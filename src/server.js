@@ -11,6 +11,7 @@ const conversationsDataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID;
 const messagesDataSourceId = process.env.HOZO_MESSAGES_DATA_SOURCE_ID;
 const attachmentsDataSourceId = process.env.HOZO_ATTACHMENTS_DATA_SOURCE_ID;
 const codexCommandsDataSourceId = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
+const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
 const publicBaseUrl = (process.env.HOZO_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
 const reportUrl = process.env.DAILY_REPORT_URL || (publicBaseUrl ? `${publicBaseUrl}/reports/daily-control-report` : '');
@@ -43,6 +44,7 @@ const server = http.createServer(async (req, res) => {
       notionConfigured,
       attachmentsConfigured: Boolean(attachmentsDataSourceId),
       codexCommandQueueConfigured: Boolean(codexCommandsDataSourceId),
+      taskQueryReplyEnabled: Boolean(notionToken && tasksDataSourceId),
       codexCommandTriggers: codexCommandTriggers.map((trigger) => trigger.label),
       autoReplyEnabled: false,
       reportCommandEnabled: true,
@@ -84,11 +86,11 @@ const server = http.createServer(async (req, res) => {
 });
 
 async function handleEvent(event, rawBody) {
-  const commandReply = buildCommandReply(event);
-
   if (notionConfigured) {
     await storeLineEventInNotion(event, rawBody);
   }
+
+  const commandReply = await buildCommandReply(event);
 
   if (commandReply && event.replyToken) {
     await replyLineMessage(event.replyToken, commandReply);
@@ -98,7 +100,7 @@ async function handleEvent(event, rawBody) {
   }
 }
 
-function buildCommandReply(event) {
+async function buildCommandReply(event) {
   const text = event.type === 'message' && event.message?.type === 'text' ? String(event.message.text || '').trim() : '';
 
   if (morningBriefCommands.has(text)) {
@@ -115,7 +117,140 @@ function buildCommandReply(event) {
     };
   }
 
+  if (isTaskListCommandText(text)) {
+    return buildTaskListReply(event, text);
+  }
+
   return null;
+}
+
+function isTaskListCommandText(text) {
+  if (!isCodexCommandText(text)) {
+    return false;
+  }
+
+  const commandText = extractCodexCommand(text);
+  return /待辦|任務|工作/.test(commandText) && /有哪些|清單|列表|列出|提供|查詢|看一下|是什麼/.test(commandText);
+}
+
+async function buildTaskListReply(event, text) {
+  if (!notionToken || !tasksDataSourceId) {
+    return {
+      type: 'text',
+      text: `${outgoingActorName} 已收到你的待辦查詢，但 HOZO 總控任務庫尚未設定完成，請先設定 HOZO_TASKS_DATA_SOURCE_ID。`,
+    };
+  }
+
+  const source = event.source || {};
+  const context = resolveConversationContext(source);
+  const display = await resolveDisplayNames(source, context);
+  let tasks;
+  let matchedActor;
+  try {
+    ({ tasks, matchedActor } = await findOpenTasksForActor(display.actorName));
+  } catch (error) {
+    console.warn(`Unable to build task list reply: ${error.message}`);
+    return {
+      type: 'text',
+      text: `${outgoingActorName} 已收到你的待辦查詢，但目前查詢 HOZO 總控任務庫失敗，請稍後再試。`,
+    };
+  }
+  const actorLabel = display.actorName && display.actorName !== 'unknown' ? display.actorName : '你';
+
+  if (!tasks.length) {
+    return {
+      type: 'text',
+      text: `${outgoingActorName} 查過 HOZO 總控任務庫，目前沒有找到 ${actorLabel} 的開放待辦。\n\n如果任務還沒指定負責人，我可以先幫你列全部開放待辦；請輸入「HOZO Junior，列出全部待辦」。`,
+    };
+  }
+
+  const lines = [
+    matchedActor
+      ? `${outgoingActorName} 幫你整理 ${actorLabel} 目前的 HOZO 待辦：`
+      : `${outgoingActorName} 目前沒有找到負責人明確標成 ${actorLabel} 的任務，先列出 HOZO 開放待辦：`,
+    '',
+    ...tasks.slice(0, 10).map((task, index) => `${index + 1}. ${task.name}\n   專案：${task.project || '未分類'}｜狀態：${task.status || '未設定'}｜優先：${task.priority || '未設定'}${task.next ? `\n   下一步：${task.next}` : ''}`),
+  ];
+
+  if (tasks.length > 10) {
+    lines.push('', `還有 ${tasks.length - 10} 筆未列出，請到 HOZO 總控任務庫查看完整清單。`);
+  }
+
+  return { type: 'text', text: clampText(lines.join('\n'), 4900) };
+}
+
+async function findOpenTasksForActor(actorName) {
+  const openTasks = await queryOpenTasks(100);
+  const normalizedActor = normalizeTaskAssigneeName(actorName);
+  const personalTasks = normalizedActor
+    ? openTasks.filter((task) => {
+      const owner = normalizeTaskAssigneeName(task.owner);
+      return owner && (owner.includes(normalizedActor) || normalizedActor.includes(owner));
+    })
+    : [];
+
+  return { tasks: personalTasks.length ? personalTasks : openTasks, matchedActor: Boolean(personalTasks.length) };
+}
+
+async function queryOpenTasks(limit = 100) {
+  const result = await notionRequest(`/v1/data_sources/${tasksDataSourceId}/query`, {
+    method: 'POST',
+    body: {
+      page_size: Math.min(Math.max(limit, 1), 100),
+      filter: {
+        and: [
+          { property: '狀態', select: { does_not_equal: '已完成' } },
+          { property: '狀態', select: { does_not_equal: '封存' } },
+        ],
+      },
+      sorts: [
+        { property: '優先級', direction: 'ascending' },
+        { property: '最後更新', direction: 'descending' },
+      ],
+    },
+  });
+
+  return (result.results || []).map((page) => ({
+    id: page.id,
+    url: page.url,
+    name: pageText(page, '任務名稱'),
+    project: pageSelect(page, '專案'),
+    status: pageSelect(page, '狀態'),
+    priority: pageSelect(page, '優先級'),
+    owner: pageText(page, '負責人'),
+    next: pageText(page, '下一步'),
+  })).filter((task) => task.name);
+}
+
+function pageText(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  if (!property) {
+    return '';
+  }
+  if (property.type === 'title') {
+    return richTextPlain(property.title);
+  }
+  if (property.type === 'rich_text') {
+    return richTextPlain(property.rich_text);
+  }
+  return '';
+}
+
+function pageSelect(page, propertyName) {
+  return page?.properties?.[propertyName]?.select?.name || '';
+}
+
+function richTextPlain(items) {
+  return (items || []).map((item) => item.plain_text || item.text?.content || '').join('');
+}
+
+function normalizeTaskAssigneeName(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/昱晴maggie/g, 'maggie')
+    .replace(/seven陳聖文/g, 'seven')
+    .trim();
 }
 
 async function replyLineMessage(replyToken, message) {
