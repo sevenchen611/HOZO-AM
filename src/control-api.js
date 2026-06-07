@@ -59,6 +59,7 @@ async function handleControlRequest(req, res, pathname) {
       approvalAcknowledgementEnabled: Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN),
       outgoingMessageLoggingEnabled: Boolean(process.env.NOTION_TOKEN && CONVERSATIONS_DATA_SOURCE_ID && MESSAGES_DATA_SOURCE_ID),
       defaultReportTargetConfigured: Boolean(process.env.HOZO_REPORT_TARGET_ID),
+      defaultReportCcConfigured: Boolean(process.env.HOZO_REPORT_CC_TARGET_IDS || process.env.HOZO_REPORT_CC_NAME_KEYWORDS || 'Seven陳聖文'),
       defaultReportTargetAutoResolveEnabled: Boolean(process.env.NOTION_TOKEN && process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID),
       codexCommandQueueConfigured: Boolean(CODEX_COMMANDS_DATA_SOURCE_ID),
       reportTypes: ['morning', 'daily', 'followup-morning', 'followup-midday', 'followup-afternoon'],
@@ -554,42 +555,78 @@ async function sendReport(req, body) {
 async function resolveReportTargets(body) {
   const targets = normalizeTargets(body.targets, body.targetId, body.targetType);
   if (targets.length) {
-    return targets;
+    return uniqueTargets(targets);
   }
 
-  const defaultTargetId = process.env.HOZO_REPORT_TARGET_ID;
-  if (defaultTargetId) {
-    return [{ id: defaultTargetId, type: process.env.HOZO_REPORT_TARGET_TYPE || 'user' }];
-  }
+  const defaultTargets = [];
+  defaultTargets.push(...targetsFromIds(process.env.HOZO_REPORT_TARGET_IDS || process.env.HOZO_REPORT_TARGET_ID, process.env.HOZO_REPORT_TARGET_TYPE || 'user'));
+  defaultTargets.push(...targetsFromIds(process.env.HOZO_REPORT_CC_TARGET_IDS, process.env.HOZO_REPORT_CC_TARGET_TYPE || 'user'));
 
-  const notionTarget = await findDefaultReportTargetFromNotion();
-  return notionTarget ? [notionTarget] : [];
+  const mainKeywords = process.env.HOZO_REPORT_TARGET_NAME_KEYWORD || (defaultTargets.length ? '' : 'Maggie');
+  defaultTargets.push(...await findReportTargetsFromNotion(mainKeywords, { fallbackLatestPersonal: !defaultTargets.length }));
+
+  const ccKeywords = process.env.HOZO_REPORT_CC_NAME_KEYWORDS || 'Seven陳聖文,Seven 陳聖文';
+  defaultTargets.push(...await findReportTargetsFromNotion(ccKeywords, { fallbackLatestPersonal: false }));
+
+  return uniqueTargets(defaultTargets);
 }
 
-async function findDefaultReportTargetFromNotion() {
+function targetsFromIds(value, targetType) {
+  return String(value || '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean)
+    .map((id) => ({ id, type: targetType || inferTargetType(id), source: 'env' }));
+}
+
+function uniqueTargets(targets) {
+  const seen = new Set();
+  return targets.filter((target) => {
+    const id = String(target.id || '').trim();
+    if (!id || seen.has(id)) {
+      return false;
+    }
+    seen.add(id);
+    target.id = id;
+    target.type = target.type || inferTargetType(id);
+    return true;
+  });
+}
+
+async function findReportTargetsFromNotion(keywordList, { fallbackLatestPersonal = false } = {}) {
   const notionToken = process.env.NOTION_TOKEN;
   const dataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID;
   if (!notionToken || !dataSourceId) {
-    return null;
+    return [];
   }
+
+  const keywords = String(keywordList || '')
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
 
   const result = await notionRequest(`/v1/data_sources/${dataSourceId}/query`, {
     method: 'POST',
     body: {
-      page_size: 10,
+      page_size: 100,
       filter: { property: '對象類型', select: { equals: '個人' } },
       sorts: [{ property: '最後訊息時間', direction: 'descending' }],
     },
   });
 
   const pages = result.results || [];
-  const keyword = String(process.env.HOZO_REPORT_TARGET_NAME_KEYWORD || 'Maggie').toLowerCase();
-  const preferred = pages.find((page) => pageTextProperty(page, 'LINE 對話名稱').toLowerCase().includes(keyword)
-    || pageTextProperty(page, '自定義名稱').toLowerCase().includes(keyword));
-  const selected = preferred || pages[0];
-  const userId = selected ? pageTextProperty(selected, 'User ID') : '';
+  const selectedPages = keywords.length
+    ? pages.filter((page) => {
+      const name = `${pageTextProperty(page, 'LINE 對話名稱')} ${pageTextProperty(page, '自定義名稱')}`.toLowerCase();
+      return keywords.some((keyword) => name.includes(keyword));
+    })
+    : [];
 
-  return userId ? { id: userId, type: 'user', source: 'notion-auto' } : null;
+  const fallbackPages = selectedPages.length || !fallbackLatestPersonal ? [] : pages.slice(0, 1);
+  return [...selectedPages, ...fallbackPages]
+    .map((page) => pageTextProperty(page, 'User ID'))
+    .filter(Boolean)
+    .map((id) => ({ id, type: 'user', source: 'notion-auto' }));
 }
 
 function buildReportMessage(reportType, customText) {
