@@ -62,25 +62,13 @@ services:
     schedule: "0 0-14 * * *"
     envVars:
       - key: NOTION_TOKEN
-        fromService:
-          name: hozo-am-line-oa-webhook
-          type: web
-          envVarKey: NOTION_TOKEN
+        sync: false
       - key: SEVEN_MEETINGS_DATA_SOURCE_ID
-        fromService:
-          name: hozo-am-line-oa-webhook
-          type: web
-          envVarKey: SEVEN_MEETINGS_DATA_SOURCE_ID
+        sync: false
       - key: SEVEN_TASKS_DATA_SOURCE_ID
-        fromService:
-          name: hozo-am-line-oa-webhook
-          type: web
-          envVarKey: SEVEN_TASKS_DATA_SOURCE_ID
+        sync: false
       - key: SEVEN_PROGRESS_REPORTS_DATA_SOURCE_ID
-        fromService:
-          name: hozo-am-line-oa-webhook
-          type: web
-          envVarKey: SEVEN_PROGRESS_REPORTS_DATA_SOURCE_ID
+        sync: false
 
   - type: cron
     name: hozo-am-morning-brief
@@ -99,10 +87,7 @@ services:
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
-        fromService:
-          name: hozo-am-line-oa-webhook
-          type: web
-          envVarKey: SEVEN_CONTROL_API_KEY
+        sync: false
 
   - type: cron
     name: hozo-am-followup-morning
@@ -121,10 +106,7 @@ services:
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
-        fromService:
-          name: hozo-am-line-oa-webhook
-          type: web
-          envVarKey: SEVEN_CONTROL_API_KEY
+        sync: false
 
   - type: cron
     name: hozo-am-followup-midday
@@ -143,10 +125,7 @@ services:
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
-        fromService:
-          name: hozo-am-line-oa-webhook
-          type: web
-          envVarKey: SEVEN_CONTROL_API_KEY
+        sync: false
 
   - type: cron
     name: hozo-am-followup-afternoon
@@ -165,10 +144,7 @@ services:
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
-        fromService:
-          name: hozo-am-line-oa-webhook
-          type: web
-          envVarKey: SEVEN_CONTROL_API_KEY
+        sync: false
 
   - type: cron
     name: hozo-am-daily-report
@@ -187,7 +163,4 @@ services:
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
-        fromService:
-          name: hozo-am-line-oa-webhook
-          type: web
-          envVarKey: SEVEN_CONTROL_API_KEY
+        sync: false
