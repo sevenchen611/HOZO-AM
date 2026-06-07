@@ -17,6 +17,8 @@ const reportUrl = process.env.DAILY_REPORT_URL || (publicBaseUrl ? `${publicBase
 const morningBriefUrl = process.env.MORNING_BRIEF_URL || (publicBaseUrl ? `${publicBaseUrl}/reports/morning-brief` : '');
 const outgoingActorName = process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
 const codexCommandTriggers = buildCodexCommandTriggers(process.env.HOZO_CODEX_COMMAND_TRIGGERS || 'HOZO Junior,HOZ Jr.,HOZO Jr.');
+const hozoDataSourceParentBlockId = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID || '35f51c68-6dac-805f-88b4-e1cf5a86bbc1');
+const verifiedHozoDataSources = new Map();
 
 const notionConfigured = Boolean(notionToken && conversationsDataSourceId && messagesDataSourceId);
 const conversationAnchorText = '【HOZO LINE】對話記錄（最新在最上方）';
@@ -699,6 +701,9 @@ async function notionRequest(pathname, { method, body }) {
   if (!notionToken) {
     throw new Error('NOTION_TOKEN is not set.');
   }
+
+  await assertHozoNotionTarget(pathname, body);
+
   const response = await fetch(`https://api.notion.com${pathname}`, {
     method,
     headers: { Authorization: `Bearer ${notionToken}`, 'Content-Type': 'application/json', 'Notion-Version': notionVersion },
@@ -709,6 +714,78 @@ async function notionRequest(pathname, { method, body }) {
     throw new Error(`Notion API failed: ${response.status} ${responseText}`);
   }
   return responseText ? JSON.parse(responseText) : {};
+}
+
+async function assertHozoNotionTarget(pathname, body) {
+  const dataSourceIds = new Set();
+  const dataSourceMatch = String(pathname || '').match(/^\/v1\/data_sources\/([^/]+)\/query(?:\?|$)/);
+  if (dataSourceMatch?.[1]) {
+    dataSourceIds.add(dataSourceMatch[1]);
+  }
+
+  const parent = body?.parent;
+  if (parent?.type === 'data_source_id' && parent.data_source_id) {
+    dataSourceIds.add(parent.data_source_id);
+  }
+
+  for (const dataSourceId of dataSourceIds) {
+    await assertHozoDataSource(dataSourceId);
+  }
+}
+
+async function assertHozoDataSource(dataSourceId) {
+  const normalizedId = normalizeId(dataSourceId);
+  if (!normalizedId) {
+    throw new Error('Missing HOZO Notion data source ID.');
+  }
+  if (verifiedHozoDataSources.has(normalizedId)) {
+    return verifiedHozoDataSources.get(normalizedId);
+  }
+
+  const dataSource = await notionFetchJson(`/v1/data_sources/${encodeURIComponent(dataSourceId)}`);
+  const dataSourceTitle = notionTitleText(dataSource.title);
+  const databaseId = dataSource.parent?.database_id;
+  if (!databaseId) {
+    throw new Error(`Notion data source ${dataSourceTitle || dataSourceId} is not attached to a database.`);
+  }
+
+  const database = await notionFetchJson(`/v1/databases/${encodeURIComponent(databaseId)}`);
+  const databaseTitle = notionTitleText(database.title);
+  const parentBlockId = normalizeId(database.parent?.block_id || '');
+
+  if (dataSource.archived || dataSource.in_trash || database.archived || database.in_trash) {
+    throw new Error(`Refusing to write to archived or trashed Notion data source: ${dataSourceTitle || dataSourceId}.`);
+  }
+  if (!/^HOZO(?:\b|-| | LINE| AM|CRM|好住|總控|Automation)/i.test(dataSourceTitle)) {
+    throw new Error(`Refusing to write to non-HOZO Notion data source: ${dataSourceTitle || dataSourceId}.`);
+  }
+  if (hozoDataSourceParentBlockId && parentBlockId !== hozoDataSourceParentBlockId) {
+    throw new Error(`Refusing to write outside the HOZO Notion database area: ${databaseTitle || databaseId}.`);
+  }
+
+  const result = { dataSourceTitle, databaseTitle, databaseId };
+  verifiedHozoDataSources.set(normalizedId, result);
+  return result;
+}
+
+async function notionFetchJson(pathname) {
+  const response = await fetch(`https://api.notion.com${pathname}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${notionToken}`, 'Content-Type': 'application/json', 'Notion-Version': notionVersion },
+  });
+  const responseText = await response.text();
+  if (!response.ok) {
+    throw new Error(`Notion API failed: ${response.status} ${responseText}`);
+  }
+  return responseText ? JSON.parse(responseText) : {};
+}
+
+function notionTitleText(titleItems) {
+  return (titleItems || []).map((item) => item.plain_text || item.text?.content || '').join('');
+}
+
+function normalizeId(value) {
+  return String(value || '').replace(/-/g, '').toLowerCase();
 }
 
 function buildNonTextMessagePreview(message) {

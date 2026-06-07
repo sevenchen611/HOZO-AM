@@ -111,6 +111,8 @@ async function writeNotionEntry(entry) {
     };
   }
 
+  await assertHozoRunLogDataSource(dataSourceId);
+
   const name = `${entry.action} | ${entry.automationId} | ${entry.status} | ${entry.timestampTaipei}`;
   const properties = {
     Name: {
@@ -176,6 +178,56 @@ async function writeNotionEntry(entry) {
     url: page.url || null,
     dataSourceId,
   };
+}
+
+async function assertHozoRunLogDataSource(dataSourceId) {
+  const dataSource = await notionGet(`/v1/data_sources/${encodeURIComponent(dataSourceId)}`);
+  const dataSourceTitle = notionTitleText(dataSource.title);
+  const databaseId = dataSource.parent?.database_id;
+  if (!databaseId) {
+    throw new Error(`Automation run log data source ${dataSourceTitle || dataSourceId} is not attached to a database.`);
+  }
+
+  const database = await notionGet(`/v1/databases/${encodeURIComponent(databaseId)}`);
+  const databaseTitle = notionTitleText(database.title);
+  const allowedBlockId = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID
+    || runLogConfig?.allowedDatabaseParentBlockId
+    || '35f51c68-6dac-805f-88b4-e1cf5a86bbc1');
+  const parentBlockId = normalizeId(database.parent?.block_id || '');
+
+  if (dataSource.archived || dataSource.in_trash || database.archived || database.in_trash) {
+    throw new Error(`Refusing to write to archived or trashed Notion data source: ${dataSourceTitle || dataSourceId}.`);
+  }
+  if (!/^HOZO(?:\b|-| | LINE| AM|CRM|好住|總控|Automation)/i.test(dataSourceTitle)) {
+    throw new Error(`Refusing to write automation run log to non-HOZO data source: ${dataSourceTitle || dataSourceId}.`);
+  }
+  if (allowedBlockId && parentBlockId !== allowedBlockId) {
+    throw new Error(`Refusing to write automation run log outside the HOZO Notion database area: ${databaseTitle || databaseId}.`);
+  }
+}
+
+async function notionGet(pathname) {
+  const response = await fetch(`https://api.notion.com${pathname}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${notionToken}`,
+      'Content-Type': 'application/json',
+      'Notion-Version': notionVersion,
+    },
+  });
+  const responseText = await response.text();
+  if (!response.ok) {
+    throw new Error(`Notion API failed: ${response.status} ${responseText}`);
+  }
+  return responseText ? JSON.parse(responseText) : {};
+}
+
+function notionTitleText(titleItems) {
+  return (titleItems || []).map((item) => item.plain_text || item.text?.content || '').join('');
+}
+
+function normalizeId(value) {
+  return String(value || '').replace(/-/g, '').toLowerCase();
 }
 
 function summaryRichText(value) {

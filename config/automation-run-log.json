@@ -1,5 +1,6 @@
 {
-  "notionDataSourceId": "25036a0e-84a7-4590-8f5c-10914207b16b",
-  "databaseUrl": "https://app.notion.com/p/011eca92dbe54067a4641ac18e3fca46",
-  "parentPageUrl": "https://app.notion.com/p/37751c686dac81b98496dc98585dbf7b"
+  "notionDataSourceId": "5f7a870d-5a34-44a2-b1c8-a17171b6353a",
+  "databaseUrl": "https://app.notion.com/p/be11f8b2a2ab46289e8b914233fa5043",
+  "parentPageUrl": "https://app.notion.com/p/35d51c686dac802c81e6c71b560c0498",
+  "allowedDatabaseParentBlockId": "35f51c68-6dac-805f-88b4-e1cf5a86bbc1"
 }

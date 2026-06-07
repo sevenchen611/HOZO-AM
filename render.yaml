@@ -20,6 +20,8 @@ services:
         value: "HOZO Jr."
       - key: HOZO_CODEX_COMMAND_TRIGGERS
         value: "HOZO Junior,HOZ Jr.,HOZO Jr."
+      - key: HOZO_DATA_SOURCE_PARENT_BLOCK_ID
+        value: 35f51c68-6dac-805f-88b4-e1cf5a86bbc1
       - key: HOZO_CONVERSATIONS_DATA_SOURCE_ID
         value: 37451c68-6dac-8163-b4fa-000b17271536
       - key: HOZO_MESSAGES_DATA_SOURCE_ID
@@ -27,19 +29,19 @@ services:
       - key: HOZO_ATTACHMENTS_DATA_SOURCE_ID
         value: 37551c68-6dac-81bb-97de-000bebacea77
       - key: HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID
-        sync: false
+        value: 4ce26dc1-0b90-49ad-8e96-73f3a8f23a1f
       - key: HOZO_CODEX_COMMANDS_DATA_SOURCE_ID
-        sync: false
+        value: 6a500d4c-43ae-4523-bd76-c19a80697bb3
       - key: HOZO_MEETINGS_DATA_SOURCE_ID
-        sync: false
+        value: fd351c68-6dac-8298-8f0e-87ab1eb6027c
       - key: HOZO_TASKS_DATA_SOURCE_ID
-        sync: false
+        value: 9c9e34ff-45af-4543-a3ae-11c5cd432b36
       - key: HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID
-        sync: false
+        value: add70895-645c-4268-9763-3e4bcb2b5b95
       - key: HOZO_RISK_DECISIONS_DATA_SOURCE_ID
-        sync: false
+        value: 1f6ef6e0-3f5f-49fb-8b80-add787898d7d
       - key: HOZO_AUTOMATION_RUN_LOG_DATA_SOURCE_ID
-        sync: false
+        value: 5f7a870d-5a34-44a2-b1c8-a17171b6353a
       - key: HOZO_REPORT_TARGET_ID
         sync: false
       - key: HOZO_REPORT_TARGET_TYPE
@@ -64,11 +66,11 @@ services:
       - key: NOTION_TOKEN
         sync: false
       - key: HOZO_MEETINGS_DATA_SOURCE_ID
-        sync: false
+        value: fd351c68-6dac-8298-8f0e-87ab1eb6027c
       - key: HOZO_TASKS_DATA_SOURCE_ID
-        sync: false
+        value: 9c9e34ff-45af-4543-a3ae-11c5cd432b36
       - key: HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID
-        sync: false
+        value: add70895-645c-4268-9763-3e4bcb2b5b95
 
   - type: cron
     name: hozo-am-morning-brief
