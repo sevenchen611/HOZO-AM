@@ -1,5 +1,7 @@
 # HOZO AM LINE OA Webhook
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sevenchen611/HOZO-AM)
+
 HOZO AM 是 HOZO 好住寓好專用的 Assistant Manager 控制中心。這個專案獨立於 SevenAM，負責接收 HOZO LINE OA 訊息、寫入 HOZO Notion 總控中心，並透過 Render Cron 發送早報、跟催確認與每日總控報告。
 
 ## 專案範圍
