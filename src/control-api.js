@@ -14,6 +14,7 @@ const CONVERSATIONS_DATA_SOURCE_ID = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_
 const MESSAGES_DATA_SOURCE_ID = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
 const OUTGOING_ACTOR_NAME = process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
 const CONVERSATION_ANCHOR_TEXT = '【HOZO LINE】對話記錄';
+const CONVERSATION_ANCHOR_PATTERN = /對話記錄(?:（最新在最上方）)?/;
 const OUTGOING_BLOCK_COLOR = 'orange';
 const PUBLIC_BASE_URL = (process.env.HOZO_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
 const CODEX_COMMAND_TRIGGERS = buildCodexCommandTriggers(process.env.HOZO_CODEX_COMMAND_TRIGGERS || 'HOZO Junior,HOZ Jr.,HOZO Jr.');
@@ -1004,7 +1005,7 @@ async function appendOutgoingConversationContent({ conversationId, target, messa
 
 async function findConversationAnchorBlock(conversationId) {
   const blocks = await getBlockChildren(conversationId);
-  return blocks.find((block) => plainBlockText(block).includes(CONVERSATION_ANCHOR_TEXT)) || null;
+  return blocks.find((block) => isConversationAnchorBlock(block)) || null;
 }
 
 async function getBlockChildren(blockId) {
@@ -1022,6 +1023,11 @@ async function getBlockChildren(blockId) {
 function plainBlockText(block) {
   const richText = block?.[block.type]?.rich_text || [];
   return richText.map((item) => item.plain_text || item.text?.content || '').join('');
+}
+
+function isConversationAnchorBlock(block) {
+  const text = plainBlockText(block);
+  return text.includes(CONVERSATION_ANCHOR_TEXT) || CONVERSATION_ANCHOR_PATTERN.test(text);
 }
 
 function buildOutgoingPreview(messages) {

@@ -20,6 +20,7 @@ const codexCommandTriggers = buildCodexCommandTriggers(process.env.HOZO_CODEX_CO
 
 const notionConfigured = Boolean(notionToken && conversationsDataSourceId && messagesDataSourceId);
 const conversationAnchorText = '【HOZO LINE】對話記錄（最新在最上方）';
+const conversationAnchorPattern = /對話記錄（最新在最上方）/;
 const reportCommands = new Set(['#報告', '報告', '#每日報告', '每日報告']);
 const morningBriefCommands = new Set(['#早報', '早報', '#今日早報', '今日早報', '#行程', '行程']);
 
@@ -524,7 +525,7 @@ async function appendConversationContentFirst({ conversationId, conversationName
 
 async function findOrCreateConversationAnchor(conversationId) {
   const children = await getBlockChildren(conversationId);
-  const anchor = children.find((block) => plainBlockText(block).includes(conversationAnchorText));
+  const anchor = children.find((block) => isConversationAnchorBlock(block));
   if (anchor) {
     return anchor;
   }
@@ -783,6 +784,10 @@ function formatTaipeiTime(value) {
 function plainBlockText(block) {
   const richText = block?.[block.type]?.rich_text || [];
   return richText.map((item) => item.plain_text || item.text?.content || '').join('');
+}
+
+function isConversationAnchorBlock(block) {
+  return conversationAnchorPattern.test(plainBlockText(block));
 }
 
 function title(content) {
