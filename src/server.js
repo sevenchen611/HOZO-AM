@@ -65,14 +65,19 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 401, { error: 'Invalid signature' });
   }
 
+  let body;
   try {
-    const body = JSON.parse(rawBody);
-    await Promise.all((body.events || []).map((event) => handleEvent(event, rawBody)));
-    return sendText(res, 200, 'OK');
+    body = JSON.parse(rawBody);
   } catch (error) {
-    console.error(error);
-    return sendJson(res, 500, { error: 'Internal server error' });
+    console.error('Unable to parse LINE webhook body:', error);
+    return sendJson(res, 400, { error: 'Invalid JSON' });
   }
+
+  sendText(res, 200, 'OK');
+
+  Promise.all((body.events || []).map((event) => handleEvent(event, rawBody))).catch((error) => {
+    console.error('Unable to process LINE webhook event:', error);
+  });
 });
 
 async function handleEvent(event, rawBody) {
@@ -200,7 +205,6 @@ async function createOutgoingReplyMessagePage({ conversationId, event, message, 
         '發話者類型': select('oa'),
         '群組標記': checkbox(Boolean(source.groupId || source.roomId)),
         '排序時間': date(sentAt),
-        '已進入判斷層': checkbox(false),
       },
       children: [
         paragraph(`來源：${outgoingActorName} 指令回覆`),
@@ -506,7 +510,6 @@ async function createMessagePage({ conversationId, event, rawBody, messageId, me
         '發話者類型': select('user'),
         '群組標記': checkbox(Boolean(source.groupId || source.roomId)),
         '排序時間': date(eventTime),
-        '已進入判斷層': checkbox(false),
       },
       children: [paragraph(`來源：LINE / ${context.entityType}`), paragraph(`內容：${text || '(非文字訊息)'}`)],
     },

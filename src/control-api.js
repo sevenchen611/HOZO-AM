@@ -967,7 +967,6 @@ async function createOutgoingMessagePage({ conversationId, messageId, message, m
         發話者類型: selectProperty('oa'),
         群組標記: checkboxProperty(['群組', '聊天室'].includes(context.entityType)),
         排序時間: dateProperty(sentAt),
-        已進入判斷層: checkboxProperty(false),
       },
       children: [
         paragraphProperty(`來源：${OUTGOING_ACTOR_NAME} 主動發送`),
