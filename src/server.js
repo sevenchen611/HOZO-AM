@@ -507,7 +507,7 @@ async function createMessagePage({ conversationId, event, rawBody, messageId, me
         '原始 payload': richText(JSON.stringify(event), 1900),
         '發話者 ID': richText(source.userId || ''),
         '發話者名稱': richText(display.actorName || ''),
-        '發話者類型': select('user'),
+        '發話者類型': select('customer'),
         '群組標記': checkbox(Boolean(source.groupId || source.roomId)),
         '排序時間': date(eventTime),
       },
