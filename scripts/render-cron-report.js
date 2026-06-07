@@ -1,9 +1,9 @@
 const reportType = String(process.argv[2] || '').trim();
 const controlApiUrl = process.env.CONTROL_API_URL || '';
 const controlLinePushUrl = process.env.CONTROL_LINE_PUSH_URL || '';
-const controlApiKey = process.env.SEVEN_CONTROL_API_KEY;
+const controlApiKey = process.env.HOZO_CONTROL_API_KEY;
 const cronJobName = process.env.CRON_JOB_NAME || `cron-${reportType || 'unknown'}`;
-const cronAlertsEnabled = !['0', 'false', 'off', 'no'].includes(String(process.env.SEVEN_CRON_ALERTS_ENABLED || 'true').trim().toLowerCase());
+const cronAlertsEnabled = !['0', 'false', 'off', 'no'].includes(String(process.env.HOZO_CRON_ALERTS_ENABLED || 'true').trim().toLowerCase());
 const runId = buildRunId();
 const startedAt = new Date();
 
@@ -12,7 +12,7 @@ if (!reportType) {
 }
 
 if (!controlApiKey) {
-  throw new Error('SEVEN_CONTROL_API_KEY is not set.');
+  throw new Error('HOZO_CONTROL_API_KEY is not set.');
 }
 if (!controlApiUrl) {
   throw new Error('CONTROL_API_URL is not set.');
@@ -28,10 +28,10 @@ try {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'x-seven-control-key': controlApiKey,
-      'x-seven-cron-job': cronJobName,
-      'x-seven-cron-run-id': runId,
-      'x-seven-cron-scheduled-report': reportType,
+      'x-hozo-control-key': controlApiKey,
+      'x-hozo-cron-job': cronJobName,
+      'x-hozo-cron-run-id': runId,
+      'x-hozo-cron-scheduled-report': reportType,
     },
     body: JSON.stringify({
       reportType,
@@ -87,7 +87,7 @@ async function sendFailureAlert(errorMessage) {
   const body = {
     useDefaultReportTarget: true,
     text: [
-      `${process.env.SEVEN_OUTGOING_ACTOR_NAME || 'HOZO Jr.'} 排程警告`,
+      `${process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.'} 排程警告`,
       `排程：${cronJobName}`,
       `報告：${reportType}`,
       `Run ID：${runId}`,
@@ -102,9 +102,9 @@ async function sendFailureAlert(errorMessage) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'x-seven-control-key': controlApiKey,
-        'x-seven-cron-job': cronJobName,
-        'x-seven-cron-run-id': runId,
+        'x-hozo-control-key': controlApiKey,
+        'x-hozo-cron-job': cronJobName,
+        'x-hozo-cron-run-id': runId,
       },
       body: JSON.stringify(body),
     });
@@ -178,3 +178,4 @@ function formatTaipeiDateTime(value) {
     hour12: false,
   }).format(value instanceof Date ? value : new Date(value));
 }
+

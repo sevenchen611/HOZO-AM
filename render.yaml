@@ -16,41 +16,41 @@ services:
         sync: false
       - key: NOTION_VERSION
         value: "2025-09-03"
-      - key: SEVEN_OUTGOING_ACTOR_NAME
+      - key: HOZO_OUTGOING_ACTOR_NAME
         value: "HOZO Jr."
-      - key: SEVEN_CODEX_COMMAND_TRIGGERS
+      - key: HOZO_CODEX_COMMAND_TRIGGERS
         value: "HOZO Junior,HOZ Jr.,HOZO Jr."
-      - key: SEVEN_CONVERSATIONS_DATA_SOURCE_ID
-        value: 37451c686dac810c99b8f42b2fcb7cc0
-      - key: SEVEN_MESSAGES_DATA_SOURCE_ID
-        value: 37451c68-6dac-81d7-a555-db554602e76d
-      - key: SEVEN_ATTACHMENTS_DATA_SOURCE_ID
-        value: 37551c68-6dac-81b1-abb2-ca881b8791ed
-      - key: SEVEN_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID
+      - key: HOZO_CONVERSATIONS_DATA_SOURCE_ID
+        value: 37451c68-6dac-8163-b4fa-000b17271536
+      - key: HOZO_MESSAGES_DATA_SOURCE_ID
+        value: 37451c68-6dac-8187-a6bc-000bbd69c364
+      - key: HOZO_ATTACHMENTS_DATA_SOURCE_ID
+        value: 37551c68-6dac-81bb-97de-000bebacea77
+      - key: HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID
         sync: false
-      - key: SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID
+      - key: HOZO_CODEX_COMMANDS_DATA_SOURCE_ID
         sync: false
-      - key: SEVEN_MEETINGS_DATA_SOURCE_ID
+      - key: HOZO_MEETINGS_DATA_SOURCE_ID
         sync: false
-      - key: SEVEN_TASKS_DATA_SOURCE_ID
+      - key: HOZO_TASKS_DATA_SOURCE_ID
         sync: false
-      - key: SEVEN_PROGRESS_REPORTS_DATA_SOURCE_ID
+      - key: HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID
         sync: false
-      - key: SEVEN_RISK_DECISIONS_DATA_SOURCE_ID
+      - key: HOZO_RISK_DECISIONS_DATA_SOURCE_ID
         sync: false
-      - key: SEVEN_AUTOMATION_RUN_LOG_DATA_SOURCE_ID
+      - key: HOZO_AUTOMATION_RUN_LOG_DATA_SOURCE_ID
         sync: false
-      - key: SEVEN_REPORT_TARGET_ID
+      - key: HOZO_REPORT_TARGET_ID
         sync: false
-      - key: SEVEN_REPORT_TARGET_TYPE
+      - key: HOZO_REPORT_TARGET_TYPE
         value: user
-      - key: SEVEN_REPORT_TARGET_NAME_KEYWORD
+      - key: HOZO_REPORT_TARGET_NAME_KEYWORD
         value: Maggie
-      - key: SEVEN_CONTROL_API_KEY
+      - key: HOZO_CONTROL_API_KEY
         sync: false
-      - key: SEVEN_REPORT_APPROVAL_KEY
+      - key: HOZO_REPORT_APPROVAL_KEY
         sync: false
-      - key: SEVEN_PUBLIC_BASE_URL
+      - key: HOZO_PUBLIC_BASE_URL
         value: https://hozo-am-line-oa-webhook.onrender.com
 
   - type: cron
@@ -63,11 +63,11 @@ services:
     envVars:
       - key: NOTION_TOKEN
         sync: false
-      - key: SEVEN_MEETINGS_DATA_SOURCE_ID
+      - key: HOZO_MEETINGS_DATA_SOURCE_ID
         sync: false
-      - key: SEVEN_TASKS_DATA_SOURCE_ID
+      - key: HOZO_TASKS_DATA_SOURCE_ID
         sync: false
-      - key: SEVEN_PROGRESS_REPORTS_DATA_SOURCE_ID
+      - key: HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID
         sync: false
 
   - type: cron
@@ -84,9 +84,9 @@ services:
         value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
-      - key: SEVEN_CRON_ALERTS_ENABLED
+      - key: HOZO_CRON_ALERTS_ENABLED
         value: "true"
-      - key: SEVEN_CONTROL_API_KEY
+      - key: HOZO_CONTROL_API_KEY
         sync: false
 
   - type: cron
@@ -103,9 +103,9 @@ services:
         value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
-      - key: SEVEN_CRON_ALERTS_ENABLED
+      - key: HOZO_CRON_ALERTS_ENABLED
         value: "true"
-      - key: SEVEN_CONTROL_API_KEY
+      - key: HOZO_CONTROL_API_KEY
         sync: false
 
   - type: cron
@@ -122,9 +122,9 @@ services:
         value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
-      - key: SEVEN_CRON_ALERTS_ENABLED
+      - key: HOZO_CRON_ALERTS_ENABLED
         value: "true"
-      - key: SEVEN_CONTROL_API_KEY
+      - key: HOZO_CONTROL_API_KEY
         sync: false
 
   - type: cron
@@ -141,9 +141,9 @@ services:
         value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
-      - key: SEVEN_CRON_ALERTS_ENABLED
+      - key: HOZO_CRON_ALERTS_ENABLED
         value: "true"
-      - key: SEVEN_CONTROL_API_KEY
+      - key: HOZO_CONTROL_API_KEY
         sync: false
 
   - type: cron
@@ -160,7 +160,8 @@ services:
         value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
-      - key: SEVEN_CRON_ALERTS_ENABLED
+      - key: HOZO_CRON_ALERTS_ENABLED
         value: "true"
-      - key: SEVEN_CONTROL_API_KEY
+      - key: HOZO_CONTROL_API_KEY
         sync: false
+

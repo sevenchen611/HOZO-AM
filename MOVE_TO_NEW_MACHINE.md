@@ -27,4 +27,4 @@ Do not copy committed secrets. Keep `.env` private and recreate it from `.env.ex
 
 ## Deployment note
 
-After Render creates the web service, replace `<hozo-render-service>` in Render environment variables and `render.yaml` with the real Render service host.
+The current Render service host is `https://hozo-am-line-oa-webhook.onrender.com`. If a future deployment uses a different host, update `HOZO_PUBLIC_BASE_URL`, `CONTROL_API_URL`, and `CONTROL_LINE_PUSH_URL`.

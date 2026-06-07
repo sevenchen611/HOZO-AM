@@ -1,6 +1,6 @@
 # HOZO AM Operating Guide
 
-This repository is the independent HOZO AM project. It must not write to SevenAM databases unless the user explicitly asks for a migration or comparison.
+This repository is the independent HOZO AM project. It must write only to HOZO AM databases unless the user explicitly asks for a migration or comparison.
 
 ## System Goal
 
@@ -35,7 +35,7 @@ The existing HOZO meeting database should not be reused for this automation. Cre
 
 ## Default LINE Identity
 
-When sending a direct LINE message to the main owner, the default target is the owner user target configured in `SEVEN_REPORT_TARGET_ID`.
+When sending a direct LINE message to the main owner, the default target is the owner user target configured in `HOZO_REPORT_TARGET_ID`.
 
 Target type:
 
@@ -86,7 +86,7 @@ Rules:
 Configured through:
 
 ```text
-SEVEN_CODEX_COMMAND_TRIGGERS=HOZO Junior,HOZ Jr.,HOZO Jr.
+HOZO_CODEX_COMMAND_TRIGGERS=HOZO Junior,HOZ Jr.,HOZO Jr.
 ```
 
 Render should still store the raw LINE message first. Queue creation failure must not block normal LINE storage.
@@ -109,3 +109,4 @@ Render Cron uses UTC. Taipei time is UTC+8.
 - Do not commit `.env`, `env.txt`, LINE tokens, Notion tokens, or control API keys.
 - Confirm existence/format only; never echo secret values.
 - Render environment variables are the deployment source of truth for secrets.
+

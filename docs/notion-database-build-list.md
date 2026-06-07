@@ -6,22 +6,22 @@ Create the following databases under `HOZO 總控中心`. Existing LINE CRM data
 
 | Database | Status | Render env |
 | --- | --- | --- |
-| HOZO LINE 對話主檔 | Existing | `SEVEN_CONVERSATIONS_DATA_SOURCE_ID` |
-| HOZO LINE 訊息紀錄 | Existing | `SEVEN_MESSAGES_DATA_SOURCE_ID` |
-| HOZO LINE 附件紀錄 | Existing | `SEVEN_ATTACHMENTS_DATA_SOURCE_ID` |
+| HOZO LINE 對話主檔 | Existing | `HOZO_CONVERSATIONS_DATA_SOURCE_ID` |
+| HOZO LINE 訊息紀錄 | Existing | `HOZO_MESSAGES_DATA_SOURCE_ID` |
+| HOZO LINE 附件紀錄 | Existing | `HOZO_ATTACHMENTS_DATA_SOURCE_ID` |
 
 ## Create New
 
 | Database | Purpose | Render env |
 | --- | --- | --- |
-| HOZO LINE 附件轉檔資料庫 | OCR / parsing queue for confirmed attachments | `SEVEN_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID` |
-| HOZO Codex 指令佇列 | LINE-triggered Codex command queue | `SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID` |
+| HOZO LINE 附件轉檔資料庫 | OCR / parsing queue for confirmed attachments | `HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID` |
+| HOZO Codex 指令佇列 | LINE-triggered Codex command queue | `HOZO_CODEX_COMMANDS_DATA_SOURCE_ID` |
 | HOZO 總控專案庫 | Project / category master list | currently Notion-side only |
-| HOZO 總控任務庫 | Cross-project task database | `SEVEN_TASKS_DATA_SOURCE_ID` |
-| HOZO 會議紀錄 | HOZO AM meeting intake layer | `SEVEN_MEETINGS_DATA_SOURCE_ID` |
-| HOZO 專案進度報表庫 | Project-level progress summaries | `SEVEN_PROGRESS_REPORTS_DATA_SOURCE_ID` |
-| HOZO 風險與決策庫 | Report approval and decisions | `SEVEN_RISK_DECISIONS_DATA_SOURCE_ID` |
-| HOZO Automation Run Log | Scheduled automation audit logs | `SEVEN_AUTOMATION_RUN_LOG_DATA_SOURCE_ID` |
+| HOZO 總控任務庫 | Cross-project task database | `HOZO_TASKS_DATA_SOURCE_ID` |
+| HOZO 會議紀錄 | HOZO AM meeting intake layer | `HOZO_MEETINGS_DATA_SOURCE_ID` |
+| HOZO 專案進度報表庫 | Project-level progress summaries | `HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID` |
+| HOZO 風險與決策庫 | Report approval and decisions | `HOZO_RISK_DECISIONS_DATA_SOURCE_ID` |
+| HOZO Automation Run Log | Scheduled automation audit logs | `HOZO_AUTOMATION_RUN_LOG_DATA_SOURCE_ID` |
 | HOZO 通知候選佇列 | Future notification approvals | future env var |
 
 ## Minimum Task Database Fields
@@ -67,3 +67,4 @@ Suggested statuses:
 ## Important Rule
 
 Do not reuse the existing HOZO meeting database mentioned in onboarding notes. Create a separate HOZO AM meeting records database for this automation.
+

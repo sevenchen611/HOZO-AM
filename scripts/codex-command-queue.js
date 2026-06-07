@@ -4,7 +4,7 @@ loadEnvFile('.env');
 loadEnvFile('../env.txt');
 
 const notionToken = process.env.NOTION_TOKEN;
-const commandsDataSourceId = process.env.SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID;
+const commandsDataSourceId = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID;
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
 
 const command = String(process.argv[2] || 'pending').trim().toLowerCase();
@@ -14,7 +14,7 @@ if (!notionToken) {
 }
 
 if (!commandsDataSourceId) {
-  fail('SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID is not set.');
+  fail('HOZO_CODEX_COMMANDS_DATA_SOURCE_ID is not set.');
 }
 
 if (command === 'pending') {
@@ -133,3 +133,4 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
+

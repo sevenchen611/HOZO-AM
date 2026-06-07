@@ -99,7 +99,7 @@ function readRunLogConfig() {
 }
 
 async function writeNotionEntry(entry) {
-  const dataSourceId = process.env.SEVEN_AUTOMATION_RUN_LOG_DATA_SOURCE_ID
+  const dataSourceId = process.env.HOZO_AUTOMATION_RUN_LOG_DATA_SOURCE_ID
     || runLogConfig?.notionDataSourceId
     || null;
 
@@ -225,3 +225,4 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
+

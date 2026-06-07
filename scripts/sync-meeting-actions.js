@@ -6,15 +6,15 @@ loadEnvFile('../env.txt');
 
 const notionToken = process.env.NOTION_TOKEN;
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
-const meetingsDataSourceId = process.env.SEVEN_MEETINGS_DATA_SOURCE_ID || '';
-const tasksDataSourceId = process.env.SEVEN_TASKS_DATA_SOURCE_ID || '';
-const progressReportsDataSourceId = process.env.SEVEN_PROGRESS_REPORTS_DATA_SOURCE_ID || '';
+const meetingsDataSourceId = process.env.HOZO_MEETINGS_DATA_SOURCE_ID || '';
+const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
+const progressReportsDataSourceId = process.env.HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID || '';
 
 const args = parseArgs(process.argv.slice(2));
 const dryRun = Boolean(args['dry-run']);
 const includeIncomplete = Boolean(args['include-incomplete']);
-const statusProperty = String(process.env.SEVEN_MEETINGS_STATUS_PROPERTY || args['status-property'] || '').trim();
-const datePropertyName = String(process.env.SEVEN_MEETINGS_DATE_PROPERTY || args['date-property'] || '日期').trim();
+const statusProperty = String(process.env.HOZO_MEETINGS_STATUS_PROPERTY || args['status-property'] || '').trim();
+const datePropertyName = String(process.env.HOZO_MEETINGS_DATE_PROPERTY || args['date-property'] || '日期').trim();
 const limit = clampNumber(Number(args.limit || 20), 1, 100);
 
 if (!notionToken) {
@@ -681,3 +681,4 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
+

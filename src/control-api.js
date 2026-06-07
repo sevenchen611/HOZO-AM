@@ -6,17 +6,17 @@ loadDotenv();
 
 const originalCreateServer = http.createServer.bind(http);
 
-const TASKS_DATA_SOURCE_ID = process.env.SEVEN_TASKS_DATA_SOURCE_ID || '';
-const RISK_DECISIONS_DATA_SOURCE_ID = process.env.SEVEN_RISK_DECISIONS_DATA_SOURCE_ID || '';
-const ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID = process.env.SEVEN_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID || '';
-const CODEX_COMMANDS_DATA_SOURCE_ID = process.env.SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID || '';
-const CONVERSATIONS_DATA_SOURCE_ID = process.env.SEVEN_CONVERSATIONS_DATA_SOURCE_ID || '';
-const MESSAGES_DATA_SOURCE_ID = process.env.SEVEN_MESSAGES_DATA_SOURCE_ID || '';
-const OUTGOING_ACTOR_NAME = process.env.SEVEN_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
+const TASKS_DATA_SOURCE_ID = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
+const RISK_DECISIONS_DATA_SOURCE_ID = process.env.HOZO_RISK_DECISIONS_DATA_SOURCE_ID || '';
+const ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID = process.env.HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID || '';
+const CODEX_COMMANDS_DATA_SOURCE_ID = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
+const CONVERSATIONS_DATA_SOURCE_ID = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID || '';
+const MESSAGES_DATA_SOURCE_ID = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
+const OUTGOING_ACTOR_NAME = process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
 const CONVERSATION_ANCHOR_TEXT = '【HOZO LINE】對話記錄';
 const OUTGOING_BLOCK_COLOR = 'orange';
-const PUBLIC_BASE_URL = (process.env.SEVEN_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
-const CODEX_COMMAND_TRIGGERS = buildCodexCommandTriggers(process.env.SEVEN_CODEX_COMMAND_TRIGGERS || 'HOZO Junior,HOZ Jr.,HOZO Jr.');
+const PUBLIC_BASE_URL = (process.env.HOZO_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
+const CODEX_COMMAND_TRIGGERS = buildCodexCommandTriggers(process.env.HOZO_CODEX_COMMAND_TRIGGERS || 'HOZO Junior,HOZ Jr.,HOZO Jr.');
 const REPORT_ROUTES = new Map([
   ['/reports/morning-brief', '../reports/morning-brief-prototype.html'],
   ['/reports/morning-brief-prototype.html', '../reports/morning-brief-prototype.html'],
@@ -50,13 +50,13 @@ async function handleControlRequest(req, res, pathname) {
   if (req.method === 'GET' && pathname === '/control/health') {
     return sendJson(res, 200, {
       ok: true,
-      controlApiEnabled: Boolean(process.env.SEVEN_CONTROL_API_KEY),
+      controlApiEnabled: Boolean(process.env.HOZO_CONTROL_API_KEY),
       linePushEnabled: Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN),
       approvalWriteBackEnabled: Boolean(process.env.NOTION_TOKEN),
       approvalAcknowledgementEnabled: Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN),
       outgoingMessageLoggingEnabled: Boolean(process.env.NOTION_TOKEN && CONVERSATIONS_DATA_SOURCE_ID && MESSAGES_DATA_SOURCE_ID),
-      defaultReportTargetConfigured: Boolean(process.env.SEVEN_REPORT_TARGET_ID),
-      defaultReportTargetAutoResolveEnabled: Boolean(process.env.NOTION_TOKEN && process.env.SEVEN_CONVERSATIONS_DATA_SOURCE_ID),
+      defaultReportTargetConfigured: Boolean(process.env.HOZO_REPORT_TARGET_ID),
+      defaultReportTargetAutoResolveEnabled: Boolean(process.env.NOTION_TOKEN && process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID),
       codexCommandQueueConfigured: Boolean(CODEX_COMMANDS_DATA_SOURCE_ID),
       reportTypes: ['morning', 'daily', 'followup-morning', 'followup-midday', 'followup-afternoon'],
       endpoints: ['POST /control/line/push', 'POST /control/reports/send', 'POST /control/reports/approve', 'POST /control/codex-commands/test'],
@@ -107,7 +107,7 @@ async function createCodexCommandTest(body) {
     throw new Error('NOTION_TOKEN is not set.');
   }
   if (!CODEX_COMMANDS_DATA_SOURCE_ID) {
-    throw new Error('SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID is not set.');
+    throw new Error('HOZO_CODEX_COMMANDS_DATA_SOURCE_ID is not set.');
   }
 
   const now = new Date();
@@ -115,7 +115,7 @@ async function createCodexCommandTest(body) {
   const trigger = findCodexCommandTrigger(originalText);
   const commandText = extractCodexCommand(originalText);
   const sourceType = String(body.sourceType || body.targetType || 'user').trim();
-  const sourceId = String(body.sourceId || body.targetId || process.env.SEVEN_REPORT_TARGET_ID || '').trim();
+  const sourceId = String(body.sourceId || body.targetId || process.env.HOZO_REPORT_TARGET_ID || '').trim();
   const lineMessageId = String(body.lineMessageId || `control-test-${now.getTime()}`).trim();
   const receivedAt = body.receivedAt ? new Date(body.receivedAt) : now;
 
@@ -207,25 +207,25 @@ function resolveCommandRiskLevel(text) {
 }
 
 function isAuthorized(req) {
-  const expected = process.env.SEVEN_CONTROL_API_KEY;
+  const expected = process.env.HOZO_CONTROL_API_KEY;
   if (!expected) {
     return false;
   }
 
-  const headerKey = req.headers['x-seven-control-key'];
+  const headerKey = req.headers['x-hozo-control-key'];
   const authorization = req.headers.authorization || '';
   const bearerToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : '';
   return headerKey === expected || bearerToken === expected;
 }
 
 function isApprovalAuthorized(req, body) {
-  const expected = process.env.SEVEN_REPORT_APPROVAL_KEY;
+  const expected = process.env.HOZO_REPORT_APPROVAL_KEY;
   if (!expected) {
     return true;
   }
 
   const url = new URL(req.url ?? '/', 'http://localhost');
-  const headerKey = req.headers['x-seven-approval-key'];
+  const headerKey = req.headers['x-hozo-approval-key'];
   const queryKey = url.searchParams.get('approvalKey');
   const bodyKey = body.approvalKey;
   return headerKey === expected || queryKey === expected || bodyKey === expected;
@@ -532,7 +532,7 @@ async function sendReport(req, body) {
   const cronMeta = readCronMeta(req, body);
 
   if (!targets.length) {
-    throw new Error(`No LINE report target found. Send a message to ${OUTGOING_ACTOR_NAME} first, or set SEVEN_REPORT_TARGET_ID.`);
+    throw new Error(`No LINE report target found. Send a message to ${OUTGOING_ACTOR_NAME} first, or set HOZO_REPORT_TARGET_ID.`);
   }
 
   if (cronMeta) {
@@ -554,9 +554,9 @@ async function resolveReportTargets(body) {
     return targets;
   }
 
-  const defaultTargetId = process.env.SEVEN_REPORT_TARGET_ID;
+  const defaultTargetId = process.env.HOZO_REPORT_TARGET_ID;
   if (defaultTargetId) {
-    return [{ id: defaultTargetId, type: process.env.SEVEN_REPORT_TARGET_TYPE || 'user' }];
+    return [{ id: defaultTargetId, type: process.env.HOZO_REPORT_TARGET_TYPE || 'user' }];
   }
 
   const notionTarget = await findDefaultReportTargetFromNotion();
@@ -565,7 +565,7 @@ async function resolveReportTargets(body) {
 
 async function findDefaultReportTargetFromNotion() {
   const notionToken = process.env.NOTION_TOKEN;
-  const dataSourceId = process.env.SEVEN_CONVERSATIONS_DATA_SOURCE_ID;
+  const dataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID;
   if (!notionToken || !dataSourceId) {
     return null;
   }
@@ -580,7 +580,7 @@ async function findDefaultReportTargetFromNotion() {
   });
 
   const pages = result.results || [];
-  const keyword = String(process.env.SEVEN_REPORT_TARGET_NAME_KEYWORD || 'Maggie').toLowerCase();
+  const keyword = String(process.env.HOZO_REPORT_TARGET_NAME_KEYWORD || 'Maggie').toLowerCase();
   const preferred = pages.find((page) => pageTextProperty(page, 'LINE 對話名稱').toLowerCase().includes(keyword)
     || pageTextProperty(page, '自定義名稱').toLowerCase().includes(keyword));
   const selected = preferred || pages[0];
@@ -718,9 +718,9 @@ function normalizeMessages(messages, message, text) {
 
 function readCronMeta(req, body) {
   const cronMeta = body?.cronMeta && typeof body.cronMeta === 'object' ? body.cronMeta : null;
-  const headerJobName = body?.cronJobName || requestHeaderValue(req, 'x-seven-cron-job');
-  const headerRunId = body?.cronRunId || requestHeaderValue(req, 'x-seven-cron-run-id');
-  const headerReportType = body?.cronReportType || requestHeaderValue(req, 'x-seven-cron-scheduled-report');
+  const headerJobName = body?.cronJobName || requestHeaderValue(req, 'x-hozo-cron-job');
+  const headerRunId = body?.cronRunId || requestHeaderValue(req, 'x-hozo-cron-run-id');
+  const headerReportType = body?.cronReportType || requestHeaderValue(req, 'x-hozo-cron-scheduled-report');
 
   const merged = {
     jobName: cronMeta?.jobName || headerJobName || '',
@@ -1214,7 +1214,7 @@ function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'content-type, authorization, x-seven-control-key, x-seven-approval-key',
+    'Access-Control-Allow-Headers': 'content-type, authorization, x-hozo-control-key, x-hozo-approval-key',
   };
 }
 
@@ -1232,3 +1232,4 @@ function loadDotenv() {
     process.env[match[1]] = match[2].replace(/^["']|["']$/g, '');
   }
 }
+

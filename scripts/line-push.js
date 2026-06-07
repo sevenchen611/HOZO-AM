@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 loadEnvFile('.env');
 loadEnvFile('../env.txt');
 
-const controlApiKey = process.env.SEVEN_CONTROL_API_KEY;
+const controlApiKey = process.env.HOZO_CONTROL_API_KEY;
 const pushUrl = process.env.CONTROL_LINE_PUSH_URL || '';
 
 const targetType = String(process.argv[2] || '').trim();
@@ -11,7 +11,7 @@ const targetId = String(process.argv[3] || '').trim();
 const text = process.argv.slice(4).join(' ').trim();
 
 if (!controlApiKey) {
-  fail('SEVEN_CONTROL_API_KEY is not set.');
+  fail('HOZO_CONTROL_API_KEY is not set.');
 }
 if (!pushUrl) {
   fail('CONTROL_LINE_PUSH_URL is not set.');
@@ -33,7 +33,7 @@ const response = await fetch(pushUrl, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json; charset=utf-8',
-    'x-seven-control-key': controlApiKey,
+    'x-hozo-control-key': controlApiKey,
   },
   body: JSON.stringify({ targetType, targetId, text }),
 });
@@ -64,3 +64,4 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
+

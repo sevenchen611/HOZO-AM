@@ -22,11 +22,11 @@ if (command === 'create') {
     databaseId,
     dataSourceId,
     url: database.url,
-    renderEnvVar: dataSourceId ? `SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID=${dataSourceId}` : null,
+    renderEnvVar: dataSourceId ? `HOZO_CODEX_COMMANDS_DATA_SOURCE_ID=${dataSourceId}` : null,
     note: dataSourceId ? 'Add renderEnvVar to Render, then redeploy the web service.' : 'Database created, but no data source id was returned. Retrieve the database in Notion to copy its data source id.',
   }, null, 2));
 } else if (command === 'inspect') {
-  const dataSourceId = String(process.argv[3] || process.env.SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID || '').trim();
+  const dataSourceId = String(process.argv[3] || process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '').trim();
   if (!dataSourceId) {
     fail('Missing data source id.');
   }
@@ -149,3 +149,4 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
+

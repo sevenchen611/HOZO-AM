@@ -7,16 +7,16 @@ loadDotenv();
 const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const channelSecret = process.env.LINE_CHANNEL_SECRET;
 const notionToken = process.env.NOTION_TOKEN;
-const conversationsDataSourceId = process.env.SEVEN_CONVERSATIONS_DATA_SOURCE_ID;
-const messagesDataSourceId = process.env.SEVEN_MESSAGES_DATA_SOURCE_ID;
-const attachmentsDataSourceId = process.env.SEVEN_ATTACHMENTS_DATA_SOURCE_ID;
-const codexCommandsDataSourceId = process.env.SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID || '';
+const conversationsDataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID;
+const messagesDataSourceId = process.env.HOZO_MESSAGES_DATA_SOURCE_ID;
+const attachmentsDataSourceId = process.env.HOZO_ATTACHMENTS_DATA_SOURCE_ID;
+const codexCommandsDataSourceId = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
-const publicBaseUrl = (process.env.SEVEN_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
+const publicBaseUrl = (process.env.HOZO_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
 const reportUrl = process.env.DAILY_REPORT_URL || (publicBaseUrl ? `${publicBaseUrl}/reports/daily-control-report` : '');
 const morningBriefUrl = process.env.MORNING_BRIEF_URL || (publicBaseUrl ? `${publicBaseUrl}/reports/morning-brief` : '');
-const outgoingActorName = process.env.SEVEN_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
-const codexCommandTriggers = buildCodexCommandTriggers(process.env.SEVEN_CODEX_COMMAND_TRIGGERS || 'HOZO Junior,HOZ Jr.,HOZO Jr.');
+const outgoingActorName = process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
+const codexCommandTriggers = buildCodexCommandTriggers(process.env.HOZO_CODEX_COMMAND_TRIGGERS || 'HOZO Junior,HOZ Jr.,HOZO Jr.');
 
 const notionConfigured = Boolean(notionToken && conversationsDataSourceId && messagesDataSourceId);
 const conversationAnchorText = '【HOZO LINE】對話記錄（最新在最上方）';
@@ -28,7 +28,7 @@ if (!channelAccessToken || !channelSecret) {
 }
 
 if (!notionConfigured) {
-  console.warn('Missing NOTION_TOKEN, SEVEN_CONVERSATIONS_DATA_SOURCE_ID, or SEVEN_MESSAGES_DATA_SOURCE_ID. LINE events will not be stored in Notion.');
+  console.warn('Missing NOTION_TOKEN, HOZO_CONVERSATIONS_DATA_SOURCE_ID, or HOZO_MESSAGES_DATA_SOURCE_ID. LINE events will not be stored in Notion.');
 }
 
 const server = http.createServer(async (req, res) => {
@@ -309,7 +309,7 @@ function extractCodexCommand(text) {
 
 async function maybeCreateCodexCommandPage({ conversation, messagePage, event, messageId, text, eventTime, display, context }) {
   if (!codexCommandsDataSourceId) {
-    console.warn(`Codex command trigger detected in LINE message ${messageId}, but SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID is not set.`);
+    console.warn(`Codex command trigger detected in LINE message ${messageId}, but HOZO_CODEX_COMMANDS_DATA_SOURCE_ID is not set.`);
     return null;
   }
 
@@ -896,3 +896,4 @@ const port = Number(process.env.PORT || 3000);
 server.listen(port, () => {
   console.log(`LINE webhook server is listening on port ${port}`);
 });
+
