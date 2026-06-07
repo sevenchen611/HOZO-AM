@@ -1,0 +1,15 @@
+{
+  "name": "hozo-am-line-oa-webhook",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --import ./src/control-api.js src/server.js",
+    "dev": "node --import ./src/control-api.js --watch src/server.js",
+    "cron:report": "node scripts/render-cron-report.js",
+    "meetings:sync": "node scripts/sync-meeting-actions.js",
+    "codex:commands": "node scripts/codex-command-queue.js",
+    "line:push": "node scripts/line-push.js",
+    "setup:codex-commands": "node scripts/setup-codex-command-queue.js"
+  }
+}

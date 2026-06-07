@@ -1,0 +1,193 @@
+services:
+  - type: web
+    name: hozo-am-line-oa-webhook
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: LINE_CHANNEL_ID
+        value: "2009385650"
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_CHANNEL_SECRET
+        sync: false
+      - key: NOTION_TOKEN
+        sync: false
+      - key: NOTION_VERSION
+        value: "2025-09-03"
+      - key: SEVEN_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
+      - key: SEVEN_CODEX_COMMAND_TRIGGERS
+        value: "HOZO Junior,HOZ Jr.,HOZO Jr."
+      - key: SEVEN_CONVERSATIONS_DATA_SOURCE_ID
+        value: 37451c686dac810c99b8f42b2fcb7cc0
+      - key: SEVEN_MESSAGES_DATA_SOURCE_ID
+        value: 37451c68-6dac-81d7-a555-db554602e76d
+      - key: SEVEN_ATTACHMENTS_DATA_SOURCE_ID
+        value: 37551c68-6dac-81b1-abb2-ca881b8791ed
+      - key: SEVEN_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID
+        sync: false
+      - key: SEVEN_CODEX_COMMANDS_DATA_SOURCE_ID
+        sync: false
+      - key: SEVEN_MEETINGS_DATA_SOURCE_ID
+        sync: false
+      - key: SEVEN_TASKS_DATA_SOURCE_ID
+        sync: false
+      - key: SEVEN_PROGRESS_REPORTS_DATA_SOURCE_ID
+        sync: false
+      - key: SEVEN_RISK_DECISIONS_DATA_SOURCE_ID
+        sync: false
+      - key: SEVEN_AUTOMATION_RUN_LOG_DATA_SOURCE_ID
+        sync: false
+      - key: SEVEN_REPORT_TARGET_ID
+        sync: false
+      - key: SEVEN_REPORT_TARGET_TYPE
+        value: user
+      - key: SEVEN_REPORT_TARGET_NAME_KEYWORD
+        value: Maggie
+      - key: SEVEN_CONTROL_API_KEY
+        sync: false
+      - key: SEVEN_REPORT_APPROVAL_KEY
+        sync: false
+      - key: SEVEN_PUBLIC_BASE_URL
+        value: https://<hozo-render-service>.onrender.com
+
+  - type: cron
+    name: hozo-am-meeting-action-sync
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run meetings:sync -- --limit 50
+    schedule: "0 0-14 * * *"
+    envVars:
+      - key: NOTION_TOKEN
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: NOTION_TOKEN
+      - key: SEVEN_MEETINGS_DATA_SOURCE_ID
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: SEVEN_MEETINGS_DATA_SOURCE_ID
+      - key: SEVEN_TASKS_DATA_SOURCE_ID
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: SEVEN_TASKS_DATA_SOURCE_ID
+      - key: SEVEN_PROGRESS_REPORTS_DATA_SOURCE_ID
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: SEVEN_PROGRESS_REPORTS_DATA_SOURCE_ID
+
+  - type: cron
+    name: hozo-am-morning-brief
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run cron:report -- morning
+    schedule: "0 0 * * *"
+    envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-morning-brief
+      - key: CONTROL_API_URL
+        value: https://<hozo-render-service>.onrender.com/control/reports/send
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://<hozo-render-service>.onrender.com/control/line/push
+      - key: SEVEN_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: SEVEN_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: SEVEN_CONTROL_API_KEY
+
+  - type: cron
+    name: hozo-am-followup-morning
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run cron:report -- followup-morning
+    schedule: "0 2 * * *"
+    envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-followup-morning
+      - key: CONTROL_API_URL
+        value: https://<hozo-render-service>.onrender.com/control/reports/send
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://<hozo-render-service>.onrender.com/control/line/push
+      - key: SEVEN_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: SEVEN_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: SEVEN_CONTROL_API_KEY
+
+  - type: cron
+    name: hozo-am-followup-midday
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run cron:report -- followup-midday
+    schedule: "0 5 * * *"
+    envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-followup-midday
+      - key: CONTROL_API_URL
+        value: https://<hozo-render-service>.onrender.com/control/reports/send
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://<hozo-render-service>.onrender.com/control/line/push
+      - key: SEVEN_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: SEVEN_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: SEVEN_CONTROL_API_KEY
+
+  - type: cron
+    name: hozo-am-followup-afternoon
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run cron:report -- followup-afternoon
+    schedule: "0 9 * * *"
+    envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-followup-afternoon
+      - key: CONTROL_API_URL
+        value: https://<hozo-render-service>.onrender.com/control/reports/send
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://<hozo-render-service>.onrender.com/control/line/push
+      - key: SEVEN_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: SEVEN_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: SEVEN_CONTROL_API_KEY
+
+  - type: cron
+    name: hozo-am-daily-report
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run cron:report -- daily
+    schedule: "30 12 * * *"
+    envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-daily-report
+      - key: CONTROL_API_URL
+        value: https://<hozo-render-service>.onrender.com/control/reports/send
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://<hozo-render-service>.onrender.com/control/line/push
+      - key: SEVEN_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: SEVEN_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: SEVEN_CONTROL_API_KEY
