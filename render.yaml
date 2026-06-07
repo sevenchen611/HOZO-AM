@@ -51,7 +51,7 @@ services:
       - key: SEVEN_REPORT_APPROVAL_KEY
         sync: false
       - key: SEVEN_PUBLIC_BASE_URL
-        value: https://<hozo-render-service>.onrender.com
+        value: https://hozo-am-line-oa-webhook.onrender.com
 
   - type: cron
     name: hozo-am-meeting-action-sync
@@ -81,9 +81,9 @@ services:
       - key: CRON_JOB_NAME
         value: hozo-am-morning-brief
       - key: CONTROL_API_URL
-        value: https://<hozo-render-service>.onrender.com/control/reports/send
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
-        value: https://<hozo-render-service>.onrender.com/control/line/push
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
@@ -100,9 +100,9 @@ services:
       - key: CRON_JOB_NAME
         value: hozo-am-followup-morning
       - key: CONTROL_API_URL
-        value: https://<hozo-render-service>.onrender.com/control/reports/send
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
-        value: https://<hozo-render-service>.onrender.com/control/line/push
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
@@ -119,9 +119,9 @@ services:
       - key: CRON_JOB_NAME
         value: hozo-am-followup-midday
       - key: CONTROL_API_URL
-        value: https://<hozo-render-service>.onrender.com/control/reports/send
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
-        value: https://<hozo-render-service>.onrender.com/control/line/push
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
@@ -138,9 +138,9 @@ services:
       - key: CRON_JOB_NAME
         value: hozo-am-followup-afternoon
       - key: CONTROL_API_URL
-        value: https://<hozo-render-service>.onrender.com/control/reports/send
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
-        value: https://<hozo-render-service>.onrender.com/control/line/push
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
@@ -157,9 +157,9 @@ services:
       - key: CRON_JOB_NAME
         value: hozo-am-daily-report
       - key: CONTROL_API_URL
-        value: https://<hozo-render-service>.onrender.com/control/reports/send
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
       - key: CONTROL_LINE_PUSH_URL
-        value: https://<hozo-render-service>.onrender.com/control/line/push
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: SEVEN_CRON_ALERTS_ENABLED
         value: "true"
       - key: SEVEN_CONTROL_API_KEY
