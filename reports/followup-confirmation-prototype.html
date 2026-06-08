@@ -24,53 +24,26 @@
       </div>
 
       <div class="metrics">
-        <div class="metric"><span>候選追蹤訊息</span><strong>3</strong></div>
-        <div class="metric"><span>未確認任務</span><strong>11</strong></div>
-        <div class="metric"><span>高風險需人工看</span><strong>2</strong></div>
-        <div class="metric"><span>預設不自動確認</span><strong>11</strong></div>
+        <div class="metric"><span>候選追蹤訊息</span><strong>0</strong></div>
+        <div class="metric"><span>未確認任務</span><strong>0</strong></div>
+        <div class="metric"><span>高風險需人工看</span><strong>0</strong></div>
+        <div class="metric"><span>靜態樣本資料</span><strong>停用</strong></div>
       </div>
 
       <section id="followups">
         <div class="head"><h2>候選追蹤訊息</h2><span class="note">勾選後才代表允許 HOZO Jr. 後續發送或安排追蹤</span></div>
         <div class="list">
-          <article class="card followup-card">
-            <div class="card-top">
-              <label class="send-toggle"><input type="checkbox" checked><span>納入追蹤</span></label>
-              <select><option>批准發送</option><option>修改後發送</option><option>暫緩</option><option>取消</option></select>
-            </div>
+          <article class="card">
             <div class="card-body">
-              <div class="field"><div class="label">對象</div><div class="target">台翰營造&茲心園改建</div><div class="meta"><span class="chip warn">等待回覆</span><span class="chip info">招租管理</span></div></div>
-              <div class="field"><div class="label">原因</div><p class="reason">已有估價與圖面相關進度，但仍需要確認正式報價流程與後續回覆。</p></div>
-              <div class="field"><div class="label">建議訊息</div><textarea>學姐好，我這邊協助確認一下：茲心園改建估價資料目前是否已正式進入報價流程？如果還需要補 D 棟或本棟圖面資料，我這邊可以協助整理。</textarea></div>
-            </div>
-          </article>
-          <article class="card followup-card">
-            <div class="card-top">
-              <label class="send-toggle"><input type="checkbox"><span>納入追蹤</span></label>
-              <select><option>暫緩</option><option>批准發送</option><option>修改後發送</option><option>取消</option></select>
-            </div>
-            <div class="card-body">
-              <div class="field"><div class="label">對象</div><div class="target">招租管理 / 昱晴</div><div class="meta"><span class="chip warn">待釐清</span><span class="chip info">招租管理</span></div></div>
-              <div class="field"><div class="label">原因</div><p class="reason">登入頁不實用與 Codex 使用教學都還缺明確範圍，建議先不急著對外催。</p></div>
-              <div class="field"><div class="label">建議訊息</div><textarea>昱晴，方便的話你可以先把後台想調整的地方用條列方式整理，我晚點再協助判斷哪些可以交給 Codex 修改。</textarea></div>
-            </div>
-          </article>
-          <article class="card followup-card">
-            <div class="card-top">
-              <label class="send-toggle"><input type="checkbox"><span>納入追蹤</span></label>
-              <select><option>取消</option><option>暫緩</option><option>批准發送</option><option>修改後發送</option></select>
-            </div>
-            <div class="card-body">
-              <div class="field"><div class="label">對象</div><div class="target">招租管理</div><div class="meta"><span class="chip gray">內部整理</span><span class="chip risk">不對外發送</span></div></div>
-              <div class="field"><div class="label">原因</div><p class="reason">招租管理類任務不需要對外發 LINE，只需要在任務庫確認是否保留。</p></div>
-              <div class="field"><div class="label">建議訊息</div><textarea>這類任務僅作為內部整理，不建議發送對外訊息。</textarea></div>
+              <div class="task-name">暫無可顯示的 HOZO-AM 候選追蹤訊息</div>
+              <p class="reason">舊 prototype 樣本資料已停用。這個頁面之後只能顯示由 HOZO-AM Notion 資料庫動態產生、且通過專案隔離檢查的內容。</p>
             </div>
           </article>
         </div>
       </section>
 
       <section id="tasks">
-        <div class="head"><h2>11 筆未確認任務</h2><span class="note">預設保留未確認；只有你選了正式狀態才會寫回任務庫</span></div>
+        <div class="head"><h2>0 筆未確認任務</h2><span class="note">預設保留未確認；只有你選了正式狀態才會寫回任務庫</span></div>
         <div class="hint">如果這件事不要、不需要追蹤、也不需要再發訊息，請選「不成立 / 封存」。這會把任務狀態改成封存，並把確認狀態改成已確認，代表它已被你判定不繼續追。</div>
         <div class="list" id="taskList"></div>
       </section>
@@ -90,19 +63,7 @@
   </div>
   <script>
     const APPROVAL_API='/control/reports/approve';
-    const pendingTasks=[
-      {task:'招租管理：建立生活行政與家庭事項追蹤清單',project:'招租管理',source:'Codex 手動整理',summary:'建立生活行政與家庭事項追蹤清單；目前缺少明細，需確認是否保留。',risk:'一般'},
-      {task:'招租管理：建立個人財務與帳務追蹤清單',project:'招租管理',source:'Codex 手動整理',summary:'建立個人財務與帳務追蹤清單；涉及財務，建議人工確認後再追蹤。',risk:'高風險'},
-      {task:'招租管理：建立私人文件與證件整理清單',project:'招租管理',source:'Codex 手動整理',summary:'建立私人文件與證件整理清單；目前缺少明細，需確認是否保留。',risk:'一般'},
-      {task:'招租管理：待確認客戶回覆與進度整理',project:'招租管理',source:'Codex 手動整理',summary:'報稅逾期處理具時效與稅務風險，需 HOZO 主管 明確確認。',risk:'高風險'},
-      {task:'招租管理：盤點目前私人待辦清單',project:'招租管理',source:'Codex 手動整理',summary:'盤點私人待辦清單；屬於內部整理，不需要對外發送。',risk:'一般'},
-      {task:'個人待辦：報稅今天完成',project:'財務',source:'LINE OA',summary:'使用者明確提到今天一定要先處理報稅。',risk:'高風險'},
-      {task:'招租管理：再發設計圖給 2-3 家營造廠估價',project:'招租管理',source:'LINE OA',summary:'明確交辦，比價需要更多廠商報價。',risk:'一般'},
-      {task:'招租管理：確認學姐估價資料是否已正式進入報價流程',project:'招租管理',source:'LINE OA',summary:'需確認估價資料是否已正式進入報價流程。',risk:'一般'},
-      {task:'招租管理：釐清登入頁不實用的具體問題',project:'招租管理',source:'LINE OA',summary:'問題存在，但缺少明確修改範圍，需先收集操作卡點。',risk:'一般'},
-      {task:'招租管理：建立昱晴使用 Codex 的教學與安全規則',project:'招租管理',source:'LINE OA',summary:'建立 Codex 使用教學、安全規則、修改流程與回復機制。',risk:'一般'},
-      {task:'後臺設計製作：建立 Local / Staging / Production 隔離確認表',project:'後臺設計製作',source:'LINE OA',summary:'環境隔離不清楚，需建立確認表避免改壞正式環境。',risk:'一般'}
-    ];
+    const pendingTasks=[];
     const params=new URLSearchParams(location.search);
     const hashParams=new URLSearchParams(location.hash.replace(/^#/,''));
     const slot=params.get('slot')||hashParams.get('slot')||'17';
@@ -112,6 +73,10 @@
 
     function renderTasks(){
       const list=document.getElementById('taskList');
+      if(!pendingTasks.length){
+        list.innerHTML='<article class="card"><div class="card-body"><div class="task-name">暫無可顯示的 HOZO-AM 候選任務</div><p class="reason">舊 prototype 樣本任務已停用。請以 HOZO 總控任務庫與 HOZO-AM 會議記錄為資料來源。</p></div></article>';
+        return;
+      }
       list.innerHTML=pendingTasks.map((item,index)=>`
         <article class="card task-card">
           <div class="card-top">
@@ -186,5 +151,4 @@
   </script>
 </body>
 </html>
-
 
