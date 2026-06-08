@@ -12,9 +12,12 @@ const ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID = process.env.HOZO_ATTACHMENT_CONVER
 const CODEX_COMMANDS_DATA_SOURCE_ID = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
 const CONVERSATIONS_DATA_SOURCE_ID = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID || '';
 const MESSAGES_DATA_SOURCE_ID = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
+const RESPONSIBILITY_DATA_SOURCE_ID = process.env.HOZO_RESPONSIBILITY_DATA_SOURCE_ID || '';
 const OUTGOING_ACTOR_NAME = process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
 const HOZO_DATA_SOURCE_PARENT_BLOCK_ID = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID || '35f51c68-6dac-805f-88b4-e1cf5a86bbc1');
+const HOZO_DATA_SOURCE_PARENT_PAGE_ID = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_PAGE_ID || '35d51c68-6dac-802c-81e6-c71b560c0498');
 const verifiedHozoDataSources = new Map();
+const dailyConversationProjectCache = new Map();
 const CONVERSATION_ANCHOR_TEXT = '【HOZO LINE】對話記錄';
 const CONVERSATION_ANCHOR_PATTERN = /對話記錄(?:（最新在最上方）)?/;
 const OUTGOING_BLOCK_COLOR = 'orange';
@@ -63,7 +66,7 @@ async function handleControlRequest(req, res, pathname) {
       defaultReportTargetAutoResolveEnabled: Boolean(process.env.NOTION_TOKEN && process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID),
       codexCommandQueueConfigured: Boolean(CODEX_COMMANDS_DATA_SOURCE_ID),
       reportTypes: ['morning', 'daily', 'followup-morning', 'followup-midday', 'followup-afternoon'],
-      endpoints: ['POST /control/line/push', 'POST /control/reports/send', 'POST /control/reports/approve', 'POST /control/codex-commands/test'],
+      endpoints: ['POST /control/line/push', 'POST /control/reports/send', 'POST /control/reports/preview', 'POST /control/reports/approve', 'POST /control/codex-commands/test'],
     });
   }
 
@@ -91,6 +94,11 @@ async function handleControlRequest(req, res, pathname) {
 
     if (pathname === '/control/reports/send') {
       const result = await sendReport(req, body);
+      return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/control/reports/preview') {
+      const result = await previewReport(body);
       return sendJson(res, 200, result);
     }
 
@@ -367,12 +375,12 @@ function reportTypeLabel(reportType) {
     daily: '每日總控報告',
     evening: '每日總控報告',
     night: '每日總控報告',
-    'followup-morning': '10:00 追蹤確認與新任務確認',
-    'followup-midday': '13:00 追蹤確認與新任務確認',
-    'followup-afternoon': '17:00 追蹤確認與新任務確認',
-    'followup-10': '10:00 追蹤確認與新任務確認',
-    'followup-13': '13:00 追蹤確認與新任務確認',
-    'followup-17': '17:00 追蹤確認與新任務確認',
+    'followup-morning': '10:00 目標追認與新任務確認',
+    'followup-midday': '13:00 目標追認與新任務確認',
+    'followup-afternoon': '17:00 目標追認與新任務確認',
+    'followup-10': '10:00 目標追認與新任務確認',
+    'followup-13': '13:00 目標追認與新任務確認',
+    'followup-17': '17:00 目標追認與新任務確認',
   };
   return labels[String(reportType || '').trim().toLowerCase()] || `${reportType || '報告'}報告`;
 }
@@ -531,7 +539,7 @@ function resolveConversionType(action) {
 
 async function sendReport(req, body) {
   const reportType = String(body.reportType || body.type || '').trim().toLowerCase();
-  const report = buildReportMessage(reportType, body.text);
+  const report = await buildReportMessage(reportType, body.text);
   const targets = await resolveReportTargets(body);
   const cronMeta = readCronMeta(req, body);
 
@@ -550,6 +558,17 @@ async function sendReport(req, body) {
 
   const result = await pushToTargets(targets, [report]);
   return cronMeta ? { ...result, cronMeta } : result;
+}
+
+async function previewReport(body) {
+  const reportType = String(body.reportType || body.type || '').trim().toLowerCase();
+  const report = await buildReportMessage(reportType, body.text);
+  return {
+    ok: true,
+    reportType,
+    report,
+    wouldSend: false,
+  };
 }
 
 async function resolveReportTargets(body) {
@@ -629,7 +648,7 @@ async function findReportTargetsFromNotion(keywordList, { fallbackLatestPersonal
     .map((id) => ({ id, type: 'user', source: 'notion-auto' }));
 }
 
-function buildReportMessage(reportType, customText) {
+async function buildReportMessage(reportType, customText) {
   if (customText) {
     return { type: 'text', text: clampLineText(customText) };
   }
@@ -641,39 +660,545 @@ function buildReportMessage(reportType, customText) {
   if (['morning', 'morning-brief', '早報'].includes(reportType)) {
     return {
       type: 'text',
-      text: `早上 8 點早晨總控報告：\n${morningBriefUrl}\n\n請確認今日行程、優先工作、未完成事項與需要決策的項目。`,
+      text: `早上 8 點晨報：\n${morningBriefUrl}\n\n請先做目標追認：今天新增或尚未確認的任務/專案，都要先問負責人「完成目標是什麼、怎樣叫完成、由誰驗收」。口述內容要寫進「目標口述原文」並上傳給 Codex 確認；確認前不列入真實進度。`,
     };
   }
 
   if (['daily', 'evening', 'night', '晚報', '每日報告'].includes(reportType)) {
+    const dynamicText = await buildDynamicDailyReportText(dailyReportUrl);
+    if (dynamicText) {
+      return { type: 'text', text: clampLineText(dynamicText) };
+    }
+
     return {
       type: 'text',
-      text: `晚上 8 點半每日總控總確認：\n${dailyReportUrl}\n\n請確認專案進度、待辦狀態、新任務、附件解析需求與明日優先事項。`,
+      text: `晚上 8 點半每日總控總確認：\n${dailyReportUrl}\n\n請先收斂今天的目標追認：哪些任務/專案已取得口述、哪些已上傳給 Codex、哪些已確認可追蹤。只有「Codex 目標確認」為已確認可追蹤或追蹤中的案件，才安排下一步與完成百分比。`,
     };
   }
 
   if (['followup-morning', 'followup-10', '10', '上午追蹤'].includes(reportType)) {
     return {
       type: 'text',
-      text: `上午 10 點追蹤確認與新任務確認：\n${withFollowupSlot(followupBaseUrl, '10')}\n\n請確認哪些提醒可以由 ${OUTGOING_ACTOR_NAME} 送出，並檢查新任務是否成立或需要退回修改。`,
+      text: `上午 10 點目標追認與新任務確認：\n${withFollowupSlot(followupBaseUrl, '10')}\n\n請檢查上午新增任務/專案；凡是沒有「完成目標定義」的，先用 LINE 或 Email 問負責人口述目標。口述上傳給 Codex 確認後，下一個時段再決定後續追蹤。`,
     };
   }
 
   if (['followup-midday', 'followup-13', '13', '中午追蹤'].includes(reportType)) {
     return {
       type: 'text',
-      text: `下午 1 點追蹤確認與新任務確認：\n${withFollowupSlot(followupBaseUrl, '13')}\n\n請確認午間前新增的待確認任務、追蹤訊息與需要退回修改的項目。`,
+      text: `下午 1 點目標追認與新任務確認：\n${withFollowupSlot(followupBaseUrl, '13')}\n\n請確認午間前新增項目的目標是否已被負責人口述；若尚未口述，先追問。若已口述，請上傳給 Codex 確認，確認後才排下一步。`,
     };
   }
 
   if (['followup-afternoon', 'followup-17', '17', '下午追蹤'].includes(reportType)) {
     return {
       type: 'text',
-      text: `下午 5 點追蹤確認與新任務確認：\n${withFollowupSlot(followupBaseUrl, '17')}\n\n請確認下午要追蹤的對象與訊息，並檢查新任務是否成立或需要退回修改。`,
+      text: `下午 5 點目標追認與新任務確認：\n${withFollowupSlot(followupBaseUrl, '17')}\n\n請確認下午要發出的 LINE/Email 追問；如果窗口不知道目標，請她指定真正負責人。Codex 確認完成目標後，下一個時段才告訴負責人後續要做什麼。`,
     };
   }
 
   throw new Error('Unknown reportType. Use morning, daily, followup-morning, followup-midday, or followup-afternoon.');
+}
+
+async function buildDynamicDailyReportText(dailyReportUrl) {
+  if (!process.env.NOTION_TOKEN || !TASKS_DATA_SOURCE_ID) {
+    return '';
+  }
+
+  try {
+    const reportDate = taipeiDateOnly(new Date());
+    const [tasks, messages, responsibilityGaps] = await Promise.all([
+      listRecentTasksForDailyReport(),
+      listImportantMessagesForDailyReport(),
+      listResponsibilityGapsForDailyReport(),
+    ]);
+    const reportItems = dedupeReportItems([...tasks, ...messages])
+      .sort(compareDailyReportItems);
+    const events = buildSynthesizedDailyEvents(reportItems);
+    const usedKeys = new Set(events.flatMap((event) => event.items.map(reportItemKey)));
+
+    const sections = [
+      '20:30 每日總控事件結論報告',
+      `日期：${reportDate}`,
+      `摘要：已整合 ${events.length} 件主要事件；每件事以「主題、對象、影響、結論、建議待辦」呈現。`,
+      '',
+      buildEventSummarySection('一、今日主要事件', events, 6),
+      '',
+      buildCompactDailySection('二、其他待確認線索', filterActionableRemainders(reportItems, usedKeys), 4),
+      '',
+      '三、目標追認提醒',
+      '新增任務或專案若尚未取得負責人口述，先問完成目標；Codex 確認前不更新完成百分比。',
+      '',
+      buildResponsibilityGapSection(responsibilityGaps),
+      '',
+      `報告頁：${dailyReportUrl}`,
+      '提醒：晚報第一層只放事件結論；零散訊息不直接上報，除非能形成待辦、風險或目標追認。',
+    ];
+
+    return sections.join('\n');
+  } catch (error) {
+    console.warn(`Unable to build dynamic daily report: ${error.message}`);
+    return '';
+  }
+}
+
+async function listResponsibilityGapsForDailyReport() {
+  if (!RESPONSIBILITY_DATA_SOURCE_ID) {
+    return [];
+  }
+
+  const result = await notionRequest(`/v1/data_sources/${RESPONSIBILITY_DATA_SOURCE_ID}/query`, {
+    method: 'POST',
+    body: {
+      page_size: 20,
+      filter: {
+        or: [
+          { property: '選擇狀態', select: { does_not_equal: '已完成' } },
+          { property: 'LINE對象ID（結果）', rich_text: { is_empty: true } },
+        ],
+      },
+      sorts: [{ property: '更新時間', direction: 'descending' }],
+    },
+  });
+
+  return (result.results || []).map((page) => ({
+    title: pageTextProperty(page, '權責項目名稱'),
+    project: pageSelectProperty(page, '第一層：總控專案'),
+    status: pageSelectProperty(page, '選擇狀態'),
+    candidateGroups: pageNumberProperty(page, '候選群組數'),
+    candidateOwners: pageNumberProperty(page, '候選負責人數'),
+    instruction: pageTextProperty(page, '選擇說明'),
+  }));
+}
+
+function buildResponsibilityGapSection(items) {
+  if (!items.length) {
+    return '四、權責指派提醒\n目前沒有未完成的權責指派列。';
+  }
+
+  const lines = items.slice(0, 5).map((item, index) => {
+    const project = item.project || item.title || '未分類';
+    const counts = `候選群組 ${item.candidateGroups}、候選負責人 ${item.candidateOwners}`;
+    return `${index + 1}. ${project}｜${item.status || '待確認'}｜${counts}\n   下一步：${conciseReportText(item.instruction || '請先確認主要 LINE 群組，再選主要負責人。', 78)}`;
+  });
+
+  return [
+    '四、權責指派提醒',
+    ...lines,
+  ].join('\n');
+}
+
+async function listRecentTasksForDailyReport() {
+  const result = await notionRequest(`/v1/data_sources/${TASKS_DATA_SOURCE_ID}/query`, {
+    method: 'POST',
+    body: {
+      page_size: 50,
+      sorts: [{ property: '最後更新', direction: 'descending' }],
+    },
+  });
+
+  const today = taipeiDateOnly(new Date());
+  return (result.results || [])
+    .map((page) => ({
+      source: 'task',
+      title: pageTextProperty(page, '任務名稱'),
+      project: pageSelectProperty(page, '專案'),
+      priority: pageSelectProperty(page, '優先級'),
+      status: pageSelectProperty(page, '狀態'),
+      confirmation: pageSelectProperty(page, '確認狀態'),
+      goalStatus: pageSelectProperty(page, 'Codex 目標確認'),
+      sourceType: pageSelectProperty(page, '來源'),
+      summary: pageTextProperty(page, 'Codex 判斷摘要') || pageTextProperty(page, '完成目標定義') || pageTextProperty(page, '來源原文'),
+      nextStep: pageTextProperty(page, '下一步給負責人') || pageTextProperty(page, '下一步'),
+      updatedAt: pageDateProperty(page, '最後更新') || page.last_edited_time || '',
+      url: page.url,
+    }))
+    .filter((item) => isTodayTaipei(item.updatedAt, today)
+      || ['待確認', '未開始', '進行中', '等待回覆'].includes(item.status)
+      || item.confirmation === '未確認'
+      || ['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(item.goalStatus))
+    .slice(0, 30);
+}
+
+async function listImportantMessagesForDailyReport() {
+  if (!MESSAGES_DATA_SOURCE_ID) {
+    return [];
+  }
+
+  const since = taipeiStartOfDayIso(new Date());
+  const result = await notionRequest(`/v1/data_sources/${MESSAGES_DATA_SOURCE_ID}/query`, {
+    method: 'POST',
+    body: {
+      page_size: 80,
+      filter: { property: '排序時間', date: { on_or_after: since } },
+      sorts: [{ property: '排序時間', direction: 'ascending' }],
+    },
+  });
+
+  const items = [];
+  for (const page of result.results || []) {
+    const text = pageTextProperty(page, '文字內容') || pageTextProperty(page, '原始內容');
+    const score = scoreDailyMessageImportance(text);
+    const conversation = await getDailyMessageConversationProject(pageRelationId(page, '對話主檔'));
+    items.push({
+      source: 'message',
+      title: buildMessageReportTitle(text),
+      project: conversation.project || inferDailyMessageProject(text),
+      priority: score >= 6 ? '高' : score >= 3 ? '中' : '低',
+      status: pageTextProperty(page, '發話者名稱'),
+      summary: text,
+      nextStep: inferMessageNextStep(text),
+      updatedAt: pageDateProperty(page, '排序時間') || page.last_edited_time || '',
+      url: page.url,
+      tags: dailyMessageTags(text),
+      score,
+    });
+  }
+
+  return items.filter((item) => item.score > 0).slice(0, 30);
+}
+
+async function getDailyMessageConversationProject(pageId) {
+  if (!pageId) {
+    return { project: '' };
+  }
+  if (dailyConversationProjectCache.has(pageId)) {
+    return dailyConversationProjectCache.get(pageId);
+  }
+
+  const page = await notionRequest(`/v1/pages/${pageId}`, { method: 'GET' });
+  const value = { project: pageSelectProperty(page, '總控專案') || pageSelectProperty(page, '專案') };
+  dailyConversationProjectCache.set(pageId, value);
+  return value;
+}
+
+function buildEventSummarySection(title, events, limit) {
+  const selected = events.slice(0, limit);
+  if (!selected.length) {
+    return `${title}\n今天沒有明確事件。`;
+  }
+
+  return [
+    title,
+    ...selected.map((event, index) => formatEventSummaryCard(event, index + 1)),
+  ].join('\n\n');
+}
+
+function buildSynthesizedDailyEvents(reportItems) {
+  const events = [];
+  const addEvent = (event) => {
+    if (event && event.items.length) {
+      events.push(event);
+    }
+  };
+
+  addEvent(buildHozoGovernanceEvent(reportItems));
+  addEvent(buildHozoSiteProcurementEvent(reportItems));
+  addEvent(buildHozoBrandWebsiteEvent(reportItems));
+  addEvent(buildHozoOperationsEvent(reportItems));
+  addEvent(buildHozoAutomationEvent(reportItems));
+  addEvent(buildHozoGoalRecognitionEvent(reportItems));
+
+  const usedKeys = new Set(events.flatMap((event) => event.items.map(reportItemKey)));
+  const remainingHigh = reportItems
+    .filter((item) => item.priority === '高' && !usedKeys.has(reportItemKey(item)))
+    .slice(0, 3)
+    .map((item) => ({
+      subject: readableReportTitle(item),
+      target: item.project || '未分類',
+      project: item.project || '未分類',
+      priority: item.priority || '高',
+      impact: '尚未歸入明確事件，但內容具備高優先或待確認訊號。',
+      conclusion: cleanReportSummary(item.summary),
+      nextAction: item.nextStep || inferMessageNextStep(`${item.title}\n${item.summary}`),
+      solution: '先確認是否成立為事件；若成立，再合併同類訊息並產生單一待辦。',
+      depth: '可回任務庫查看原始訊息與判斷摘要。',
+      items: [item],
+    }));
+
+  return [...events, ...remainingHigh]
+    .sort((a, b) => eventPriorityScore(b) - eventPriorityScore(a))
+    .slice(0, 8);
+}
+
+function buildHozoGovernanceEvent(items) {
+  const matched = items.filter((item) => /公司|治理|法規|合規|銀行|開戶|驗資|股東|董事|監察人|合約|租賃|公證|用印|大小章|稅務|證照/.test(eventHaystack(item)));
+  if (!matched.length) return null;
+  return {
+    subject: '公司治理收斂',
+    target: '公司設立 / 銀行 / 合約 / 法務稅務',
+    project: '公司治理',
+    priority: '高',
+    impact: '若公司、銀行、合約與合規沒有收斂，後續場域、通路與營收啟動都缺乏正式承接基礎。',
+    conclusion: '目前需要把公司設立、銀行、合約、公證、證照與稅務整併成一個可驗收事件，而不是分散待辦。',
+    nextAction: '請主辦負責人口述完成目標，列出必須完成的文件、帳戶、合約與驗收人。',
+    solution: '用單一「公司治理收尾」任務追蹤，避免文件項目散落。',
+    depth: `${matched.length} 則治理/合規相關訊號已合併。`,
+    items: matched,
+  };
+}
+
+function buildHozoSiteProcurementEvent(items) {
+  const matched = items.filter((item) => /場域|工程|裝修|水電|網路|設備|備品|採購|家具|衛浴|床墊|飲水機|洗烘|門鎖|磁扣|點收|驗收|供應商|報價/.test(eventHaystack(item)));
+  if (!matched.length) return null;
+  return {
+    subject: '工程建置可營運條件',
+    target: '工程 / 設備 / 備品 / 現場驗收',
+    project: '工程建置管理',
+    priority: '高',
+    impact: '工程與設備沒有定義可營運條件，就無法判斷是否能交付住客或進入營運。',
+    conclusion: '目前應把工程、設備、備品與點收整理成可營運驗收清單。',
+    nextAction: '請工程或採購窗口確認：哪些項目是營運前必須到位，誰做最後驗收。',
+    solution: '用「可營運驗收清單」合併工程缺失、設備到位、備品點收與現場交付。',
+    depth: `${matched.length} 則場域/採購相關訊號已合併。`,
+    items: matched,
+  };
+}
+
+function buildHozoBrandWebsiteEvent(items) {
+  const matched = items.filter((item) => /品牌|官網|網站|網域|hozo\.com|Email|表單|FAQ|設備設施|企業合作|文案|照片|素材|官方|上線/.test(eventHaystack(item)));
+  if (!matched.length) return null;
+  return {
+    subject: '品牌官網公開條件',
+    target: '品牌 / 官網 / 表單 / 官方數位資產',
+    project: '品牌官網',
+    priority: '中',
+    impact: '品牌與官網若沒有明確公開條件，通路與企業合作內容會反覆等待。',
+    conclusion: '目前應把品牌名稱、網域、Email、官網內容與表單整理成一個可公開事件。',
+    nextAction: '請品牌或網站窗口口述：什麼狀態才算可以正式公開，誰驗收。',
+    solution: '用「官網可公開清單」整併頁面、FAQ、設備設施、表單與官方資訊一致性。',
+    depth: `${matched.length} 則品牌/官網相關訊號已合併。`,
+    items: matched,
+  };
+}
+
+function buildHozoOperationsEvent(items) {
+  const matched = items.filter((item) => /營運|通路|營收|上架|月租|招租|帶看|交接|房務|維運|清潔|SOP|櫻桃|商務會館|財務移轉|房客|入住|退房/.test(eventHaystack(item)));
+  if (!matched.length) return null;
+  return {
+    subject: '營運啟動與交接維運',
+    target: '通路 / 收客 / 交接 / 房務維運',
+    project: '營運和資料交接',
+    priority: '高',
+    impact: '通路收客與現場維運若不同步，會出現可銷售但不可交付、或可交付但不可收客的落差。',
+    conclusion: '目前應把通路營收啟動和交接房務維運合併為營運啟動事件。',
+    nextAction: '請營運窗口分別確認通路可收客、交接可接手、房務可維持的驗收標準。',
+    solution: '用一個營運啟動看板追蹤通路、定價、素材、交接、SOP 與維修窗口。',
+    depth: `${matched.length} 則營運相關訊號已合併。`,
+    items: matched,
+  };
+}
+
+function buildHozoAutomationEvent(items) {
+  const matched = items.filter((item) => /LINE|Notion|PMS|webhook|自動化|同步|每日報告|早報|晚報|任務庫|目標定義|點收|OCR|附件|Codex|HOZO Jr|資料治理/.test(eventHaystack(item)));
+  if (!matched.length) return null;
+  return {
+    subject: '自動化與資料治理驗收',
+    target: 'LINE / Notion / PMS / 報告 / 點收',
+    project: '自動化',
+    priority: '高',
+    impact: '系統若只收資料但不能產生可追蹤結論，管理仍會回到人工整理。',
+    conclusion: '目前應把 LINE webhook、Notion 同步、報告追認、PMS 與點收整理成可驗收功能組。',
+    nextAction: '請系統 owner 確認每個功能的驗收條件，並把未定義目標先送 Codex 確認。',
+    solution: '用「自動化驗收清單」追蹤收訊、同步、報告、點收與資料治理。',
+    depth: `${matched.length} 則系統/自動化相關訊號已合併。`,
+    items: matched,
+  };
+}
+
+function buildHozoGoalRecognitionEvent(items) {
+  const matched = items.filter((item) => /完成目標|目標口述|Codex 目標確認|待負責人口述|待上傳給 Codex|追認|驗收|怎樣叫完成|完成百分比/.test(eventHaystack(item)));
+  if (!matched.length) return null;
+  return {
+    subject: '目標追認缺口',
+    target: '所有新增任務與專案負責人',
+    project: '跨專案',
+    priority: '高',
+    impact: '沒有完成目標定義，就不能合理判斷完成百分比，也無法知道下一步是否正確。',
+    conclusion: '目前最重要的管理動作是取得負責人口述，並讓 Codex 確認能否追蹤。',
+    nextAction: '每個報告時段檢查新增項目：缺目標先問，已口述就上傳給 Codex，確認後才追蹤。',
+    solution: '使用「Codex 目標確認、目標口述原文、對外詢問草稿、下一步給負責人」四個欄位收斂。',
+    depth: `${matched.length} 則目標追認相關訊號已合併。`,
+    items: matched,
+  };
+}
+
+function formatEventSummaryCard(event, index) {
+  const project = event.project ? `｜${event.project}` : '';
+  const priority = event.priority ? `｜${event.priority}` : '';
+  return [
+    `${index}. ${event.subject}${project}${priority}`,
+    `   主題：${conciseReportText(event.subject, 48)}`,
+    `   對象：${conciseReportText(event.target || event.project || '未分類', 48)}`,
+    `   影響：${conciseReportText(event.impact, 76)}`,
+    `   結論：${conciseReportText(event.conclusion, 92)}`,
+    `   建議待辦：${conciseReportText(event.nextAction, 86)}`,
+    event.solution ? `   解法：${conciseReportText(event.solution, 74)}` : '',
+    `   深看：${conciseReportText(event.depth, 58)}`,
+  ].filter(Boolean).join('\n');
+}
+
+function eventPriorityScore(event) {
+  let score = event.priority === '高' ? 100 : event.priority === '中' ? 60 : 30;
+  score += Math.min(event.items.length, 10);
+  if (/目標追認|系統|營運|場域|治理/.test(event.subject || '')) score += 20;
+  return score;
+}
+
+function eventHaystack(item) {
+  return [
+    item.project,
+    item.title,
+    item.summary,
+    item.nextStep,
+    item.status,
+    item.goalStatus,
+    ...(item.tags || []),
+  ].join('\n');
+}
+
+function buildCompactDailySection(title, items, limit) {
+  const uniqueItems = dedupeReportItems(items).slice(0, limit);
+  if (!uniqueItems.length) {
+    return `${title}\n今天沒有明確項目。`;
+  }
+
+  return [
+    title,
+    ...uniqueItems.map((item, index) => `${index + 1}. ${readableReportTitle(item)}${item.project && item.project !== '未分類' ? `｜${item.project}` : ''}`),
+  ].join('\n');
+}
+
+function filterActionableRemainders(items, usedKeys) {
+  return items
+    .filter((item) => !usedKeys.has(reportItemKey(item)))
+    .filter((item) => item.priority === '高'
+      || ['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(item.goalStatus)
+      || /待辦|確認|追蹤|決策|卡點|處理|回覆|期限|到期|驗收|完成目標|報價|合約|通路|交接/.test(eventHaystack(item)))
+    .sort(compareDailyReportItems);
+}
+
+function dedupeReportItems(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = reportItemKey(item);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function reportItemKey(item) {
+  const cleaned = normalizeReportKey(`${item.project || ''}:${readableReportTitle(item)}:${cleanReportSummary(item.summary).slice(0, 50)}`);
+  return cleaned || normalizeReportKey(item.url || item.title || item.summary);
+}
+
+function normalizeReportKey(value) {
+  return String(value || '').replace(/\s+/g, '').replace(/[^\p{L}\p{N}:：]/gu, '').slice(0, 120);
+}
+
+function compareDailyReportItems(a, b) {
+  const aScore = reportItemImportanceScore(a);
+  const bScore = reportItemImportanceScore(b);
+  if (aScore !== bScore) return bScore - aScore;
+  const priorityRank = { 高: 3, 中: 2, 低: 1 };
+  const aRank = priorityRank[a.priority] || 0;
+  const bRank = priorityRank[b.priority] || 0;
+  if (aRank !== bRank) return bRank - aRank;
+  return String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''));
+}
+
+function reportItemImportanceScore(item) {
+  const haystack = eventHaystack(item);
+  let score = item.priority === '高' ? 10 : item.priority === '中' ? 5 : 1;
+  if (['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(item.goalStatus)) score += 8;
+  if (/公司|合約|銀行|稅務|證照|治理|法規/.test(haystack)) score += 7;
+  if (/工程|設備|備品|採購|點收|驗收/.test(haystack)) score += 7;
+  if (/通路|營收|交接|房務|維運|SOP/.test(haystack)) score += 7;
+  if (/LINE|Notion|PMS|webhook|自動化|每日報告|目標定義/.test(haystack)) score += 6;
+  if (/品牌|官網|表單|網域|Email/.test(haystack)) score += 4;
+  return score + (Number(item.score) || 0);
+}
+
+function readableReportTitle(item) {
+  const project = String(item.project || '');
+  let title = String(item.title || item.summary || '').replace(/\s+/g, ' ').trim();
+  title = title.replace(new RegExp(`^${escapeRegExp(project)}[：:]`), '');
+  return conciseReportText(title || cleanReportSummary(item.summary), 36);
+}
+
+function conciseReportText(value, maxLength) {
+  const text = String(value || '')
+    .replace(/\s+/g, ' ')
+    .replace(/LINE 訊息：https?:\/\/\S+/g, '')
+    .replace(/同步識別碼：\S+/g, '')
+    .trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}...` : text;
+}
+
+function cleanReportSummary(value) {
+  const text = String(value || '').trim();
+  const summaryMatch = text.match(/摘要：([\s\S]+)/);
+  if (summaryMatch) return summaryMatch[1].trim();
+  const nextStepMatch = text.match(/建議處理：([^\n]+)/);
+  if (nextStepMatch) return nextStepMatch[1].trim();
+  return text;
+}
+
+function inferMessageNextStep(text) {
+  const value = String(text || '');
+  if (/完成目標|怎樣叫完成|驗收/.test(value)) return '補齊負責人口述與驗收人，送 Codex 確認後再追蹤。';
+  if (/合約|銀行|稅務|證照|公證/.test(value)) return '確認文件、責任人、驗收條件與期限。';
+  if (/工程|設備|備品|採購|報價/.test(value)) return '確認到位清單、供應商回覆、缺口與驗收窗口。';
+  if (/通路|招租|帶看|房務|交接|維運/.test(value)) return '確認可營運條件、SOP、窗口與下一步。';
+  if (/LINE|Notion|PMS|webhook|自動化/.test(value)) return '確認功能驗收標準、目前卡點與下一個測試。';
+  return '確認是否保留為待辦，並補上完成目標定義。';
+}
+
+function scoreDailyMessageImportance(text) {
+  const value = String(text || '');
+  const rules = [
+    [6, /完成目標|怎樣叫完成|驗收|負責人|目標口述/],
+    [5, /公司|合約|銀行|稅務|證照|公證|法規|治理/],
+    [5, /工程|裝修|水電|設備|備品|採購|報價|點收/],
+    [5, /通路|招租|月租|帶看|交接|房務|維運|SOP|房客/],
+    [5, /LINE|Notion|PMS|webhook|自動化|每日報告|附件|OCR/],
+    [4, /品牌|官網|網域|Email|表單|FAQ|素材|上線/],
+    [3, /進度|狀態|下一步|卡住|卡點|確認|決定|決策/],
+  ];
+  return rules.reduce((score, [points, pattern]) => (pattern.test(value) ? score + points : score), 0);
+}
+
+function dailyMessageTags(text) {
+  const tags = [];
+  if (/完成目標|怎樣叫完成|驗收|負責人|目標口述/.test(text)) tags.push('goal');
+  if (/公司|合約|銀行|稅務|證照|公證|法規|治理/.test(text)) tags.push('governance');
+  if (/工程|裝修|水電|設備|備品|採購|報價|點收/.test(text)) tags.push('site');
+  if (/通路|招租|月租|帶看|交接|房務|維運|SOP|房客/.test(text)) tags.push('operations');
+  if (/LINE|Notion|PMS|webhook|自動化|每日報告|附件|OCR/.test(text)) tags.push('automation');
+  if (/品牌|官網|網域|Email|表單|FAQ|素材|上線/.test(text)) tags.push('brand');
+  return tags;
+}
+
+function inferDailyMessageProject(text) {
+  if (/公司|合約|銀行|稅務|證照|公證|法規|治理/.test(text)) return '公司治理';
+  if (/工程|裝修|水電|設備|採購|報價|點收/.test(text)) return '工程建置管理';
+  if (/備品|房務|清潔|客房/.test(text)) return '房務管理';
+  if (/品牌|官網|網域|Email|表單|FAQ|素材|上線/.test(text)) return '品牌官網';
+  if (/通路|招租|月租|帶看|入住|退房|房客|住客/.test(text)) return '住客服務與體驗管理';
+  if (/交接|維運|SOP|營運資料|流程/.test(text)) return '營運和資料交接';
+  if (/LINE|Notion|PMS|webhook|自動化|每日報告|附件|OCR|資料治理/.test(text)) return '自動化';
+  return '未分類';
+}
+
+function buildMessageReportTitle(text) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  if (/完成目標|怎樣叫完成|驗收/.test(value)) return `目標追認：${value.slice(0, 34)}`;
+  if (/公司|合約|銀行|稅務|證照/.test(value)) return `治理合規：${value.slice(0, 34)}`;
+  if (/工程|設備|備品|採購/.test(value)) return `場域採購：${value.slice(0, 34)}`;
+  if (/通路|交接|房務|維運/.test(value)) return `營運：${value.slice(0, 34)}`;
+  if (/LINE|Notion|PMS|自動化/.test(value)) return `系統自動化：${value.slice(0, 34)}`;
+  return value.slice(0, 46);
 }
 
 function withFollowupSlot(baseUrl, slot) {
@@ -1152,7 +1677,7 @@ async function assertHozoDataSource(dataSourceId) {
 
   const database = await notionFetchJson(`/v1/databases/${encodeURIComponent(databaseId)}`);
   const databaseTitle = notionTitleText(database.title);
-  const parentBlockId = normalizeId(database.parent?.block_id || '');
+  const parentId = normalizeId(database.parent?.block_id || database.parent?.page_id || '');
 
   if (dataSource.archived || dataSource.in_trash || database.archived || database.in_trash) {
     throw new Error(`Refusing to write to archived or trashed Notion data source: ${dataSourceTitle || dataSourceId}.`);
@@ -1160,7 +1685,8 @@ async function assertHozoDataSource(dataSourceId) {
   if (!/^HOZO(?:\b|-| | LINE| AM|CRM|好住|總控|Automation)/i.test(dataSourceTitle)) {
     throw new Error(`Refusing to write to non-HOZO Notion data source: ${dataSourceTitle || dataSourceId}.`);
   }
-  if (HOZO_DATA_SOURCE_PARENT_BLOCK_ID && parentBlockId !== HOZO_DATA_SOURCE_PARENT_BLOCK_ID) {
+  const allowedParentIds = new Set([HOZO_DATA_SOURCE_PARENT_BLOCK_ID, HOZO_DATA_SOURCE_PARENT_PAGE_ID].filter(Boolean));
+  if (allowedParentIds.size && !allowedParentIds.has(parentId)) {
     throw new Error(`Refusing to write outside the HOZO Notion database area: ${databaseTitle || databaseId}.`);
   }
 
@@ -1208,6 +1734,50 @@ function pageTextProperty(page, propertyName) {
   }
 
   return '';
+}
+
+function pageSelectProperty(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'select' ? property.select?.name || '' : '';
+}
+
+function pageDateProperty(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'date' ? property.date?.start || '' : '';
+}
+
+function pageNumberProperty(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'number' ? Number(property.number || 0) : 0;
+}
+
+function pageRelationId(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'relation' ? property.relation?.[0]?.id || '' : '';
+}
+
+function taipeiDateOnly(value) {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(value instanceof Date ? value : new Date(value));
+}
+
+function taipeiStartOfDayIso(value) {
+  return `${taipeiDateOnly(value instanceof Date ? value : new Date(value))}T00:00:00+08:00`;
+}
+
+function isTodayTaipei(value, today = taipeiDateOnly(new Date())) {
+  if (!value) {
+    return false;
+  }
+  return taipeiDateOnly(value) === today;
+}
+
+function escapeRegExp(value) {
+  return escapeRegex(value);
 }
 
 function richTextPlain(items) {
