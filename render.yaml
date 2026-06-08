@@ -22,6 +22,8 @@ services:
         value: "HOZO Junior,HOZ Jr.,HOZO Jr."
       - key: HOZO_DATA_SOURCE_PARENT_BLOCK_ID
         value: 35f51c68-6dac-805f-88b4-e1cf5a86bbc1
+      - key: HOZO_DATA_SOURCE_PARENT_PAGE_ID
+        value: 35d51c68-6dac-802c-81e6-c71b560c0498
       - key: HOZO_CONVERSATIONS_DATA_SOURCE_ID
         value: 37451c68-6dac-8163-b4fa-000b17271536
       - key: HOZO_MESSAGES_DATA_SOURCE_ID
@@ -38,10 +40,24 @@ services:
         value: 9c9e34ff-45af-4543-a3ae-11c5cd432b36
       - key: HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID
         value: add70895-645c-4268-9763-3e4bcb2b5b95
+      - key: HOZO_DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID
+        sync: false
+      - key: HOZO_JUDGMENT_CALIBRATION_CASES_DATA_SOURCE_ID
+        sync: false
+      - key: HOZO_JUDGMENT_RULES_DATA_SOURCE_ID
+        sync: false
+      - key: HOZO_JUDGMENT_REVIEW_TARGET_NAME_KEYWORD
+        value: Maggie
       - key: HOZO_RISK_DECISIONS_DATA_SOURCE_ID
         value: 1f6ef6e0-3f5f-49fb-8b80-add787898d7d
       - key: HOZO_AUTOMATION_RUN_LOG_DATA_SOURCE_ID
         value: 5f7a870d-5a34-44a2-b1c8-a17171b6353a
+      - key: HOZO_RESPONSIBILITY_DATA_SOURCE_ID
+        value: 5d06662d-47a6-49d2-86dd-f2f59d497077
+      - key: HOZO_LINE_GROUP_OPTIONS_DATA_SOURCE_ID
+        value: bdab58cf-be1f-4e10-85bd-3ab1b9d5e527
+      - key: HOZO_LINE_GROUP_MEMBERS_DATA_SOURCE_ID
+        value: 685ddbd8-a7da-42a3-b526-07f335c1bb9e
       - key: HOZO_REPORT_TARGET_ID
         sync: false
       - key: HOZO_REPORT_TARGET_TYPE
@@ -62,6 +78,23 @@ services:
         value: https://hozo-am-line-oa-webhook.onrender.com
 
   - type: cron
+    name: hozo-am-line-message-judgement-sync
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run line:judgements -- --include-outgoing-groups --limit 50
+    schedule: "10 0-14 * * *"
+    envVars:
+      - key: NOTION_TOKEN
+        sync: false
+      - key: HOZO_MESSAGES_DATA_SOURCE_ID
+        value: 37451c68-6dac-8187-a6bc-000bbd69c364
+      - key: HOZO_TASKS_DATA_SOURCE_ID
+        value: 9c9e34ff-45af-4543-a3ae-11c5cd432b36
+      - key: HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID
+        value: add70895-645c-4268-9763-3e4bcb2b5b95
+
+  - type: cron
     name: hozo-am-meeting-action-sync
     runtime: node
     plan: starter
@@ -79,6 +112,29 @@ services:
         value: add70895-645c-4268-9763-3e4bcb2b5b95
 
   - type: cron
+    name: hozo-am-responsibility-candidate-sync
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run line:groups && npm run responsibility:sync
+    schedule: "15 0-14 * * *"
+    envVars:
+      - key: NOTION_TOKEN
+        sync: false
+      - key: NOTION_VERSION
+        value: "2025-09-03"
+      - key: HOZO_RESPONSIBILITY_DATA_SOURCE_ID
+        value: 5d06662d-47a6-49d2-86dd-f2f59d497077
+      - key: HOZO_CONVERSATIONS_DATA_SOURCE_ID
+        value: 37451c68-6dac-8163-b4fa-000b17271536
+      - key: HOZO_MESSAGES_DATA_SOURCE_ID
+        value: 37451c68-6dac-8187-a6bc-000bbd69c364
+      - key: HOZO_LINE_GROUP_OPTIONS_DATA_SOURCE_ID
+        value: bdab58cf-be1f-4e10-85bd-3ab1b9d5e527
+      - key: HOZO_LINE_GROUP_MEMBERS_DATA_SOURCE_ID
+        value: 685ddbd8-a7da-42a3-b526-07f335c1bb9e
+
+  - type: cron
     name: hozo-am-morning-brief
     runtime: node
     plan: starter
@@ -93,6 +149,18 @@ services:
       - key: CONTROL_LINE_PUSH_URL
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: HOZO_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_CRON_RETRY_DELAYS_MS
+        value: "10000,30000,60000"
+      - key: AM_CRON_REQUEST_TIMEOUT_MS
+        value: "45000"
+      - key: AM_CRON_HEALTH_PING_ENABLED
+        value: "true"
+      - key: AM_CRON_ALERTS_ENABLED
         value: "true"
       - key: HOZO_CONTROL_API_KEY
         sync: false
@@ -113,6 +181,18 @@ services:
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: HOZO_CRON_ALERTS_ENABLED
         value: "true"
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_CRON_RETRY_DELAYS_MS
+        value: "10000,30000,60000"
+      - key: AM_CRON_REQUEST_TIMEOUT_MS
+        value: "45000"
+      - key: AM_CRON_HEALTH_PING_ENABLED
+        value: "true"
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
       - key: HOZO_CONTROL_API_KEY
         sync: false
 
@@ -131,6 +211,18 @@ services:
       - key: CONTROL_LINE_PUSH_URL
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: HOZO_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_CRON_RETRY_DELAYS_MS
+        value: "10000,30000,60000"
+      - key: AM_CRON_REQUEST_TIMEOUT_MS
+        value: "45000"
+      - key: AM_CRON_HEALTH_PING_ENABLED
+        value: "true"
+      - key: AM_CRON_ALERTS_ENABLED
         value: "true"
       - key: HOZO_CONTROL_API_KEY
         sync: false
@@ -151,6 +243,18 @@ services:
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: HOZO_CRON_ALERTS_ENABLED
         value: "true"
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_CRON_RETRY_DELAYS_MS
+        value: "10000,30000,60000"
+      - key: AM_CRON_REQUEST_TIMEOUT_MS
+        value: "45000"
+      - key: AM_CRON_HEALTH_PING_ENABLED
+        value: "true"
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
       - key: HOZO_CONTROL_API_KEY
         sync: false
 
@@ -170,6 +274,17 @@ services:
         value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
       - key: HOZO_CRON_ALERTS_ENABLED
         value: "true"
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_CRON_RETRY_DELAYS_MS
+        value: "10000,30000,60000"
+      - key: AM_CRON_REQUEST_TIMEOUT_MS
+        value: "45000"
+      - key: AM_CRON_HEALTH_PING_ENABLED
+        value: "true"
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
       - key: HOZO_CONTROL_API_KEY
         sync: false
-

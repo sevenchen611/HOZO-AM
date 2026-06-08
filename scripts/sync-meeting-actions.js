@@ -6,7 +6,8 @@ loadEnvFile('../env.txt');
 
 const notionToken = process.env.NOTION_TOKEN;
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
-const meetingsDataSourceId = process.env.HOZO_MEETINGS_DATA_SOURCE_ID || '';
+const defaultMeetingsDataSourceId = 'fd351c68-6dac-8298-8f0e-87ab1eb6027c';
+const meetingsDataSourceId = process.env.HOZO_MEETINGS_DATA_SOURCE_ID || defaultMeetingsDataSourceId;
 const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
 const progressReportsDataSourceId = process.env.HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID || '';
 
@@ -19,6 +20,9 @@ const limit = clampNumber(Number(args.limit || 20), 1, 100);
 
 if (!notionToken) {
   fail('NOTION_TOKEN is not set.');
+}
+if (!meetingsDataSourceId) {
+  fail('HOZO_MEETINGS_DATA_SOURCE_ID is not set.');
 }
 
 try {
@@ -50,8 +54,9 @@ try {
 async function syncMeeting(page) {
   const meeting = summarizeMeeting(page);
   const bodyText = await readPageText(page.id);
-  const sourceText = [meeting.actionItems, meeting.meetingRecord, bodyText].filter(Boolean).join('\n');
+  const sourceText = buildActionSourceText(meeting, bodyText);
   const extractedItems = extractActionItems(sourceText);
+  const actionItemTexts = extractedItems.map((item) => item.text);
   const createdTasks = [];
   const skippedTasks = [];
 
@@ -64,8 +69,11 @@ async function syncMeeting(page) {
     };
   }
 
-  for (const itemText of extractedItems) {
-    const candidate = buildTaskCandidate(itemText, meeting);
+  for (const extractedItem of extractedItems) {
+    const itemText = extractedItem.text;
+    const candidate = buildTaskCandidate(itemText, meeting, {
+      checkboxDerived: extractedItem.checkboxDerived,
+    });
     const existing = await findExistingTask(candidate.name, meeting.url);
 
     if (existing) {
@@ -82,11 +90,11 @@ async function syncMeeting(page) {
     createdTasks.push({ task: candidate.name, pageId: created.id, url: created.url });
   }
 
-  const progressReport = await maybeCreateProgressReport(meeting, bodyText, extractedItems);
+  const progressReport = await maybeCreateProgressReport(meeting, bodyText, actionItemTexts);
 
   return {
     meeting: publicMeetingSummary(meeting),
-    extractedActionItems: extractedItems,
+    extractedActionItems: actionItemTexts,
     createdTasks,
     skippedTasks,
     progressReport,
@@ -165,6 +173,40 @@ async function readPageText(pageId) {
   return lines.join('\n');
 }
 
+function buildActionSourceText(meeting, bodyText) {
+  const consolidatedSection = extractHozoMigrationActionSection(bodyText);
+  if (consolidatedSection) {
+    return [meeting.meetingRecord, consolidatedSection].filter(Boolean).join('\n');
+  }
+  return [meeting.actionItems, meeting.meetingRecord, bodyText].filter(Boolean).join('\n');
+}
+
+function extractHozoMigrationActionSection(text) {
+  const value = String(text || '');
+  const markerIndex = value.indexOf('HOZO-AM 移轉整理');
+  if (markerIndex === -1) {
+    return '';
+  }
+
+  const markerText = value.slice(markerIndex);
+  const sectionNames = ['整併後待辦事項', '跨會議整併後待辦總表'];
+  const starts = sectionNames
+    .map((name) => markerText.indexOf(name))
+    .filter((index) => index >= 0);
+  if (!starts.length) {
+    return '';
+  }
+
+  const start = Math.min(...starts);
+  const sectionText = markerText.slice(start);
+  const endMarkers = ['\n整併原則', '\n---'];
+  const ends = endMarkers
+    .map((marker) => sectionText.indexOf(marker))
+    .filter((index) => index > 0);
+  const end = ends.length ? Math.min(...ends) : sectionText.length;
+  return sectionText.slice(0, end).trim();
+}
+
 async function getBlockChildren(blockId) {
   const blocks = [];
   let startCursor;
@@ -187,23 +229,29 @@ function extractActionItems(text) {
   const items = [];
 
   for (const rawLine of normalized.split('\n')) {
+    const checkboxDerived = isCheckboxActionLine(rawLine);
     const item = normalizeActionLine(rawLine);
     if (!item || seen.has(item)) {
       continue;
     }
-    if (!looksLikeActionItem(item)) {
+    if (!checkboxDerived && !looksLikeActionItem(item)) {
       continue;
     }
     seen.add(item);
-    items.push(item);
+    items.push({ text: item, checkboxDerived });
   }
 
   return items.slice(0, 30);
 }
 
+function isCheckboxActionLine(value) {
+  return /^\s*(?:\[[ xX]\]|□|☐|☑|✅)\s+\S/u.test(String(value || ''));
+}
+
 function normalizeActionLine(value) {
   return String(value || '')
     .replace(/^\s*(?:[-*+]|[0-9０-９]+[.)、．]|[一二三四五六七八九十]+[、.．]|□|☐|☑|✅)\s*/u, '')
+    .replace(/^\s*\[[ xX]\]\s*/u, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -237,9 +285,9 @@ function looksLikeActionItem(value) {
   return actionPattern.test(text) || actionTerms.some((term) => text.length <= 24 && text.toLowerCase().includes(term.toLowerCase()));
 }
 
-function buildTaskCandidate(itemText, meeting) {
+function buildTaskCandidate(itemText, meeting, options = {}) {
   const analysisText = `${meeting.name}\n${meeting.summary}\n${itemText}`;
-  const project = meeting.selectedProject || inferProject(analysisText);
+  const project = normalizeTaskProject(meeting.selectedProject || inferProject(analysisText));
   const riskLevel = inferRiskLevel(analysisText);
   const status = inferTaskStatus(itemText);
   const confidence = riskLevel === 'High' ? '低' : inferConfidence(itemText, project);
@@ -248,7 +296,9 @@ function buildTaskCandidate(itemText, meeting) {
   const summary = [
     `會議：${meeting.name}`,
     `同步識別碼：${syncId}`,
-    `判斷：由會議行動項目轉入候選任務。`,
+    options.checkboxDerived
+      ? '判斷：由會議 checkbox 行動項目轉入已確認任務。'
+      : '判斷：由會議行動項目轉入候選任務。',
     riskLevel === 'High' ? '注意：內容可能涉及敏感或高風險事項，需 HOZO 主管確認後再推進。' : '',
   ].filter(Boolean).join('\n');
 
@@ -257,14 +307,14 @@ function buildTaskCandidate(itemText, meeting) {
     properties: compactProperties({
       任務名稱: titleProperty(itemText),
       狀態: selectProperty(status),
-      確認狀態: selectProperty('未確認'),
+      確認狀態: selectProperty(options.checkboxDerived ? '已確認' : '未確認'),
       來源: selectProperty('會議'),
       信心等級: selectProperty(confidence),
       優先級: selectProperty(inferPriority(itemText, riskLevel)),
       專案: selectProperty(project),
       負責人: richTextProperty(inferOwner(itemText)),
       下一步: richTextProperty(itemText),
-      來源原文: richTextProperty(`會議：${meeting.name}\n行動項目：${itemText}\n同步識別碼：${syncId}`),
+      來源原文: richTextProperty(`會議：${meeting.name}\n行動項目：${itemText}\n來源標記：${options.checkboxDerived ? 'meeting-checkbox' : 'meeting-action'}\n同步識別碼：${syncId}`),
       'Codex 判斷摘要': richTextProperty(summary),
       '關聯 Notion 頁面': urlProperty(meeting.url),
       截止日: dueDate ? dateProperty(dueDate) : undefined,
@@ -302,7 +352,7 @@ async function createTask(candidate) {
 
 async function maybeCreateProgressReport(meeting, bodyText, actionItems) {
   const sourceText = `${meeting.name}\n${meeting.summary}\n${bodyText}\n${actionItems.join('\n')}`;
-  const project = meeting.selectedProject || inferProject(sourceText);
+  const project = normalizeProgressProject(meeting.selectedProject || inferProject(sourceText));
 
   if (project === '未分類' || isExcludedScope(sourceText)) {
     return { action: 'skipped', reason: 'no-confident-project' };
@@ -372,13 +422,14 @@ function buildProgressReport(meeting, bodyText, actionItems, project) {
 function inferProject(text) {
   const value = String(text || '').toLowerCase();
   const projectRules = [
-    ['茲心園工程', ['茲心園', '台翰', '改建', '工程']],
+    ['後臺設計製作', ['hozo 後臺', 'hozo 後台', '後臺', '後台', 'backend', 'admin']],
+    ['網頁設計', ['網頁', '網站', '官網', 'hozo.com', 'web design']],
+    ['招租管理', ['招租', '出租', '帶看', '租客', '刊登']],
     ['包租代管', ['包租', '代管', '租賃管理']],
-    ['SmartFront / AI Brain', ['smartfront', 'ai brain', 'codex', '自動化', 'line oa', 'seven jr', 'sevenam']],
+    ['SmartFront / AI Brain', ['smartfront', 'ai brain', 'codex', '自動化', 'line oa']],
     ['財務', ['財務', '付款', '匯款', '發票', '報價', '預算']],
     ['人資', ['人資', '薪資', '招募', '面談', '到職']],
     ['營運', ['營運', '流程', '客服', '行政']],
-    ['私人事務', ['私人', '個人']],
   ];
 
   for (const [project, keywords] of projectRules) {
@@ -391,7 +442,34 @@ function inferProject(text) {
 }
 
 function isExcludedScope(text) {
-  return /hozo|hogo|好住|寓好/i.test(String(text || ''));
+  return /hogo/i.test(String(text || ''));
+}
+
+function normalizeTaskProject(project) {
+  const normalized = normalizeProjectName(project);
+  const allowed = new Set(['招租管理', '網頁設計', '後臺設計製作', '包租代管', '營運', '財務', '人資', '未分類']);
+  return allowed.has(normalized) ? normalized : '未分類';
+}
+
+function normalizeProgressProject(project) {
+  const normalized = normalizeProjectName(project);
+  const allowed = new Set(['招租管理', '網頁設計', '後臺設計製作', '包租代管', 'SmartFront / AI Brain', '財務', '人資', '營運', '未分類']);
+  return allowed.has(normalized) ? normalized : '未分類';
+}
+
+function normalizeProjectName(project) {
+  const value = String(project || '').trim();
+  const aliases = new Map([
+    ['HOZO 後臺', '後臺設計製作'],
+    ['HOZO 後台', '後臺設計製作'],
+    ['後臺', '後臺設計製作'],
+    ['後台', '後臺設計製作'],
+    ['網站', '網頁設計'],
+    ['官網', '網頁設計'],
+    ['茲心園工程', '未分類'],
+    ['私人事務', '未分類'],
+  ]);
+  return aliases.get(value) || value || '未分類';
 }
 
 function inferTaskStatus(text) {
@@ -520,7 +598,11 @@ function blockText(block) {
     return '';
   }
   if (Array.isArray(value.rich_text)) {
-    return richTextPlain(value.rich_text);
+    const text = richTextPlain(value.rich_text);
+    if (block.type === 'to_do') {
+      return `${value.checked ? '[x]' : '[ ]'} ${text}`.trim();
+    }
+    return text;
   }
   return '';
 }
@@ -595,7 +677,7 @@ async function notionRequest(pathname, { method, body }) {
     if (response.status === 404 && pathname.includes('/data_sources/')) {
       throw new Error([
         `Notion data source is not accessible: ${pathname}`,
-        'Please confirm the database is inside Codex 總控中心 and shared with the Notion integration used by NOTION_TOKEN.',
+        'Please confirm the database is inside HOZO 好住、寓好 and shared with the Notion integration used by NOTION_TOKEN.',
         `Notion response: ${responseText}`,
       ].join('\n'));
     }
@@ -681,4 +763,3 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
-

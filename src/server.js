@@ -12,6 +12,8 @@ const messagesDataSourceId = process.env.HOZO_MESSAGES_DATA_SOURCE_ID;
 const attachmentsDataSourceId = process.env.HOZO_ATTACHMENTS_DATA_SOURCE_ID;
 const codexCommandsDataSourceId = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
 const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
+const judgmentCalibrationCasesDataSourceId = process.env.HOZO_JUDGMENT_CALIBRATION_CASES_DATA_SOURCE_ID || '';
+const judgmentRulesDataSourceId = process.env.HOZO_JUDGMENT_RULES_DATA_SOURCE_ID || '';
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
 const publicBaseUrl = (process.env.HOZO_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
 const reportUrl = process.env.DAILY_REPORT_URL || (publicBaseUrl ? `${publicBaseUrl}/reports/daily-control-report` : '');
@@ -19,13 +21,16 @@ const morningBriefUrl = process.env.MORNING_BRIEF_URL || (publicBaseUrl ? `${pub
 const outgoingActorName = process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
 const codexCommandTriggers = buildCodexCommandTriggers(process.env.HOZO_CODEX_COMMAND_TRIGGERS || 'HOZO Junior,HOZ Jr.,HOZO Jr.');
 const hozoDataSourceParentBlockId = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID || '35f51c68-6dac-805f-88b4-e1cf5a86bbc1');
+const hozoDataSourceParentPageId = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_PAGE_ID || '35d51c68-6dac-802c-81e6-c71b560c0498');
 const verifiedHozoDataSources = new Map();
+const recentTaskListsByConversation = new Map();
 
 const notionConfigured = Boolean(notionToken && conversationsDataSourceId && messagesDataSourceId);
 const conversationAnchorText = '【HOZO LINE】對話記錄（最新在最上方）';
 const conversationAnchorPattern = /對話記錄（最新在最上方）/;
 const reportCommands = new Set(['#報告', '報告', '#每日報告', '每日報告']);
 const morningBriefCommands = new Set(['#早報', '早報', '#今日早報', '今日早報', '#行程', '行程']);
+const judgmentCalibrationSessionReviewId = 'HOZO-JC-SESSION';
 
 if (!channelAccessToken || !channelSecret) {
   console.warn('Missing LINE_CHANNEL_ACCESS_TOKEN or LINE_CHANNEL_SECRET.');
@@ -46,6 +51,10 @@ const server = http.createServer(async (req, res) => {
       codexCommandQueueConfigured: Boolean(codexCommandsDataSourceId),
       taskQueryReplyEnabled: Boolean(notionToken && tasksDataSourceId),
       codexCommandTriggers: codexCommandTriggers.map((trigger) => trigger.label),
+      immediateCommandEnabled: true,
+      immediateCommandPrefixes: codexCommandTriggers.map((trigger) => trigger.label),
+      judgmentCalibrationCommandEnabled: Boolean(notionToken && tasksDataSourceId && judgmentCalibrationCasesDataSourceId && judgmentRulesDataSourceId),
+      judgmentCalibrationCommands: ['開始做任務校準', '我們來做任務校準', '任務校準暫停', '任務校準狀態'],
       autoReplyEnabled: false,
       reportCommandEnabled: true,
       morningBriefCommandEnabled: true,
@@ -102,6 +111,7 @@ async function handleEvent(event, rawBody) {
 
 async function buildCommandReply(event) {
   const text = event.type === 'message' && event.message?.type === 'text' ? String(event.message.text || '').trim() : '';
+  const immediateCommand = parseImmediateCommand(text);
 
   if (morningBriefCommands.has(text)) {
     return {
@@ -117,20 +127,151 @@ async function buildCommandReply(event) {
     };
   }
 
-  if (isTaskListCommandText(text)) {
+  if (immediateCommand && isJudgmentCalibrationCommandText(immediateCommand.commandText)) {
+    return handleJudgmentCalibrationCommand(event, immediateCommand.commandText);
+  }
+
+  if (!immediateCommand && await shouldHandleJudgmentCalibrationReply(text)) {
+    return handleJudgmentCalibrationControllerReply(text);
+  }
+
+  if (immediateCommand && isOpenTaskDetailCommandText(immediateCommand.commandText)) {
+    return buildOpenTaskDetailReply(event, immediateCommand.commandText);
+  }
+
+  if (isTaskListCommandText(immediateCommand?.commandText || text)) {
     return buildTaskListReply(event, text);
+  }
+
+  if (immediateCommand) {
+    return buildImmediateCommandAcknowledgement(immediateCommand.commandText);
   }
 
   return null;
 }
 
-function isTaskListCommandText(text) {
-  if (!isCodexCommandText(text)) {
-    return false;
+function parseImmediateCommand(text) {
+  const value = String(text || '').trim();
+  const trigger = findCodexCommandTrigger(value);
+  if (!trigger) {
+    return null;
+  }
+  return {
+    trigger: trigger.label,
+    commandText: extractCodexCommand(value),
+  };
+}
+
+function isJudgmentCalibrationCommandText(text) {
+  return resolveJudgmentCalibrationCommand(text) !== null;
+}
+
+function resolveJudgmentCalibrationCommand(text) {
+  const value = String(text || '').trim();
+  if (!/任務校準|校準任務|判斷校準/.test(value)) {
+    return null;
+  }
+  if (/開始|啟動|start|繼續|resume|來做|做一下|進行|run/i.test(value)) {
+    return 'start';
+  }
+  if (/暫停|停止|先停|pause|stop/i.test(value)) {
+    return 'pause';
+  }
+  if (/狀態|進度|還有多少|status|progress/i.test(value)) {
+    return 'status';
+  }
+  return null;
+}
+
+async function handleJudgmentCalibrationCommand(event, commandText) {
+  if (!isJudgmentCalibrationConfigured()) {
+    return { type: 'text', text: 'HOZO Jr. 還沒有完成任務校準資料庫設定，所以暫時不能啟動任務校準。' };
   }
 
-  const commandText = extractCodexCommand(text);
-  return /待辦|任務|工作/.test(commandText) && /有哪些|清單|列表|列出|提供|查詢|看一下|是什麼/.test(commandText);
+  const command = resolveJudgmentCalibrationCommand(commandText);
+  if (command === 'pause') {
+    await setJudgmentCalibrationSessionState('Paused');
+    const progress = await getJudgmentCalibrationProgress();
+    return { type: 'text', text: buildJudgmentCalibrationPauseText(progress) };
+  }
+
+  if (command === 'status') {
+    const session = await getJudgmentCalibrationSession();
+    const progress = await getJudgmentCalibrationProgress();
+    return { type: 'text', text: buildJudgmentCalibrationStatusText(session?.state || 'Paused', progress) };
+  }
+
+  await setJudgmentCalibrationSessionState('Active');
+  const pending = await findPendingJudgmentCalibrationCase();
+  if (pending) {
+    const progress = await getJudgmentCalibrationProgress();
+    return { type: 'text', text: buildPendingJudgmentCalibrationText(pending, progress) };
+  }
+
+  const next = await createNextJudgmentCalibrationCase();
+  if (!next) {
+    await setJudgmentCalibrationSessionState('Paused');
+    const progress = await getJudgmentCalibrationProgress();
+    return { type: 'text', text: `任務校準已完成。\n進度：${progress.completed}/${progress.total}\n目前沒有新的待校準任務。` };
+  }
+
+  return { type: 'text', text: buildJudgmentCalibrationReviewText(next.casePage, next.task, next.progress) };
+}
+
+async function shouldHandleJudgmentCalibrationReply(text) {
+  if (!String(text || '').trim()) {
+    return false;
+  }
+  if (!isJudgmentCalibrationConfigured()) {
+    return false;
+  }
+  const session = await getJudgmentCalibrationSession();
+  if (session?.state !== 'Active') {
+    return false;
+  }
+  const pending = await findPendingJudgmentCalibrationCase();
+  return Boolean(pending);
+}
+
+async function handleJudgmentCalibrationControllerReply(text) {
+  const pending = await findPendingJudgmentCalibrationCase();
+  if (!pending) {
+    return { type: 'text', text: '目前沒有等待回覆的任務校準項目。' };
+  }
+
+  const parsed = parseJudgmentCalibrationControllerReply(text);
+  await applyJudgmentCalibrationReply(pending, parsed);
+  const afterUpdateProgress = await getJudgmentCalibrationProgress();
+  const next = await createNextJudgmentCalibrationCase();
+
+  if (!next) {
+    await setJudgmentCalibrationSessionState('Paused');
+    return {
+      type: 'text',
+      text: [
+        '收到，這筆已完成校準並更新任務庫。',
+        `進度：${afterUpdateProgress.completed}/${afterUpdateProgress.total}`,
+        `已校準：${afterUpdateProgress.completed}｜尚未校準：${Math.max(0, afterUpdateProgress.total - afterUpdateProgress.completed)}`,
+        '',
+        '目前沒有下一筆待校準任務，我先自動暫停。',
+      ].join('\n'),
+    };
+  }
+
+  return {
+    type: 'text',
+    text: clampText([
+      '收到，上一筆已完成校準並更新任務庫。',
+      `進度：${afterUpdateProgress.completed}/${afterUpdateProgress.total}`,
+      '',
+      buildJudgmentCalibrationReviewText(next.casePage, next.task, next.progress),
+    ].join('\n'), 4900),
+  };
+}
+
+function isTaskListCommandText(text) {
+  const commandText = isCodexCommandText(text) ? extractCodexCommand(text) : String(text || '').trim();
+  return /待辦|任務|工作|todo|task/i.test(commandText) && /有哪些|清單|列表|列出|提供|查詢|看一下|是什麼|目前|現在|pending|list|show/i.test(commandText);
 }
 
 async function buildTaskListReply(event, text) {
@@ -176,7 +317,119 @@ async function buildTaskListReply(event, text) {
     lines.push('', `還有 ${tasks.length - 10} 筆未列出，請到 HOZO 總控任務庫查看完整清單。`);
   }
 
+  rememberRecentTaskList(event, tasks);
   return { type: 'text', text: clampText(lines.join('\n'), 4900) };
+}
+
+function isOpenTaskDetailCommandText(text) {
+  const value = String(text || '').trim();
+  return /(打開|開啟|展開|給我看|看一下|查看|詳細|詳情)/.test(value)
+    && /(第\s*[0-9一二三四五六七八九十]+\s*個|[0-9一二三四五六七八九十]+\s*號)/.test(value)
+    && /(任務|待辦|工作)?/.test(value);
+}
+
+async function buildOpenTaskDetailReply(event, text) {
+  const index = parseTaskOrdinal(text);
+  if (!index) {
+    return { type: 'text', text: `我收到你要打開任務，但還沒判斷出是哪一個。你可以說：「${codexCommandTriggers[0]?.label || outgoingActorName}，打開第 2 個任務」。` };
+  }
+
+  const list = getRecentTaskList(event);
+  if (!list?.tasks?.length) {
+    return { type: 'text', text: `我現在沒有上一份待辦清單可以對照。請先說：「${codexCommandTriggers[0]?.label || outgoingActorName}，目前有哪些待辦？」我列出來後，你再說要打開第幾個。` };
+  }
+
+  const task = list.tasks[index - 1];
+  if (!task) {
+    return { type: 'text', text: `上一份待辦清單沒有第 ${index} 個任務。你可以重新查一次待辦清單，我再幫你打開。` };
+  }
+
+  const detail = task.id ? await findTaskDetailById(task.id) : task;
+  const lines = [
+    `第 ${index} 個任務：${detail.name || task.name}`,
+    detail.status ? `狀態：${detail.status}` : '',
+    detail.owner ? `負責人：${detail.owner}` : '',
+    detail.dueDate ? `期限：${formatTaipeiDate(detail.dueDate)}` : '',
+    detail.project ? `專案：${detail.project}` : '',
+    detail.priority ? `優先：${detail.priority}` : '',
+    detail.next ? `下一步：${detail.next}` : '',
+    detail.summary ? `摘要：${detail.summary}` : '',
+    detail.url ? `Notion：${detail.url}` : '',
+    '',
+    '你可以接著說：',
+    `${codexCommandTriggers[0]?.label || outgoingActorName}，把第 ${index} 個任務狀態改成進行中`,
+    `${codexCommandTriggers[0]?.label || outgoingActorName}，幫第 ${index} 個任務加備註：今天先確認窗口`,
+  ].filter((line) => line !== '');
+
+  return { type: 'text', text: clampText(lines.join('\n'), 4900) };
+}
+
+function buildImmediateCommandAcknowledgement(commandText) {
+  const riskLevel = resolveCommandRiskLevel(commandText);
+  if (riskLevel === 'High') {
+    return {
+      type: 'text',
+      text: `我已收到這個即時指令，但內容可能涉及金流、合約、法律、稅務或外部承諾，所以我先放進待確認，不會直接執行。\n\n指令：${commandText || '(空白)'}`,
+    };
+  }
+
+  return {
+    type: 'text',
+    text: `我已收到這個即時指令，並放進 HOZO AM 指令佇列。\n\n目前我可以即時處理「查待辦」和「打開第幾個任務」。其他操作會先排入佇列，等 Codex 接手處理。\n\n指令：${commandText || '(空白)'}`,
+  };
+}
+
+function rememberRecentTaskList(event, tasks) {
+  const context = resolveConversationContext(event.source || {});
+  recentTaskListsByConversation.set(context.key, {
+    savedAt: Date.now(),
+    tasks: tasks.slice(0, 10),
+  });
+}
+
+function getRecentTaskList(event) {
+  const context = resolveConversationContext(event.source || {});
+  const list = recentTaskListsByConversation.get(context.key);
+  if (!list) {
+    return null;
+  }
+  if (Date.now() - list.savedAt > 30 * 60 * 1000) {
+    recentTaskListsByConversation.delete(context.key);
+    return null;
+  }
+  return list;
+}
+
+function parseTaskOrdinal(text) {
+  const value = String(text || '');
+  const match = value.match(/第\s*([0-9一二三四五六七八九十]+)\s*個/) || value.match(/([0-9一二三四五六七八九十]+)\s*號/);
+  if (!match) {
+    return null;
+  }
+  const raw = match[1];
+  if (/^\d+$/.test(raw)) {
+    return Number(raw);
+  }
+  const numerals = {
+    一: 1,
+    二: 2,
+    三: 3,
+    四: 4,
+    五: 5,
+    六: 6,
+    七: 7,
+    八: 8,
+    九: 9,
+    十: 10,
+  };
+  if (raw === '十') return 10;
+  if (raw.startsWith('十')) return 10 + (numerals[raw.slice(1)] || 0);
+  if (raw.endsWith('十')) return (numerals[raw[0]] || 1) * 10;
+  if (raw.includes('十')) {
+    const [tens, ones] = raw.split('十');
+    return (numerals[tens] || 1) * 10 + (numerals[ones] || 0);
+  }
+  return numerals[raw] || null;
 }
 
 async function findOpenTasksForActor(actorName) {
@@ -190,6 +443,440 @@ async function findOpenTasksForActor(actorName) {
     : [];
 
   return { tasks: personalTasks.length ? personalTasks : openTasks, matchedActor: Boolean(personalTasks.length) };
+}
+
+async function findTaskDetailById(pageId) {
+  const page = await notionRequest(`/v1/pages/${pageId}`, { method: 'GET' });
+  return {
+    id: page.id,
+    url: page.url,
+    name: pageText(page, '任務名稱'),
+    project: pageSelect(page, '專案'),
+    status: pageSelect(page, '狀態'),
+    priority: pageSelect(page, '優先級'),
+    owner: pageText(page, '負責人'),
+    next: pageText(page, '下一步給負責人') || pageText(page, '下一步'),
+    summary: pageText(page, 'Codex 判斷摘要') || pageText(page, '完成目標定義') || pageText(page, '來源原文'),
+    dueDate: pageDate(page, '期限'),
+  };
+}
+
+function isJudgmentCalibrationConfigured() {
+  return Boolean(notionToken && tasksDataSourceId && judgmentCalibrationCasesDataSourceId && judgmentRulesDataSourceId);
+}
+
+async function getJudgmentCalibrationSession() {
+  const page = await findJudgmentCalibrationCaseByReviewId(judgmentCalibrationSessionReviewId);
+  if (!page) {
+    return null;
+  }
+  return {
+    page,
+    state: pageText(page, 'Controller Judgment') || 'Paused',
+  };
+}
+
+async function setJudgmentCalibrationSessionState(state) {
+  const existing = await findJudgmentCalibrationCaseByReviewId(judgmentCalibrationSessionReviewId);
+  const properties = {
+    'Controller Judgment': richText(state),
+    'Reply Summary': richText(`Session state: ${state}`),
+    'Case Status': select(state === 'Active' ? 'New' : 'Archived'),
+  };
+
+  if (existing) {
+    await notionRequest(`/v1/pages/${existing.id}`, {
+      method: 'PATCH',
+      body: { properties },
+    });
+    return existing;
+  }
+
+  return notionRequest('/v1/pages', {
+    method: 'POST',
+    body: {
+      parent: { type: 'data_source_id', data_source_id: judgmentCalibrationCasesDataSourceId },
+      properties: {
+        'Review ID': title(judgmentCalibrationSessionReviewId),
+        Project: select('HOZO_AM'),
+        'Source Type': select('manual review'),
+        'Task Type': select('unknown'),
+        'Assistant Judgment': richText('Judgment calibration session state.'),
+        'Assistant Reason': richText('Tracks whether the controller is currently available for task calibration.'),
+        'Assistant Confidence': select('high'),
+        'Data Boundary Check': checkbox(true),
+        ...properties,
+      },
+    },
+  });
+}
+
+async function findPendingJudgmentCalibrationCase() {
+  const pages = await queryJudgmentCalibrationCases();
+  return pages
+    .filter((page) => pageTitle(page, 'Review ID') !== judgmentCalibrationSessionReviewId)
+    .filter((page) => pageSelect(page, 'Case Status') === 'Sent to LINE')
+    .sort((left, right) => new Date(pageDate(left, 'LINE Review Sent At') || left.created_time) - new Date(pageDate(right, 'LINE Review Sent At') || right.created_time))[0] || null;
+}
+
+async function getJudgmentCalibrationProgress() {
+  const [tasks, cases] = await Promise.all([
+    queryJudgmentCalibrationScopeTasks(),
+    queryJudgmentCalibrationCases(),
+  ]);
+
+  const activeTaskIds = new Set(tasks.map((task) => task.id));
+  const completedTaskIds = new Set();
+  const sentTaskIds = new Set();
+
+  for (const page of cases) {
+    if (pageTitle(page, 'Review ID') === judgmentCalibrationSessionReviewId) {
+      continue;
+    }
+    const taskIds = pageRelationIds(page, 'Source Task');
+    if (!taskIds.length) {
+      continue;
+    }
+    const status = pageSelect(page, 'Case Status');
+    const hasControllerReply = Boolean(pageText(page, 'Controller Judgment'));
+    for (const taskId of taskIds) {
+      sentTaskIds.add(taskId);
+      if (['Updated', 'Rule Extracted', 'Archived', 'Replied'].includes(status) || hasControllerReply || pageCheckbox(page, 'Source Task Updated')) {
+        completedTaskIds.add(taskId);
+      }
+    }
+  }
+
+  const totalTaskIds = new Set([...activeTaskIds, ...sentTaskIds, ...completedTaskIds]);
+  const pendingCount = [...sentTaskIds].filter((taskId) => !completedTaskIds.has(taskId)).length;
+  const completed = completedTaskIds.size;
+  const total = totalTaskIds.size;
+
+  return {
+    total,
+    completed,
+    pending: pendingCount,
+    remaining: Math.max(0, total - completed),
+    nextIndex: Math.min(total || completed + 1, completed + pendingCount + 1),
+  };
+}
+
+async function createNextJudgmentCalibrationCase() {
+  const progress = await getJudgmentCalibrationProgress();
+  const candidate = await findNextJudgmentCalibrationTaskCandidate();
+  if (!candidate) {
+    return null;
+  }
+  const casePage = await createJudgmentCalibrationCase(candidate, progress);
+  return {
+    casePage,
+    task: candidate,
+    progress: { ...progress, currentIndex: progress.completed + 1 },
+  };
+}
+
+async function findNextJudgmentCalibrationTaskCandidate() {
+  const [tasks, cases] = await Promise.all([
+    queryJudgmentCalibrationScopeTasks(),
+    queryJudgmentCalibrationCases(),
+  ]);
+  const sentTaskIds = new Set();
+  for (const page of cases) {
+    for (const taskId of pageRelationIds(page, 'Source Task')) {
+      sentTaskIds.add(taskId);
+    }
+  }
+  return tasks.find((task) => !sentTaskIds.has(task.id)) || null;
+}
+
+async function queryJudgmentCalibrationScopeTasks() {
+  const pages = await queryAllDataSourcePages(tasksDataSourceId, { page_size: 100 });
+  return pages
+    .map(normalizeJudgmentCalibrationTask)
+    .filter((task) => task.id && task.name)
+    .filter((task) => !isClosedTaskStatus(task.status));
+}
+
+function normalizeJudgmentCalibrationTask(page) {
+  return {
+    id: page.id,
+    url: page.url || '',
+    name: pageText(page, '任務名稱') || pageText(page, 'Name') || pageText(page, '名稱') || '(未命名任務)',
+    project: pageRelationTitleFallback(page, '總控專案') || pageText(page, '專案'),
+    owner: pageText(page, '負責人') || pageText(page, 'Owner'),
+    status: pageStatus(page, '狀態') || pageSelect(page, '狀態'),
+    confirmation: pageSelect(page, '確認狀態'),
+    confidence: pageSelect(page, '信心等級'),
+    priority: pageSelect(page, '優先級'),
+    dueDate: pageDate(page, '期限') || pageDate(page, 'Due Date'),
+    summary: pageText(page, 'Codex 判斷摘要') || pageText(page, '下一步') || pageText(page, '來源原文'),
+  };
+}
+
+function isClosedTaskStatus(status) {
+  return /^(已完成|完成|封存|取消|Done|Closed)$/i.test(String(status || '').trim());
+}
+
+async function createJudgmentCalibrationCase(task, progress) {
+  const reviewId = `HOZO-JC-${formatDateKey(new Date())}`;
+  return notionRequest('/v1/pages', {
+    method: 'POST',
+    body: {
+      parent: { type: 'data_source_id', data_source_id: judgmentCalibrationCasesDataSourceId },
+      properties: {
+        'Review ID': title(reviewId),
+        Project: select('HOZO_AM'),
+        'Source Type': select('total-control task'),
+        'Source Task': relation(task.id),
+        'Source URL': url(task.url),
+        'Task Type': select(inferJudgmentCalibrationTaskType(task)),
+        'Assistant Judgment': richText('請 controller 校準此任務是否應保留、撤除、拆分、改專案或補資料。'),
+        'Assistant Reason': richText(buildJudgmentCalibrationReason(task, progress)),
+        'Assistant Confidence': select(task.confidence === '高' ? 'high' : task.confidence === '中' ? 'medium' : 'low'),
+        'Case Status': select('Sent to LINE'),
+        'LINE Review Sent At': date(new Date().toISOString()),
+        'Data Boundary Check': checkbox(true),
+      },
+    },
+  });
+}
+
+function buildJudgmentCalibrationReviewText(casePage, task, progress) {
+  const reviewId = pageTitle(casePage, 'Review ID');
+  const currentIndex = progress.currentIndex || progress.nextIndex || progress.completed + 1;
+  const total = progress.total || currentIndex;
+  const remaining = Math.max(0, total - progress.completed);
+  return clampText([
+    `【判斷校準】${currentIndex}/${total}`,
+    `Review ID：${reviewId}`,
+    `已校準：${progress.completed}｜尚未校準：${remaining}`,
+    '',
+    `任務：${task.name}`,
+    '來源：HOZO AM 總控任務庫',
+    '',
+    '我的判斷：',
+    '這筆需要你校準：保留、撤任務、暫緩、拆任務、改專案或補資料。',
+    '',
+    '我判斷的理由：',
+    [
+      task.project ? `專案=${task.project}` : '',
+      task.status ? `狀態=${task.status}` : '',
+      task.confirmation ? `確認=${task.confirmation}` : '',
+      task.confidence ? `信心=${task.confidence}` : '',
+      task.priority ? `優先=${task.priority}` : '',
+      task.owner ? `負責人=${task.owner}` : '',
+    ].filter(Boolean).join('｜') || '任務庫中尚未有足夠校準資料。',
+    '',
+    '不確定點：',
+    task.summary || '需要你指定正確處理方向。',
+    '',
+    '請回覆：',
+    '方向：建立任務 / 撤任務 / 暫緩 / 拆任務 / 改專案 / 補資料 / 其他',
+    '原因：...',
+    '規則：...',
+    '例外：...',
+    '',
+    '若你現在沒空，可說：HOZO Junior，任務校準暫停',
+  ].join('\n'), 4900);
+}
+
+function buildPendingJudgmentCalibrationText(casePage, progress) {
+  const reviewId = pageTitle(casePage, 'Review ID');
+  const taskName = pageRelationIds(casePage, 'Source Task').length ? '上一筆已送出的任務' : '上一筆校準項目';
+  return [
+    '任務校準已開始。',
+    `目前還有一筆等待你回覆：${reviewId}`,
+    `進度：${progress.completed}/${progress.total}`,
+    `已校準：${progress.completed}｜尚未校準：${progress.remaining}`,
+    '',
+    `${taskName}還沒完成校準；請直接回覆「方向、原因、規則、例外」。`,
+  ].join('\n');
+}
+
+function buildJudgmentCalibrationPauseText(progress) {
+  return [
+    '任務校準已暫停。',
+    `進度：${progress.completed}/${progress.total}`,
+    `已校準：${progress.completed}｜尚未校準：${progress.remaining}`,
+    '',
+    '你有空時說：「HOZO Junior，我們開始做任務校準」，我再繼續發下一筆。',
+  ].join('\n');
+}
+
+function buildJudgmentCalibrationStatusText(state, progress) {
+  const stateText = state === 'Active' ? '進行中' : '暫停中';
+  return [
+    `任務校準狀態：${stateText}`,
+    `進度：${progress.completed}/${progress.total}`,
+    `已校準：${progress.completed}｜尚未校準：${progress.remaining}`,
+    progress.pending ? `等待你回覆：${progress.pending} 筆` : '目前沒有等待回覆的校準項目。',
+  ].join('\n');
+}
+
+function parseJudgmentCalibrationControllerReply(text) {
+  const value = String(text || '').trim();
+  return {
+    direction: extractLabeledValue(value, ['方向', '處理方向']) || inferJudgmentDirection(value),
+    reason: extractLabeledValue(value, ['原因', '理由']) || inferJudgmentReason(value),
+    rule: extractLabeledValue(value, ['規則', '可學習規則', '學習規則']),
+    exception: extractLabeledValue(value, ['例外', '例外情況']),
+    raw: value,
+  };
+}
+
+function extractLabeledValue(text, labels) {
+  for (const label of labels) {
+    const pattern = new RegExp(`${label}\\s*[:：是]?\\s*([\\s\\S]*?)(?=[，,。；;\\n\\s]*(方向|處理方向|原因|理由|規則|可學習規則|學習規則|例外|例外情況)\\s*[:：是]?|$)`, 'i');
+    const match = text.match(pattern);
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+  }
+  return '';
+}
+
+function inferJudgmentDirection(text) {
+  if (/撤任務|不是任務|不用列入|不列入|退回|封存/.test(text)) return '撤任務';
+  if (/拆任務|拆成|分開/.test(text)) return '拆任務';
+  if (/改專案|換專案|歸到/.test(text)) return '改專案';
+  if (/暫緩|先不要|之後再/.test(text)) return '暫緩';
+  if (/補資料|不清楚|確認/.test(text)) return '補資料';
+  if (/建立任務|保留|列入/.test(text)) return '建立任務';
+  return '其他';
+}
+
+function inferJudgmentReason(text) {
+  const match = text.match(/原因(?:是|[:：])?([\s\S]*?)(?:規則|例外|$)/);
+  return (match?.[1] || text).trim().slice(0, 900);
+}
+
+async function applyJudgmentCalibrationReply(casePage, parsed) {
+  const sourceTaskId = pageRelationIds(casePage, 'Source Task')[0];
+  const rulePage = parsed.rule ? await createJudgmentRuleFromReply(parsed) : null;
+  const properties = {
+    'Controller Judgment': richText(parsed.direction),
+    'Controller Reason': richText(parsed.reason),
+    'Reply Summary': richText(parsed.raw),
+    'Generalized Rule': richText(parsed.rule),
+    'Controller Replied At': date(new Date().toISOString()),
+    'Case Status': select(parsed.rule ? 'Rule Extracted' : 'Updated'),
+    'Source Task Updated': checkbox(Boolean(sourceTaskId)),
+  };
+  if (rulePage) {
+    properties['Rule Link'] = relation(rulePage.id);
+  }
+
+  await notionRequest(`/v1/pages/${casePage.id}`, {
+    method: 'PATCH',
+    body: { properties },
+  });
+
+  if (sourceTaskId) {
+    await updateJudgmentCalibrationSourceTask(sourceTaskId, parsed);
+  }
+}
+
+async function createJudgmentRuleFromReply(parsed) {
+  return notionRequest('/v1/pages', {
+    method: 'POST',
+    body: {
+      parent: { type: 'data_source_id', data_source_id: judgmentRulesDataSourceId },
+      properties: {
+        'Rule Name': title(clampText(parsed.rule.replace(/\s+/g, ' ').trim(), 80)),
+        'Trigger Pattern': richText(parsed.reason || parsed.direction),
+        'Preferred Judgment': richText(parsed.direction),
+        'Avoided Judgment': richText('Use assistant original judgment without controller calibration.'),
+        Reason: richText(parsed.reason),
+        'Applies To': multiSelect(['HOZO_AM']),
+        Exceptions: richText(parsed.exception),
+        'Source Case Count': number(1),
+        Status: select('Needs review'),
+        'Checklist Placement': select('task start'),
+        'Last Verified': date(new Date().toISOString()),
+      },
+    },
+  });
+}
+
+async function updateJudgmentCalibrationSourceTask(taskId, parsed) {
+  const summary = [
+    `Controller 校準：${parsed.direction}`,
+    parsed.reason ? `原因：${parsed.reason}` : '',
+    parsed.rule ? `規則：${parsed.rule}` : '',
+    parsed.exception ? `例外：${parsed.exception}` : '',
+  ].filter(Boolean).join('\n');
+  const properties = {
+    'Codex 判斷摘要': richText(summary, 1900),
+  };
+
+  if (/撤任務|不是任務|退回|封存/.test(parsed.direction)) {
+    properties['狀態'] = select('封存');
+    properties['確認狀態'] = select('退回');
+  } else if (/暫緩/.test(parsed.direction)) {
+    properties['狀態'] = select('等待回覆');
+  } else if (/建立任務|保留/.test(parsed.direction)) {
+    properties['確認狀態'] = select('已確認');
+  } else if (/補資料|拆任務|改專案/.test(parsed.direction)) {
+    properties['確認狀態'] = select('未確認');
+  }
+
+  await notionRequest(`/v1/pages/${taskId}`, {
+    method: 'PATCH',
+    body: { properties },
+  });
+}
+
+function buildJudgmentCalibrationReason(task, progress) {
+  return [
+    `進度=${progress.completed + 1}/${progress.total || progress.completed + 1}`,
+    task.status ? `狀態=${task.status}` : '',
+    task.confirmation ? `確認狀態=${task.confirmation}` : '',
+    task.confidence ? `信心等級=${task.confidence}` : '',
+    task.priority ? `優先級=${task.priority}` : '',
+  ].filter(Boolean).join('；') || 'HOZO AM 任務校準流程選出此任務。';
+}
+
+function inferJudgmentCalibrationTaskType(task) {
+  const text = `${task.name} ${task.summary}`;
+  if (/Render|部署|production|deploy/i.test(text)) return 'deployment';
+  if (/資料|Notion|LINE|權限|token|secret|database/i.test(text)) return 'data governance';
+  if (/目標|完成標準|驗收|口述/.test(text)) return 'goal';
+  if (/責任|負責人|權責/.test(text)) return 'responsibility item';
+  return 'task';
+}
+
+async function queryJudgmentCalibrationCases() {
+  return queryAllDataSourcePages(judgmentCalibrationCasesDataSourceId, { page_size: 100 });
+}
+
+async function findJudgmentCalibrationCaseByReviewId(reviewId) {
+  const result = await notionRequest(`/v1/data_sources/${judgmentCalibrationCasesDataSourceId}/query`, {
+    method: 'POST',
+    body: {
+      page_size: 1,
+      filter: { property: 'Review ID', title: { equals: reviewId } },
+    },
+  });
+  return result.results?.[0] || null;
+}
+
+async function queryAllDataSourcePages(dataSourceId, body = {}) {
+  const results = [];
+  let startCursor = null;
+  do {
+    const response = await notionRequest(`/v1/data_sources/${dataSourceId}/query`, {
+      method: 'POST',
+      body: {
+        page_size: body.page_size || 100,
+        start_cursor: startCursor || undefined,
+        filter: body.filter,
+        sorts: body.sorts,
+      },
+    });
+    results.push(...(response.results || []));
+    startCursor = response.has_more ? response.next_cursor : null;
+  } while (startCursor);
+  return results;
 }
 
 async function queryOpenTasks(limit = 100) {
@@ -218,7 +905,8 @@ async function queryOpenTasks(limit = 100) {
     status: pageSelect(page, '狀態'),
     priority: pageSelect(page, '優先級'),
     owner: pageText(page, '負責人'),
-    next: pageText(page, '下一步'),
+    next: pageText(page, '下一步給負責人') || pageText(page, '下一步'),
+    dueDate: pageDate(page, '期限'),
   })).filter((task) => task.name);
 }
 
@@ -236,8 +924,35 @@ function pageText(page, propertyName) {
   return '';
 }
 
+function pageTitle(page, propertyName) {
+  return pageText(page, propertyName);
+}
+
 function pageSelect(page, propertyName) {
   return page?.properties?.[propertyName]?.select?.name || '';
+}
+
+function pageDate(page, propertyName) {
+  return page?.properties?.[propertyName]?.date?.start || '';
+}
+
+function pageStatus(page, propertyName) {
+  return page?.properties?.[propertyName]?.status?.name || '';
+}
+
+function pageRelationTitleFallback(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'relation' && property.relation?.length ? '' : '';
+}
+
+function pageRelationIds(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'relation' ? (property.relation || []).map((item) => item.id).filter(Boolean) : [];
+}
+
+function pageCheckbox(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'checkbox' ? Boolean(property.checkbox) : false;
 }
 
 function richTextPlain(items) {
@@ -886,7 +1601,7 @@ async function assertHozoDataSource(dataSourceId) {
 
   const database = await notionFetchJson(`/v1/databases/${encodeURIComponent(databaseId)}`);
   const databaseTitle = notionTitleText(database.title);
-  const parentBlockId = normalizeId(database.parent?.block_id || '');
+  const parentId = normalizeId(database.parent?.block_id || database.parent?.page_id || '');
 
   if (dataSource.archived || dataSource.in_trash || database.archived || database.in_trash) {
     throw new Error(`Refusing to write to archived or trashed Notion data source: ${dataSourceTitle || dataSourceId}.`);
@@ -894,7 +1609,8 @@ async function assertHozoDataSource(dataSourceId) {
   if (!/^HOZO(?:\b|-| | LINE| AM|CRM|好住|總控|Automation)/i.test(dataSourceTitle)) {
     throw new Error(`Refusing to write to non-HOZO Notion data source: ${dataSourceTitle || dataSourceId}.`);
   }
-  if (hozoDataSourceParentBlockId && parentBlockId !== hozoDataSourceParentBlockId) {
+  const allowedParentIds = new Set([hozoDataSourceParentBlockId, hozoDataSourceParentPageId].filter(Boolean));
+  if (allowedParentIds.size && !allowedParentIds.has(parentId)) {
     throw new Error(`Refusing to write outside the HOZO Notion database area: ${databaseTitle || databaseId}.`);
   }
 
@@ -993,6 +1709,16 @@ function formatTaipeiTime(value) {
   return new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(value));
 }
 
+function formatTaipeiDate(value) {
+  return new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'numeric', day: 'numeric' }).format(new Date(value));
+}
+
+function formatDateKey(date) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+    .format(date)
+    .replace(/[^0-9]/g, '');
+}
+
 function plainBlockText(block) {
   const richText = block?.[block.type]?.rich_text || [];
   return richText.map((item) => item.plain_text || item.text?.content || '').join('');
@@ -1016,6 +1742,14 @@ function richText(content, maxLength = 1900) {
 
 function select(name) {
   return { select: { name } };
+}
+
+function multiSelect(names) {
+  return { multi_select: names.filter(Boolean).map((name) => ({ name })) };
+}
+
+function number(value) {
+  return { number: Number.isFinite(value) ? value : null };
 }
 
 function date(start) {

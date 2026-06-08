@@ -21,7 +21,7 @@ The system answers:
 
 ## Scope
 
-Only include pages and databases under `HOZO 總控中心`.
+Only include pages and databases under `HOZO 好住、寓好`.
 
 Do not scan, summarize, or sync unrelated Notion pages, other workspace areas, private pages, or non-HOZO project databases.
 
@@ -31,7 +31,7 @@ Existing LINE CRM databases under the HOZO LINE page are allowed:
 - HOZO LINE 訊息紀錄
 - HOZO LINE 附件紀錄
 
-The existing HOZO meeting database should not be reused for this automation. Create a new HOZO AM meeting records database for this project.
+The existing HOZO meeting database should not be reused for this automation. Use the HOZO-AM meeting records database for this project.
 
 ## Default LINE Identity
 
@@ -68,7 +68,7 @@ Required or planned databases:
 - HOZO Codex 指令佇列
 - HOZO 總控專案庫
 - HOZO 總控任務庫
-- HOZO 會議紀錄
+- HOZO-AM 會議記錄
 - HOZO 專案進度報表庫
 - HOZO 風險與決策庫
 - HOZO Automation Run Log
@@ -97,6 +97,7 @@ Render Cron uses UTC. Taipei time is UTC+8.
 
 | Job | Taipei Time | UTC Cron |
 | --- | --- | --- |
+| LINE task reconciliation | 08:10-22:10 hourly | `10 0-14 * * *` |
 | Meeting action sync | 08:00-22:00 hourly | `0 0-14 * * *` |
 | Morning brief | 08:00 | `0 0 * * *` |
 | Follow-up morning | 10:00 | `0 2 * * *` |
@@ -104,9 +105,22 @@ Render Cron uses UTC. Taipei time is UTC+8.
 | Follow-up afternoon | 17:00 | `0 9 * * *` |
 | Daily report | 20:30 | `30 12 * * *` |
 
+Hourly LINE task reconciliation runs:
+
+```bash
+npm run line:judgements -- --include-outgoing-groups --limit 50
+```
+
+This job is task reconciliation, not direct message-to-task conversion. For every new LINE message, first read the same conversation context and search active `HOZO 總控任務庫` tasks. If the message extends, answers, completes, blocks, changes, or clarifies an existing task, update that task and record evidence. Create a new event-level task only when no existing task can reasonably absorb the message.
+
+The 08:00-22:00 hourly LINE judgement contract is defined in:
+
+```text
+config/hourly-line-task-reconciliation.json
+```
+
 ## Sensitive Data Rules
 
 - Do not commit `.env`, `env.txt`, LINE tokens, Notion tokens, or control API keys.
 - Confirm existence/format only; never echo secret values.
 - Render environment variables are the deployment source of truth for secrets.
-

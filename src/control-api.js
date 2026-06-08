@@ -10,6 +10,7 @@ const TASKS_DATA_SOURCE_ID = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
 const RISK_DECISIONS_DATA_SOURCE_ID = process.env.HOZO_RISK_DECISIONS_DATA_SOURCE_ID || '';
 const ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID = process.env.HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID || '';
 const CODEX_COMMANDS_DATA_SOURCE_ID = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
+const DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID = process.env.HOZO_DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID || '';
 const CONVERSATIONS_DATA_SOURCE_ID = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID || '';
 const MESSAGES_DATA_SOURCE_ID = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
 const RESPONSIBILITY_DATA_SOURCE_ID = process.env.HOZO_RESPONSIBILITY_DATA_SOURCE_ID || '';
@@ -65,6 +66,7 @@ async function handleControlRequest(req, res, pathname) {
       defaultReportCcConfigured: Boolean(process.env.HOZO_REPORT_CC_TARGET_IDS || process.env.HOZO_REPORT_CC_NAME_KEYWORDS || 'Seven陳聖文'),
       defaultReportTargetAutoResolveEnabled: Boolean(process.env.NOTION_TOKEN && process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID),
       codexCommandQueueConfigured: Boolean(CODEX_COMMANDS_DATA_SOURCE_ID),
+      dailyReportSnapshotsConfigured: Boolean(DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID),
       reportTypes: ['morning', 'daily', 'followup-morning', 'followup-midday', 'followup-afternoon'],
       endpoints: ['POST /control/line/push', 'POST /control/reports/send', 'POST /control/reports/preview', 'POST /control/reports/approve', 'POST /control/codex-commands/test'],
     });
@@ -282,6 +284,11 @@ async function approveReport(req, body) {
     followups,
     notes: body.notes,
   });
+  const snapshotUpdate = await maybeMarkDailyReportSnapshotConfirmed({
+    reportType,
+    decisionPage,
+    submittedAt,
+  });
   const acknowledgement = await sendReportApprovalAcknowledgement(body, {
     reportType,
     approvedBy,
@@ -300,6 +307,7 @@ async function approveReport(req, body) {
     acknowledgement,
     tasksWritten: taskResults.length,
     attachmentsWritten: attachmentResults.length,
+    snapshotUpdate,
     taskResults,
     attachmentResults,
   };
@@ -491,7 +499,7 @@ async function createApprovalDecisionPage({ reportType, approvedBy, submittedAt,
     ? attachmentResults.map((item) => `${item.file} -> ${item.action} (${item.conversionStatus})`).join('\n')
     : '沒有附件轉檔確認。';
   const decisionLines = decisions?.length
-    ? decisions.map((item) => `${item.item || item.title || '決策'} -> ${item.decision || item.value || item.status || ''}`).join('\n')
+    ? decisions.map((item) => `${item.item || item.title || '決策'} -> ${item.decision || item.value || item.status || ''}${item.actionKey ? ` (${item.actionKey})` : ''}`).join('\n')
     : '沒有額外決策選擇。';
   const followupLines = followups?.length
     ? followups.map((item) => [
@@ -557,7 +565,14 @@ async function sendReport(req, body) {
   }
 
   const result = await pushToTargets(targets, [report]);
-  return cronMeta ? { ...result, cronMeta } : result;
+  const snapshot = await maybeCreateDailyReportSnapshot({
+    reportType,
+    report,
+    targets,
+    cronMeta,
+    sentAt: new Date(),
+  });
+  return { ...result, ...(cronMeta ? { cronMeta } : {}), ...(snapshot ? { snapshot } : {}) };
 }
 
 async function previewReport(body) {
@@ -596,6 +611,91 @@ function targetsFromIds(value, targetType) {
     .map((id) => id.trim())
     .filter(Boolean)
     .map((id) => ({ id, type: targetType || inferTargetType(id), source: 'env' }));
+}
+
+async function maybeCreateDailyReportSnapshot({ reportType, report, targets, cronMeta, sentAt }) {
+  if (!isDailyReportType(reportType) || !DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID || !process.env.NOTION_TOKEN) {
+    return null;
+  }
+
+  try {
+    const text = outgoingMessageText(report);
+    const reportUrl = firstUrlFromText(text);
+    const reportDate = taipeiDateOnly(sentAt);
+    const targetSummary = targets.map((target) => target.name || target.id).filter(Boolean).join('、');
+    const page = await notionRequest('/v1/pages', {
+      method: 'POST',
+      body: {
+        parent: { type: 'data_source_id', data_source_id: DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID },
+        properties: compactProperties({
+          報告名稱: titleProperty(`${reportDate} 每日總控總確認`),
+          報告日期: dateProperty(`${reportDate}T00:00:00+08:00`),
+          報告類型: selectProperty('每日總控總確認'),
+          狀態: selectProperty('已發送'),
+          報告連結: reportUrl ? urlProperty(reportUrl) : undefined,
+          LINE訊息內容: richTextProperty(text),
+          發送時間: dateProperty(sentAt),
+          CronJob: richTextProperty(cronMeta?.jobName || ''),
+          RunID: richTextProperty(cronMeta?.runId || ''),
+          目標: richTextProperty(targetSummary),
+          摘要: richTextProperty('20:30 每日總控總確認已發送，等待使用者確認寫回。'),
+        }),
+        children: [
+          paragraphProperty('每日總控總確認快照'),
+          paragraphProperty(`報告日期：${reportDate}`),
+          paragraphProperty(`報告連結：${reportUrl || '未提供'}`),
+          paragraphProperty(`發送目標：${targetSummary || '預設報告對象'}`),
+          paragraphProperty('LINE 訊息內容：'),
+          paragraphProperty(text),
+        ],
+      },
+    });
+
+    return { ok: true, pageId: page.id, url: page.url };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Unable to create daily report snapshot: ${message}`);
+    return { ok: false, error: message };
+  }
+}
+
+async function maybeMarkDailyReportSnapshotConfirmed({ reportType, decisionPage, submittedAt }) {
+  if (!isDailyReportType(reportType) || !DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID || !process.env.NOTION_TOKEN) {
+    return null;
+  }
+
+  try {
+    const result = await notionRequest(`/v1/data_sources/${DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID}/query`, {
+      method: 'POST',
+      body: {
+        page_size: 1,
+        filter: { property: '報告類型', select: { equals: '每日總控總確認' } },
+        sorts: [{ property: '發送時間', direction: 'descending' }],
+      },
+    });
+    const snapshot = result.results?.[0];
+    if (!snapshot) {
+      return { ok: false, skipped: true, reason: 'no-daily-report-snapshot-found' };
+    }
+
+    const page = await notionRequest(`/v1/pages/${snapshot.id}`, {
+      method: 'PATCH',
+      body: {
+        properties: compactProperties({
+          狀態: selectProperty('已確認'),
+          確認時間: dateProperty(submittedAt),
+          確認紀錄連結: decisionPage?.url ? urlProperty(decisionPage.url) : undefined,
+          摘要: richTextProperty('每日總控總確認已由使用者確認，確認結果已寫入風險與決策庫。'),
+        }),
+      },
+    });
+
+    return { ok: true, pageId: page.id, url: page.url };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Unable to update daily report snapshot confirmation: ${message}`);
+    return { ok: false, error: message };
+  }
 }
 
 function uniqueTargets(targets) {
@@ -1207,6 +1307,14 @@ function withFollowupSlot(baseUrl, slot) {
   }
 
   return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}slot=${encodeURIComponent(slot)}`;
+}
+
+function isDailyReportType(reportType) {
+  return ['daily', 'evening', 'night', '晚報', '每日報告'].includes(String(reportType || '').trim().toLowerCase());
+}
+
+function firstUrlFromText(text) {
+  return String(text || '').match(/https?:\/\/\S+/)?.[0] || '';
 }
 
 async function pushLineMessages(req, body) {
@@ -1924,4 +2032,3 @@ function loadDotenv() {
     process.env[match[1]] = match[2].replace(/^["']|["']$/g, '');
   }
 }
-

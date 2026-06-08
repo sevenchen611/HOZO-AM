@@ -44,7 +44,7 @@ Only include data under the HOZO project Notion page. Other Notion data should n
 - HOZO Codex 指令佇列
 - HOZO 總控專案庫
 - HOZO 總控任務庫
-- HOZO 會議紀錄
+- HOZO-AM 會議記錄
 - HOZO 專案進度報表庫
 - HOZO 風險與決策庫
 - HOZO Automation Run Log
