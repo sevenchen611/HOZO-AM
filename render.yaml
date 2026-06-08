@@ -48,6 +48,10 @@ services:
         value: user
       - key: HOZO_REPORT_TARGET_NAME_KEYWORD
         value: Maggie
+      - key: HOZO_REPORT_CC_TARGET_IDS
+        value: U77e5ebe92da94e8803e0786d8684f69a
+      - key: HOZO_REPORT_CC_TARGET_TYPE
+        value: user
       - key: HOZO_REPORT_CC_NAME_KEYWORDS
         value: Seven陳聖文,Seven 陳聖文
       - key: HOZO_CONTROL_API_KEY
