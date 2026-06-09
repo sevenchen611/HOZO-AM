@@ -86,7 +86,10 @@ services:
     schedule: "10 0-14 * * *"
     envVars:
       - key: NOTION_TOKEN
-        sync: false
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: NOTION_TOKEN
       - key: HOZO_MESSAGES_DATA_SOURCE_ID
         value: 37451c68-6dac-8187-a6bc-000bbd69c364
       - key: HOZO_TASKS_DATA_SOURCE_ID
@@ -103,7 +106,10 @@ services:
     schedule: "0 0-14 * * *"
     envVars:
       - key: NOTION_TOKEN
-        sync: false
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: NOTION_TOKEN
       - key: HOZO_MEETINGS_DATA_SOURCE_ID
         value: fd351c68-6dac-8298-8f0e-87ab1eb6027c
       - key: HOZO_TASKS_DATA_SOURCE_ID
@@ -120,7 +126,10 @@ services:
     schedule: "15 0-14 * * *"
     envVars:
       - key: NOTION_TOKEN
-        sync: false
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: NOTION_TOKEN
       - key: NOTION_VERSION
         value: "2025-09-03"
       - key: HOZO_RESPONSIBILITY_DATA_SOURCE_ID
@@ -140,7 +149,7 @@ services:
     plan: starter
     buildCommand: npm install
     startCommand: npm run cron:report -- morning
-    schedule: "0 0 * * *"
+    schedule: "30 0 * * *"
     envVars:
       - key: CRON_JOB_NAME
         value: hozo-am-morning-brief
