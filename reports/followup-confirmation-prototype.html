@@ -12,7 +12,7 @@
   <div class="app">
     <aside>
       <div class="brand"><strong>追蹤與任務確認</strong><span>10:00 / 13:00 / 17:00 審核</span></div>
-      <nav><a href="#goals">目標追認</a><a href="#followups">候選訊息</a><a href="#tasks">待確認任務</a><a href="#rules">確認規則</a><a href="#summary">確認結果</a></nav>
+      <nav><a href="#today-completed">今日完成</a><a href="#active-tasks">進行中</a><a href="#goals">目標追認</a><a href="#followups">候選訊息</a><a href="#tasks">待確認任務</a><a href="#summary">確認結果</a></nav>
     </aside>
     <main>
       <div class="top">
@@ -24,11 +24,21 @@
       </div>
 
       <div class="metrics">
-        <div class="metric"><span>待目標追認</span><strong>0</strong></div>
+        <div class="metric"><span>今日已完成</span><strong>0</strong></div>
+        <div class="metric"><span>目前進行中</span><strong>0</strong></div>
         <div class="metric"><span>候選追蹤訊息</span><strong>0</strong></div>
         <div class="metric"><span>未確認任務</span><strong>0</strong></div>
-        <div class="metric"><span>靜態樣本資料</span><strong>停用</strong></div>
       </div>
+
+      <section id="today-completed">
+        <div class="head"><h2>今天已完成的任務</h2><span class="note">作為本時段回顧，不需要操作</span></div>
+        <div class="list" id="completedTaskList"></div>
+      </section>
+
+      <section id="active-tasks">
+        <div class="head"><h2>今天目前還在進行中的待辦任務</h2><span class="note">用來決定是否需要追問、改狀態或補下一步</span></div>
+        <div class="list" id="activeTaskList"></div>
+      </section>
 
       <section id="goals">
         <div class="head"><h2>本時段目標追認</h2><span class="note">新增項目先問目標，Codex 確認後才追蹤</span></div>
@@ -64,16 +74,6 @@
         <div class="list" id="taskList"></div>
       </section>
 
-      <section id="rules">
-        <div class="head"><h2>確認規則</h2><span class="note">避免把候選內容誤當正式承諾</span></div>
-        <div class="list">
-          <article class="card"><div class="card-body"><div class="task-name">待負責人口述</div><p class="reason">任務看起來成立，但還不知道怎樣叫完成。先發 LINE / Email 問目標，不更新完成百分比。</p></div></article>
-          <article class="card"><div class="card-body"><div class="task-name">Codex 待確認</div><p class="reason">已拿到口述原文，等待 Codex 判斷是否足以追蹤。下一時段再告訴負責人後續行動。</p></div></article>
-          <article class="card"><div class="card-body"><div class="task-name">已確認可追蹤</div><p class="reason">完成目標明確，才寫回總控任務庫並安排下一步與完成百分比。</p></div></article>
-          <article class="card"><div class="card-body"><div class="task-name">不成立 / 封存</div><p class="reason">用在你不要、不需要追蹤、不需要繼續發的任務。它會從待確認清單退場。</p></div></article>
-        </div>
-      </section>
-
       <div class="actions"><button class="btn" onclick="resetChoices()">重設</button><button class="btn primary js-confirm" onclick="confirmSend()">確認並寫回</button></div>
       <div class="result" id="summary"></div>
     </main>
@@ -81,12 +81,28 @@
   <script>
     const APPROVAL_API='/control/reports/approve';
     const pendingTasks=[];
+    const completedTasks=[];
+    const activeTasks=[];
     const params=new URLSearchParams(location.search);
     const hashParams=new URLSearchParams(location.hash.replace(/^#/,''));
     const slot=params.get('slot')||hashParams.get('slot')||'17';
     const slotLabels={10:'上午 10:00',13:'下午 1:00',17:'下午 5:00'};
     document.getElementById('briefTime').innerText=slotLabels[slot]||slotLabels[17];
+    renderReadOnlyTaskList('completedTaskList', completedTasks);
+    renderReadOnlyTaskList('activeTaskList', activeTasks);
     renderTasks();
+
+    function renderReadOnlyTaskList(elementId, items){
+      const list=document.getElementById(elementId);
+      list.innerHTML=items.length?items.map(item=>`
+        <article class="card">
+          <div class="card-body">
+            <div class="task-name">${escapeHtml(item.task)}</div>
+            <div class="meta"><span class="chip info">${escapeHtml(item.project)}</span>${item.owner?`<span class="chip gray">${escapeHtml(item.owner)}</span>`:''}</div>
+            <p class="reason">${escapeHtml(item.summary)}</p>
+          </div>
+        </article>`).join(''):'<article class="card"><div class="card-body"><p class="muted">目前沒有資料。</p></div></article>';
+    }
 
     function renderTasks(){
       const list=document.getElementById('taskList');

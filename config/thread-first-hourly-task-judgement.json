@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "thread-first-hourly-task-judgement",
+  "name": "Thread-first hourly task judgment",
+  "purpose": "Make hourly LINE judgment reconcile conversation event threads before creating or updating tasks.",
+  "localSchedule": {
+    "timezone": "project-local",
+    "windowStart": "08:00",
+    "windowEnd": "22:00",
+    "frequency": "hourly",
+    "inclusiveWindow": true
+  },
+  "coreQuestion": "Does this message update an existing event-level task, or does it create a genuinely new event that needs its own task?",
+  "requiredInputs": [
+    "new LINE messages since previous run",
+    "same-conversation message context",
+    "conversation master metadata",
+    "active total-control tasks",
+    "project-local topic calibration rules",
+    "project-local task status values"
+  ],
+  "decisionFlow": [
+    {
+      "step": 1,
+      "name": "Group by conversation",
+      "rule": "Judge messages inside their LINE group, room, or user conversation instead of as isolated messages."
+    },
+    {
+      "step": 2,
+      "name": "Load context",
+      "rule": "Read nearby earlier messages from the same conversation before judging the current message."
+    },
+    {
+      "step": 3,
+      "name": "Infer project",
+      "rule": "Use conversation master project assignment first. If it is blank, infer from conversation name, preview, and context before generic text rules."
+    },
+    {
+      "step": 4,
+      "name": "Suppress non-task records",
+      "rule": "Assistant commands, setup messages, acknowledgements, contact exchange, and background records must not create total-control tasks unless they contain a separate concrete action."
+    },
+    {
+      "step": 5,
+      "name": "Apply project calibration",
+      "rule": "When a known project topic pattern exists, use its contextual matching rules before generic keyword matching."
+    },
+    {
+      "step": 6,
+      "name": "Search active tasks",
+      "rule": "Search active total-control tasks before creating a new task. Exclude archived, completed, cancelled, and deprecated tasks."
+    },
+    {
+      "step": 7,
+      "name": "Update before create",
+      "rule": "If the message extends, answers, blocks, completes, changes, or clarifies an active task, update that task and record evidence."
+    },
+    {
+      "step": 8,
+      "name": "Create event task",
+      "rule": "Create a new task only when no active task can absorb the event and the event contains a real action, owner, delivery, decision, risk, or follow-up need."
+    },
+    {
+      "step": 9,
+      "name": "Merge same-run duplicates",
+      "rule": "If multiple messages in the same run produce the same candidate task, create it once and update it for later messages."
+    }
+  ],
+  "suppressionSignals": [
+    "assistant operation command",
+    "task list query",
+    "open task command",
+    "group setup message",
+    "contact exchange",
+    "standalone acknowledgement",
+    "duplicate file link without new action",
+    "pure knowledge sharing without action"
+  ],
+  "activeTaskExclusionSignals": [
+    "completed",
+    "archived",
+    "cancelled",
+    "deprecated"
+  ],
+  "projectCalibrationExamples": [
+    {
+      "pattern": "vendor-estimate-document-follow-up",
+      "description": "A vendor estimate thread may include contact exchange, document links, and later missing-document questions.",
+      "backgroundMessages": [
+        "request for Gmail",
+        "Gmail address reply",
+        "group setup message",
+        "name card upload"
+      ],
+      "progressUpdate": "Design drawings or file links sent to vendor update the existing estimate-delivery task.",
+      "newOrUpdatedTask": "Missing documents such as site location map, permits, or drawings become one consolidated follow-up task."
+    }
+  ],
+  "outputs": [
+    "update_existing_task",
+    "create_new_event_task",
+    "mark_judged_no_task",
+    "request_owner_confirmation"
+  ],
+  "evidenceRequired": [
+    "source message or conversation reference",
+    "message summary",
+    "reason for updating or creating task",
+    "detected status or next-step change",
+    "detection time"
+  ]
+}
+

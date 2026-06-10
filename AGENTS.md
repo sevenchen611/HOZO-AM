@@ -99,7 +99,7 @@ Render Cron uses UTC. Taipei time is UTC+8.
 | --- | --- | --- |
 | LINE task reconciliation | 08:10-22:10 hourly | `10 0-14 * * *` |
 | Meeting action sync | 08:00-22:00 hourly | `0 0-14 * * *` |
-| Morning brief | 08:00 | `0 0 * * *` |
+| Morning brief | 08:30 | `30 0 * * *` |
 | Follow-up morning | 10:00 | `0 2 * * *` |
 | Follow-up midday | 13:00 | `0 5 * * *` |
 | Follow-up afternoon | 17:00 | `0 9 * * *` |

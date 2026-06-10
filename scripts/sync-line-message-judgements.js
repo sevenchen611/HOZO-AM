@@ -10,6 +10,7 @@ const messagesDataSourceId = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
 const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
 const progressReportsDataSourceId = process.env.HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID || '';
 const conversationProjectCache = new Map();
+const inRunCreatedTasks = new Map();
 
 const args = parseArgs(process.argv.slice(2));
 const dryRun = Boolean(args['dry-run']);
@@ -27,10 +28,13 @@ if (!progressReportsDataSourceId) fail('HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID is 
 try {
   const startedAt = new Date();
   const messages = await listMessagesForJudgement();
+  const groupedMessages = groupMessagesByConversation(messages);
   const results = [];
 
-  for (const message of messages) {
-    results.push(await processMessage(message));
+  for (const group of groupedMessages) {
+    for (const message of group.messages) {
+      results.push(await processMessage(message, group.messages));
+    }
   }
 
   console.log(JSON.stringify({
@@ -41,10 +45,15 @@ try {
     reprocess,
     sinceHours,
     scannedMessages: messages.length,
+    conversationGroups: groupedMessages.length,
+    updatedExistingTasks: results.reduce((count, item) => count + item.updatedExistingTasks.filter((task) => task.action === 'updated-existing').length, 0),
+    createdNewEventTasks: results.reduce((count, item) => count + item.createdTasks.filter((task) => task.action === 'created').length, 0),
     createdTasks: results.reduce((count, item) => count + item.createdTasks.filter((task) => task.action === 'created').length, 0),
     createdProgressReports: results.reduce((count, item) => count + item.createdProgressReports.filter((report) => report.action === 'created').length, 0),
     importantMessages: results.filter((item) => item.importanceScore > 0).length,
     markedJudged: results.filter((item) => item.markedJudged).length,
+    judgedNoTask: results.filter((item) => item.markedJudged && !item.createdTasks.length && !item.updatedExistingTasks.length).length,
+    duplicateSkipped: results.reduce((count, item) => count + item.createdTasks.filter((task) => task.action === 'skipped-duplicate').length, 0),
     skipped: results.filter((item) => item.action === 'ignored' || item.action === 'skipped').length,
     startedAt: startedAt.toISOString(),
     finishedAt: new Date().toISOString(),
@@ -117,21 +126,38 @@ async function getConversationProject(pageId) {
   if (conversationProjectCache.has(pageId)) return conversationProjectCache.get(pageId);
 
   const page = await notionRequest(`/v1/pages/${pageId}`, { method: 'GET' });
-  const project = selectName(page.properties?.['總控專案']);
   const name = textProperty(page.properties?.['LINE 對話名稱']) || textProperty(page.properties?.['自定義名稱']);
+  const preview = textProperty(page.properties?.['最新訊息預覽']);
+  const project = selectName(page.properties?.['總控專案'])
+    || inferConversationProject(`${name}\n${preview}`);
   const value = { project, name };
   conversationProjectCache.set(pageId, value);
   return value;
 }
 
-async function processMessage(message) {
-  const analysis = analyzeMessage(message);
+function groupMessagesByConversation(messages) {
+  const groups = new Map();
+  for (const message of messages) {
+    const key = message.conversationId || message.conversationName || 'unknown-conversation';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(message);
+  }
+  return [...groups.entries()].map(([key, groupMessages]) => ({
+    key,
+    messages: groupMessages.sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0)),
+  }));
+}
+
+async function processMessage(message, runConversationMessages = []) {
+  const sameConversationContext = await loadSameConversationContext(message, runConversationMessages);
+  const analysis = analyzeMessage({ ...message, sameConversationContext });
   const result = {
     messageId: message.messageId,
     messagePageId: message.id,
     time: message.time,
     actor: message.actor,
     conversation: message.conversationName,
+    contextMessages: sameConversationContext.length,
     action: analysis.action,
     importanceScore: analysis.importanceScore,
     importanceReasons: analysis.importanceReasons,
@@ -141,31 +167,63 @@ async function processMessage(message) {
       category: candidate.category,
       priority: candidate.priority,
     })),
+    updatedExistingTasks: [],
     createdTasks: [],
     createdProgressReports: [],
     markedJudged: false,
   };
 
   for (const candidate of analysis.candidates) {
-    const existing = await findExistingTask(candidate.name);
-    if (existing) {
-      result.createdTasks.push({ action: 'skipped-duplicate', pageId: existing.id, url: existing.url, name: candidate.name });
+    const candidateKey = normalizeKey(candidate.name);
+    const relatedTask = inRunCreatedTasks.get(candidateKey)
+      || await findRelatedActiveTask(candidate, message, sameConversationContext);
+    if (relatedTask) {
+      if (dryRun) {
+        result.updatedExistingTasks.push({ action: 'dry-run-update', pageId: relatedTask.id, url: relatedTask.url, name: relatedTask.name, candidate: candidate.name });
+      } else {
+        await updateTaskWithEvidence(relatedTask, candidate, message, sameConversationContext);
+        result.updatedExistingTasks.push({ action: 'updated-existing', pageId: relatedTask.id, url: relatedTask.url, name: relatedTask.name, candidate: candidate.name });
+      }
     } else if (dryRun) {
       result.createdTasks.push({ action: 'dry-run', name: candidate.name, properties: candidate.taskProperties });
+      inRunCreatedTasks.set(candidateKey, {
+        id: `dry-run:${candidateKey}`,
+        url: '',
+        name: candidate.name,
+        project: candidate.project,
+        status: '待確認',
+        sourceText: candidate.sourceText || '',
+        judgementSummary: candidate.summary || '',
+        nextStep: candidate.nextStep || '',
+      });
     } else {
       const created = await createTask(candidate);
       result.createdTasks.push({ action: 'created', pageId: created.id, url: created.url, name: candidate.name });
+      inRunCreatedTasks.set(candidateKey, {
+        id: created.id,
+        url: created.url,
+        name: candidate.name,
+        project: candidate.project,
+        status: '待確認',
+        sourceText: candidate.sourceText || '',
+        judgementSummary: candidate.summary || '',
+        nextStep: candidate.nextStep || '',
+      });
     }
 
     if (candidate.progressProperties) {
-      const existingProgress = await findExistingProgressReport(candidate.progressName);
-      if (existingProgress) {
-        result.createdProgressReports.push({ action: 'skipped-duplicate', pageId: existingProgress.id, url: existingProgress.url, name: candidate.progressName });
-      } else if (dryRun) {
-        result.createdProgressReports.push({ action: 'dry-run', name: candidate.progressName, properties: candidate.progressProperties });
-      } else {
-        const createdProgress = await createProgressReport(candidate);
-        result.createdProgressReports.push({ action: 'created', pageId: createdProgress.id, url: createdProgress.url, name: candidate.progressName });
+      try {
+        const existingProgress = await findExistingProgressReport(candidate.progressName);
+        if (existingProgress) {
+          result.createdProgressReports.push({ action: 'skipped-duplicate', pageId: existingProgress.id, url: existingProgress.url, name: candidate.progressName });
+        } else if (dryRun) {
+          result.createdProgressReports.push({ action: 'dry-run', name: candidate.progressName, properties: candidate.progressProperties });
+        } else {
+          const createdProgress = await createProgressReport(candidate);
+          result.createdProgressReports.push({ action: 'created', pageId: createdProgress.id, url: createdProgress.url, name: candidate.progressName });
+        }
+      } catch (error) {
+        result.createdProgressReports.push({ action: 'skipped-error', name: candidate.progressName, reason: error.message });
       }
     }
   }
@@ -178,6 +236,46 @@ async function processMessage(message) {
   return result;
 }
 
+async function loadSameConversationContext(message, runConversationMessages = []) {
+  const runContext = runConversationMessages
+    .filter((item) => item.conversationId === message.conversationId || item.conversationName === message.conversationName)
+    .filter((item) => !item.time || !message.time || new Date(item.time) <= new Date(message.time));
+
+  if (!message.conversationId) {
+    return runContext.slice(-12);
+  }
+
+  const filters = [
+    { property: '對話主檔', relation: { contains: message.conversationId } },
+  ];
+  if (message.time) {
+    filters.push({ property: '排序時間', date: { on_or_before: message.time } });
+  }
+
+  try {
+    const result = await notionRequest(`/v1/data_sources/${messagesDataSourceId}/query`, {
+      method: 'POST',
+      body: {
+        page_size: 12,
+        filter: { and: filters },
+        sorts: [{ property: '排序時間', direction: 'descending' }],
+      },
+    });
+
+    return (result.results || [])
+      .map(normalizeMessagePage)
+      .map((item) => ({
+        ...item,
+        conversationProject: message.conversationProject,
+        conversationDisplayName: message.conversationDisplayName,
+      }))
+      .sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0));
+  } catch (error) {
+    console.warn(`Unable to load same conversation context for ${message.messageId}: ${error.message}`);
+    return runContext.slice(-12);
+  }
+}
+
 function analyzeMessage(message) {
   const text = String(message.text || '').trim();
   if (!text || !isTextMessageType(message.type)) {
@@ -186,6 +284,31 @@ function analyzeMessage(message) {
 
   if (isCommandTriggerMessage(text)) {
     return emptyAnalysis('command-trigger-message');
+  }
+
+  if (isOperationalInstructionMessage(text, message)) {
+    return emptyAnalysis('operational-instruction-message');
+  }
+
+  if (isPureKnowledgeExplanation(text)) {
+    return emptyAnalysis('pure-knowledge-message');
+  }
+
+  if (isConversationSetupMessage(text, message)) {
+    return emptyAnalysis('conversation-setup-message');
+  }
+
+  const contextualConcern = detectContextualConcern(text, message);
+  if (contextualConcern) {
+    return {
+      action: 'context-thread-reconciliation',
+      importanceScore: contextualConcern.importanceScore,
+      importanceReasons: contextualConcern.reasons,
+      candidates: [buildCandidate(contextualConcern, message, {
+        score: contextualConcern.importanceScore,
+        reasons: contextualConcern.reasons,
+      })],
+    };
   }
 
   const importance = scoreImportance(text, message);
@@ -213,7 +336,7 @@ function analyzeMessage(message) {
 
 function emptyAnalysis(reason) {
   return {
-    action: reason === 'low-signal-message' ? 'ignored' : 'skipped',
+    action: ['low-signal-message', 'pure-knowledge-message'].includes(reason) ? 'ignored' : 'skipped',
     importanceScore: 0,
     importanceReasons: [reason],
     candidates: [],
@@ -309,7 +432,7 @@ function detectConcern(text, message, importance) {
   const owner = inferOwner(text) || (category === 'delegation' || /你處理|你要|交給你|提醒你/.test(text) ? 'Seven 陳聖文' : message.actor || '');
   const dueDate = inferDueDate(text);
 
-  if (importance.score <= 0 && category === 'note') return null;
+  if (category === 'note') return null;
 
   return {
     category,
@@ -336,8 +459,10 @@ function dedupeConcerns(concerns) {
 }
 
 function buildCandidate(concern, message, importance) {
+  const project = normalizeHozoProject(concern.project);
   const syncId = buildSyncId(message.id, concern.sourceText);
-  const name = buildTaskName(concern, message);
+  const normalizedConcern = { ...concern, project };
+  const name = buildTaskName(normalizedConcern, message);
   const sourceText = [
     `LINE 訊息：${message.url}`,
     message.conversationName ? `對話：${message.conversationName}` : '',
@@ -354,28 +479,40 @@ function buildCandidate(concern, message, importance) {
     `建議處理：${concern.nextStep}`,
     `摘要：${concern.summary}`,
   ].join('\n');
+  const taskBody = buildInitialTaskBody({
+    name,
+    project,
+    status: '待確認',
+    owner: concern.owner,
+    nextStep: concern.nextStep,
+    sourceType: 'LINE',
+    sourceText,
+    judgementSummary,
+    confidence: project === '未分類' ? '中' : '高',
+    message,
+  });
 
   const taskProperties = compactProperties({
     任務名稱: titleProperty(name),
-    專案: selectProperty(concern.project),
+    專案: selectProperty(project),
     狀態: selectProperty('待確認'),
     確認狀態: selectProperty('未確認'),
     優先級: selectProperty(concern.priority),
     負責人: richTextProperty(concern.owner),
     截止日: concern.dueDate ? dateProperty(concern.dueDate) : undefined,
     來源: selectProperty('LINE'),
-    來源原文: richTextProperty(sourceText, 1900),
+    來源原文: richTextProperty(sourceOriginalCompatibilityText(message), 1900),
     'Codex 判斷摘要': richTextProperty(judgementSummary, 1900),
-    信心等級: selectProperty(concern.project === '未分類' ? '中' : '高'),
+    信心等級: selectProperty(project === '未分類' ? '中' : '高'),
     下一步: richTextProperty(concern.nextStep, 900),
     '關聯 Notion 頁面': urlProperty(message.url),
     最後更新: dateProperty(new Date()),
   });
 
-  const progressName = concern.createsProgress ? buildProgressName(concern, message) : '';
+  const progressName = concern.createsProgress ? buildProgressName(normalizedConcern, message) : '';
   const progressProperties = concern.createsProgress ? compactProperties({
     報表名稱: titleProperty(progressName),
-    專案: selectProperty(concern.project),
+    專案: selectProperty(project),
     報表週期: dateProperty(message.time ? new Date(message.time) : new Date()),
     目前狀態: selectProperty(concern.priority === '高' ? '需注意' : '更新'),
     負責人: richTextProperty(concern.owner),
@@ -388,12 +525,29 @@ function buildCandidate(concern, message, importance) {
 
   return {
     ...concern,
+    project,
     name,
     syncId,
     taskProperties,
+    taskBodyChildren: markdownToBlocks(taskBody),
     progressName,
     progressProperties,
   };
+}
+
+function normalizeHozoProject(project) {
+  const value = String(project || '').trim();
+  const aliases = new Map([
+    ['HOZO 後臺', '自動化'],
+    ['HOZO 後台', '自動化'],
+    ['SmartFront / AI Brain', '自動化'],
+    ['包租代管', '住客服務與體驗管理'],
+    ['茲心園工程', '未分類'],
+    ['財務', '財務與帳務管理'],
+    ['營運', '營運和資料交接'],
+    ['私人事務', '未分類'],
+  ]);
+  return aliases.get(value) || value || '未分類';
 }
 
 function normalizeMessagePage(page) {
@@ -434,7 +588,6 @@ function inferProject(text, message, category) {
   if (message.conversationProject) return message.conversationProject;
 
   const rules = [
-    ['茲心園工程', /茲心園|改建|營造|工程|工地/],
     ['HOZO 後臺', /HOZO\s*後|HOZO後|後臺|後台|登入頁|CRM/],
     ['包租代管', /包租代管|包租|代管|房客|租客|租屋|出租|招租|好住寓好|HOZO|發黴|浴室|燈光/],
     ['SmartFront / AI Brain', /SmartFront|AI Brain|AI腦|智能前台/],
@@ -457,6 +610,25 @@ function inferProject(text, message, category) {
   if (['insurance', 'finance'].includes(category)) return '財務';
   if (['meeting', 'progress'].includes(category)) return '營運';
   return '未分類';
+}
+
+function inferConversationProject(value) {
+  const text = String(value || '');
+  const rules = [
+    ['自動化', /系統|自動化|Notion|LINE|Codex|Render|Webhook|API|報告|HOZO\s*後|HOZO後|後臺|後台|CRM|SmartFront|AI Brain|智能前台/],
+    ['住客服務與體驗管理', /住客|房客|租客|客訴|客服|體驗|入住|退房|包租|代管|好住寓好|發黴|漏水|浴室|燈光/],
+    ['工程建置管理', /工務|場域|採購|組裝|家具|設備|資產|裝修|工程|點交|硬體|維修|修繕/],
+    ['品牌官網', /品牌|官網|網站|內容|文案|SEO|照片|視覺|社群/],
+    ['房務管理', /房務|清潔|管家|打掃|床包|備品/],
+    ['公司治理', /法規|合規|公司治理|公司設立|設立|合約|股東|登記/],
+    ['財務與帳務管理', /財務|帳務|付款|匯款|發票|報稅|稅|銀行|保險|火險|保單|房貸/],
+    ['營運和資料交接', /營運|月會|例會|流程|SOP|會議|資料交接|進度/],
+  ];
+
+  for (const [project, pattern] of rules) {
+    if (pattern.test(text)) return project;
+  }
+  return '';
 }
 
 function inferPriority(text, category, score) {
@@ -522,6 +694,68 @@ function isLowSignal(text) {
   return lowSignalTerms.some((term) => compact === term.replace(/\s+/g, ''));
 }
 
+function isPureKnowledgeExplanation(text) {
+  const value = String(text || '').trim();
+  if (value.length < 60) return false;
+  if (!/(研究|指出|機制|原理|受體|血清素|諾麗果|萃取物|濃度|功效|如何改善)/.test(value)) return false;
+  return !/(請|麻煩|幫我|需要|確認|追蹤|安排|回覆|聯絡|處理|提醒|決定|要不要|是否)/.test(value);
+}
+
+function isOperationalInstructionMessage(text, message = {}) {
+  const value = String(text || '').replace(/\s+/g, '');
+  const context = `${message.actor || ''}\n${message.conversationDisplayName || ''}\n${message.conversationName || ''}`;
+  const addressedToAssistant = /HOZO(Junior|Jr|助理)|Seven(Junior|Jr)|AM|Codex/i.test(`${text}\n${context}`);
+  if (!addressedToAssistant && !/(查待辦|列出.*待辦|打開第?\d+個任務|任務校準|看一下.*任務)/.test(value)) return false;
+  return /(查待辦|列出.*待辦|打開第?\d+個任務|看一下.*任務|任務校準|同步|重新整理|開啟|打開)/.test(value)
+    && !/(付款|匯款|修繕|回覆客人|聯絡房客|安排清潔|採購|合約|報稅|發票)/.test(value);
+}
+
+function isConversationSetupMessage(text, message = {}) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!value) return false;
+  if (/^(ok|OK|好|收到|了解|謝謝|感謝|辛苦了)[。！!]*$/.test(value)) return true;
+  if (/謝謝加入群組|在這個群組裡面進行|就在這個群組裡面討論|群組裡面討論/.test(value)) {
+    return !/(請|麻煩|需要|確認|提供|補|回覆|安排|處理).*(資料|文件|時間|期限|回報|修繕|清潔|發票|合約)/.test(value);
+  }
+  if (/^[^\s@]+@[^@\s]+\.[^@\s]+$/.test(value)) return true;
+  if (/^(名片|聯絡方式|電話|手機|Email|Gmail|信箱)[:：\s]/i.test(value) && value.length < 80) return true;
+  return false;
+}
+
+function detectContextualConcern(text, message) {
+  const value = String(text || '').trim();
+  const contextText = [
+    message.conversationDisplayName,
+    message.conversationName,
+    ...(message.sameConversationContext || []).map((item) => item.text || ''),
+    value,
+  ].join('\n');
+  const category = inferCategory(value);
+  const project = normalizeHozoProject(inferProject(value, message, category));
+
+  if (isHozoServiceOrRepairThread(contextText) && /(已處理|已完成|處理完|修好了|已修|已安排|已回覆|已通知|已聯絡)/.test(value)) {
+    return {
+      category: 'done',
+      project,
+      priority: '中',
+      summary: summarizeText(value),
+      owner: inferOwner(value) || message.actor || '',
+      dueDate: null,
+      sourceText: value,
+      nextStep: '將此訊息作為既有住客/修繕/服務任務的狀態更新證據，確認是否可改為完成或待確認完成。',
+      createsProgress: project !== '未分類',
+      reasons: ['hozo-service-thread', 'status-update-evidence'],
+      importanceScore: 7,
+    };
+  }
+
+  return null;
+}
+
+function isHozoServiceOrRepairThread(value) {
+  return /住客|房客|租客|客訴|客服|入住|退房|修繕|維修|漏水|發黴|燈光|浴室|清潔|房務|管家/.test(String(value || ''));
+}
+
 function isTextMessageType(value) {
   return ['text', '文字', '文字訊息'].includes(String(value || '').trim().toLowerCase())
     || ['文字', '文字訊息'].includes(String(value || '').trim());
@@ -542,6 +776,7 @@ function inferBlockerText(text) {
 }
 
 function buildTaskName(concern, message) {
+  if (concern.nameOverride) return concern.nameOverride;
   const subject = shortSubject(concern.summary);
   if (concern.category === 'health') return `${concern.project}：關心與追蹤健康狀況 - ${subject}`;
   if (concern.category === 'insurance') return `${concern.project}：確認保險/火險續保處理 - ${subject}`;
@@ -635,12 +870,454 @@ async function findExistingTask(taskName) {
   return result.results?.[0] || null;
 }
 
+async function findRelatedActiveTask(candidate, message, sameConversationContext) {
+  const exact = await findExistingTask(candidate.name);
+  if (exact) {
+    const normalizedExact = normalizeTaskPage(exact);
+    if (isActiveTask(normalizedExact)) return normalizedExact;
+  }
+
+  const possibleTasks = await queryRelatedActiveTasks(candidate, message);
+  const scored = possibleTasks
+    .filter(isActiveTask)
+    .map((task) => ({
+      task,
+      score: scoreTaskMatch(task, candidate, message, sameConversationContext),
+    }))
+    .filter((item) => item.score >= 28)
+    .sort((a, b) => b.score - a.score);
+
+  return scored[0]?.task || null;
+}
+
+async function queryRelatedActiveTasks(candidate, message) {
+  const filters = [];
+  if (candidate.project && candidate.project !== '未分類') {
+    filters.push({ property: '專案', select: { equals: candidate.project } });
+  }
+
+  for (const keyword of topKeywords(`${candidate.summary} ${candidate.name}`).slice(0, 5)) {
+    filters.push({ property: '任務名稱', title: { contains: keyword } });
+  }
+
+  const conversationLabel = cleanHumanLabel(message.conversationDisplayName || message.conversationName);
+  if (conversationLabel) {
+    filters.push({ property: '來源原文', rich_text: { contains: conversationLabel.slice(0, 60) } });
+  }
+
+  const pages = [];
+  for (const filter of filters.slice(0, 8)) {
+    try {
+      const result = await notionRequest(`/v1/data_sources/${tasksDataSourceId}/query`, {
+        method: 'POST',
+        body: {
+          page_size: 10,
+          filter,
+          sorts: [{ property: '最後更新', direction: 'descending' }],
+        },
+      });
+      pages.push(...(result.results || []));
+    } catch (error) {
+      console.warn(`Unable to search active task with one filter: ${error.message}`);
+    }
+  }
+
+  return uniqueById(pages).map(normalizeTaskPage);
+}
+
+function normalizeTaskPage(page) {
+  const properties = page.properties || {};
+  return {
+    id: page.id,
+    url: page.url,
+    name: textProperty(properties['任務名稱']),
+    project: selectName(properties['專案']),
+    status: selectName(properties['狀態']),
+    sourceText: textProperty(properties['來源原文']),
+    judgementSummary: textProperty(properties['Codex 判斷摘要']),
+    nextStep: textProperty(properties['下一步']),
+    updatedAt: dateValue(properties['最後更新']),
+  };
+}
+
+function isActiveTask(task) {
+  return !/(完成|已完成|封存|已封存|取消|Deprecated|deprecated)/.test(String(task.status || ''));
+}
+
+function scoreContextualTaskMatch(task, candidate, message, contextText) {
+  const taskText = `${task.name}\n${task.sourceText}\n${task.judgementSummary}\n${task.nextStep}`.toLowerCase();
+  const candidateText = `${candidate.name}\n${candidate.summary}\n${candidate.sourceText}`.toLowerCase();
+  const conversationText = `${message.conversationDisplayName || ''}\n${message.conversationName || ''}\n${contextText || ''}`.toLowerCase();
+
+  if (normalizeKey(task.name) === normalizeKey(candidate.name)) return 100;
+
+  if (isHozoServiceOrRepairThread(`${candidateText}\n${conversationText}`)) {
+    if (candidate.category === 'done' && /(完成|已處理|處理完|修好|已修|已回覆|已聯絡)/.test(candidate.sourceText)) {
+      if (isHozoServiceOrRepairThread(taskText)) return 78;
+    }
+    if (candidate.project && task.project && candidate.project === task.project && isHozoServiceOrRepairThread(taskText)) {
+      return 42;
+    }
+  }
+
+  return 0;
+}
+
+function scoreTaskMatch(task, candidate, message, sameConversationContext) {
+  if (normalizeKey(task.name) === normalizeKey(candidate.name)) return 100;
+
+  let score = 0;
+  if (task.project && candidate.project && task.project === candidate.project) score += 12;
+
+  const taskText = `${task.name}\n${task.sourceText}\n${task.judgementSummary}`.toLowerCase();
+  const candidateText = `${candidate.name}\n${candidate.summary}\n${candidate.sourceText}`.toLowerCase();
+  const contextText = sameConversationContext.map((item) => item.text || '').join('\n').toLowerCase();
+  const conversationLabel = cleanHumanLabel(message.conversationDisplayName || message.conversationName).toLowerCase();
+
+  const contextualScore = scoreContextualTaskMatch(task, candidate, message, contextText);
+  if (contextualScore) return contextualScore;
+
+  const candidateKeywords = topKeywords(candidateText).slice(0, 8);
+  const overlap = candidateKeywords.filter((keyword) => taskText.includes(keyword.toLowerCase())).length;
+  if (overlap < 2) return 0;
+
+  if (conversationLabel && taskText.includes(conversationLabel)) score += 10;
+  if (message.actor && taskText.includes(String(message.actor).toLowerCase())) score += 3;
+  if (candidate.category && taskText.includes(categoryLabel(candidate.category).toLowerCase())) score += 4;
+
+  score += overlap * 6;
+
+  const contextOverlap = candidateKeywords.filter((keyword) => contextText.includes(keyword.toLowerCase())).length;
+  score += Math.min(contextOverlap * 2, 8);
+
+  if (candidate.category === 'done' && /(完成|已處理|處理完)/.test(candidate.sourceText)) score += 10;
+  if (candidate.category === 'meeting' && /月會|會議|例會/.test(taskText)) score += 8;
+  if (candidate.category === 'health' && /健康|頭痛|血清素|諾麗果|媽媽|媽/.test(taskText)) score += 8;
+
+  return score;
+}
+
+async function updateTaskWithEvidence(task, candidate, message, sameConversationContext) {
+  if (message.url && task.sourceText.includes(message.url)) {
+    return;
+  }
+
+  const evidence = buildTaskUpdateEvidence(candidate, message, sameConversationContext);
+  const judgement = [
+    task.judgementSummary,
+    '',
+    `任務更新判斷：新 LINE 訊息被判定為既有任務的延伸，不另建新任務。`,
+    `更新原因：${candidate.reasons.join('、') || '同對話前後文與活躍任務比對'}`,
+  ].filter(Boolean).join('\n');
+  const record = buildUpdateEvidenceRecord({
+    task,
+    candidate,
+    message,
+    evidence,
+    judgement,
+    statusUpdate: '',
+  });
+
+  await notionRequest(`/v1/pages/${task.id}`, {
+    method: 'PATCH',
+    body: {
+      properties: compactProperties({
+        來源原文: richTextProperty(sourceOriginalCompatibilityText(message), 1900),
+        'Codex 判斷摘要': richTextProperty(appendEvidence('', judgement), 1900),
+        下一步: richTextProperty(candidate.nextStep, 900),
+        最後更新: dateProperty(new Date()),
+      }),
+    },
+  });
+  await appendTaskEvidenceRecord(task.id, record);
+}
+
+function buildTaskUpdateEvidence(candidate, message, sameConversationContext) {
+  const nearby = sameConversationContext
+    .filter((item) => item.id !== message.id)
+    .slice(-4)
+    .map((item) => `${item.actor || 'unknown'}：${summarizeText(item.text || '').slice(0, 120)}`)
+    .join('\n');
+
+  return [
+    `LINE 任務更新證據：${new Date().toISOString()}`,
+    message.url ? `訊息：${message.url}` : '',
+    message.conversationName ? `對話：${message.conversationName}` : '',
+    message.actor ? `發話者：${message.actor}` : '',
+    `判斷：更新既有任務，不建立新任務。`,
+    `新訊息摘要：${candidate.summary}`,
+    nearby ? `同對話前後文：\n${nearby}` : '',
+  ].filter(Boolean).join('\n');
+}
+
+function appendEvidence(existing, addition, maxLength = 1900) {
+  const merged = [existing, addition].filter(Boolean).join('\n\n');
+  if (merged.length <= maxLength) return merged;
+  return `${merged.slice(0, 450)}\n...\n${merged.slice(-(maxLength - 460))}`;
+}
+
+function buildInitialTaskBody({ name, project, status, owner, nextStep, sourceType, sourceText, judgementSummary, confidence, message }) {
+  return [
+    '# 任務控制紀錄',
+    '',
+    '## 目前任務摘要',
+    `- 任務：${name}`,
+    `- 專案目標：${project || '未分類'}`,
+    `- 目前狀態：${status || '待確認'}`,
+    `- 負責人：${owner || '未設定'}`,
+    `- 下一步：${nextStep || '未設定'}`,
+    '- 需要確認：未確認',
+    '',
+    '## 最新判斷',
+    `- 判斷時間：${formatTaipeiDateTime(new Date())}`,
+    `- 判斷來源：${sourceType}`,
+    `- 判斷結果：${judgementSummary}`,
+    '- 判斷理由：hourly LINE reconciliation 判定此訊息需要建立新的 event-level 總控任務。',
+    `- 信心程度：${confidence || '中'}`,
+    '- 是否需要人工確認：是，請依任務確認狀態補齊。',
+    '',
+    '## 證據與處理紀錄',
+    '',
+    '### 紀錄 1',
+    `- 擷取時間：${formatTaipeiDateTime(new Date())}`,
+    `- 來源類型：${sourceType}`,
+    `- 來源位置：${sourceLocationMarkdown(message)}`,
+    `- 來源時間：${message.time ? formatTaipeiDateTime(new Date(message.time)) : '未設定'}`,
+    `- 來源對象：${message.actor || '未設定'}`,
+    '',
+    '#### 來源原文',
+    '',
+    sourceText || '未取得來源原文。',
+    '',
+    '#### 證據摘要',
+    '',
+    'hourly reconciliation 從 LINE 訊息與同對話脈絡擷取出此任務來源證據。',
+    '',
+    '#### AM 判斷',
+    '',
+    judgementSummary || '未提供判斷摘要。',
+    '',
+    '#### 處理結果',
+    '',
+    '建立新的總控任務，並將來源原文寫入本筆證據與處理紀錄。',
+    '',
+    '#### 狀態變更',
+    '',
+    `無 → ${status || '待確認'}`,
+    '',
+    '#### 下一步',
+    '',
+    nextStep || '未設定',
+    '',
+    '#### 關聯規則',
+    '',
+    'AM-IMP-2026.0610.03：hourly reconciliation 建立任務時，必須使用任務控制紀錄格式，並把來源原文放在同一筆證據與處理紀錄內。',
+  ].join('\n');
+}
+
+function buildUpdateEvidenceRecord({ task, candidate, message, evidence, judgement, statusUpdate }) {
+  return [
+    `### 紀錄 ${formatTaipeiDateTime(new Date())}`,
+    `- 擷取時間：${formatTaipeiDateTime(new Date())}`,
+    '- 來源類型：LINE',
+    `- 來源位置：${sourceLocationMarkdown(message)}`,
+    `- 來源時間：${message.time ? formatTaipeiDateTime(new Date(message.time)) : '未設定'}`,
+    `- 來源對象：${message.actor || '未設定'}`,
+    '',
+    '#### 來源原文',
+    '',
+    evidence || candidate.sourceText || '未取得來源原文。',
+    '',
+    '#### 證據摘要',
+    '',
+    candidate.summary || '新 LINE 訊息被判定為既有任務的延伸。',
+    '',
+    '#### AM 判斷',
+    '',
+    judgement || '更新既有任務，不建立新任務。',
+    '',
+    '#### 處理結果',
+    '',
+    '已將本次 LINE reconciliation 判斷追加到既有任務內文的證據與處理紀錄。',
+    '',
+    '#### 狀態變更',
+    '',
+    statusUpdate ? `${task.status || '未設定'} → ${statusUpdate}` : `維持既有狀態：${task.status || '未設定'}`,
+    '',
+    '#### 下一步',
+    '',
+    candidate.nextStep || task.nextStep || '未設定',
+    '',
+    '#### 關聯規則',
+    '',
+    'AM-IMP-2026.0610.03：hourly reconciliation 更新既有任務時，必須追加一筆證據與處理紀錄，不得只把原文塞回獨立來源原文欄位。',
+  ].join('\n');
+}
+
+async function appendTaskEvidenceRecord(pageId, markdown) {
+  const blocks = markdownToBlocks(markdown);
+  for (const group of chunk(blocks, 80)) {
+    await notionRequest(`/v1/blocks/${pageId}/children`, {
+      method: 'PATCH',
+      body: { children: group },
+    });
+  }
+}
+
+function sourceLocationMarkdown(message) {
+  if (message.conversationId) {
+    const label = `${message.conversationName || 'LINE 對話'} / LINE 對話主檔`;
+    return `[${label}](${notionPageUrl(message.conversationId)})`;
+  }
+  if (message.url) return `[LINE 訊息](${message.url})`;
+  return 'LINE / 未設定來源頁面';
+}
+
+function sourceOriginalCompatibilityText(message) {
+  return [
+    '完整來源原文已依 AM-IMP-2026.0610.03 寫入內文各筆「證據與處理紀錄」中的「來源原文」區塊；此欄位僅保留為相容提示。',
+    message?.url ? `最新來源訊息：${message.url}` : '',
+    message?.conversationId ? `來源位置：${notionPageUrl(message.conversationId)}` : '',
+  ].filter(Boolean).join('\n');
+}
+
+function markdownToBlocks(markdown) {
+  const blocks = [];
+  const lines = String(markdown || '').split(/\r?\n/);
+  let paragraph = [];
+
+  function flushParagraph() {
+    const text = paragraph.join('\n').trim();
+    paragraph = [];
+    if (!text) return;
+    for (const part of splitText(text, 1800)) blocks.push(paragraphBlock(part));
+  }
+
+  for (const line of lines) {
+    if (line.startsWith('# ')) {
+      flushParagraph();
+      blocks.push(headingBlock('heading_1', line.slice(2)));
+    } else if (line.startsWith('## ')) {
+      flushParagraph();
+      blocks.push(headingBlock('heading_2', line.slice(3)));
+    } else if (line.startsWith('### ')) {
+      flushParagraph();
+      blocks.push(headingBlock('heading_3', line.slice(4)));
+    } else if (line.startsWith('#### ')) {
+      flushParagraph();
+      blocks.push(paragraphBlock(line.slice(5), { bold: true }));
+    } else if (line.startsWith('- ')) {
+      flushParagraph();
+      blocks.push({
+        object: 'block',
+        type: 'bulleted_list_item',
+        bulleted_list_item: { rich_text: richTextArray(line.slice(2)) },
+      });
+    } else if (!line.trim()) {
+      flushParagraph();
+    } else {
+      paragraph.push(line);
+    }
+  }
+  flushParagraph();
+  return blocks;
+}
+
+function headingBlock(type, text) {
+  return { object: 'block', type, [type]: { rich_text: richTextArray(text) } };
+}
+
+function paragraphBlock(text, annotations = {}) {
+  return { object: 'block', type: 'paragraph', paragraph: { rich_text: richTextArray(text, annotations) } };
+}
+
+function richTextArray(text, annotations = {}) {
+  const output = [];
+  const pattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+  let last = 0;
+  let match;
+  while ((match = pattern.exec(text))) {
+    if (match.index > last) output.push(textRich(text.slice(last, match.index), annotations));
+    output.push(textRich(match[1], annotations, match[2]));
+    last = pattern.lastIndex;
+  }
+  if (last < text.length) output.push(textRich(text.slice(last), annotations));
+  return output.length ? output : [textRich('', annotations)];
+}
+
+function textRich(content, annotations = {}, url) {
+  return {
+    type: 'text',
+    text: { content: String(content || '').slice(0, 2000), ...(url ? { link: { url } } : {}) },
+    annotations,
+  };
+}
+
+function splitText(text, size) {
+  const value = String(text || '');
+  const parts = [];
+  for (let index = 0; index < value.length; index += size) parts.push(value.slice(index, index + size));
+  return parts.length ? parts : [''];
+}
+
+function chunk(items, size) {
+  const groups = [];
+  for (let index = 0; index < items.length; index += size) groups.push(items.slice(index, index + size));
+  return groups;
+}
+
+function notionPageUrl(pageId) {
+  return `https://app.notion.com/p/${String(pageId || '').replace(/-/g, '')}`;
+}
+
+function formatTaipeiDateTime(date) {
+  return new Intl.DateTimeFormat('zh-TW', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date).replace(/\//g, '/');
+}
+
+function topKeywords(value) {
+  const source = String(value || '');
+  const words = source
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .map((item) => item.trim())
+    .filter((item) => item.length >= 2);
+  const grams = [];
+  for (const chunk of source.match(/[\p{Script=Han}]{3,}/gu) || []) {
+    for (let index = 0; index < chunk.length - 1 && grams.length < 80; index += 1) {
+      grams.push(chunk.slice(index, index + 2));
+      if (index < chunk.length - 2) grams.push(chunk.slice(index, index + 3));
+    }
+  }
+
+  return [...new Set([...words, ...grams])]
+    .filter((item) => item.length >= 2)
+    .filter((item) => !/^(LINE|Notion|http|https|www|com|tw|任務|確認|處理|追蹤|需要|是否|這個|那個|我們|你們|他們|Seven|Bonnie|營運|人資|財務|私人事務)$/i.test(item));
+}
+
+function uniqueById(pages) {
+  const seen = new Set();
+  return pages.filter((page) => {
+    if (!page?.id || seen.has(page.id)) return false;
+    seen.add(page.id);
+    return true;
+  });
+}
+
 async function createTask(candidate) {
   return notionRequest('/v1/pages', {
     method: 'POST',
     body: {
       parent: { type: 'data_source_id', data_source_id: tasksDataSourceId },
       properties: candidate.taskProperties,
+      children: candidate.taskBodyChildren || [],
     },
   });
 }
@@ -664,15 +1341,23 @@ async function createProgressReport(candidate) {
 }
 
 async function markMessageJudged(message, relatedUrl) {
-  await notionRequest(`/v1/pages/${message.id}`, {
-    method: 'PATCH',
-    body: {
-      properties: compactProperties({
-        已進入判斷層: checkboxProperty(true),
-        關聯總控事件: relatedUrl ? urlProperty(relatedUrl) : undefined,
-      }),
-    },
+  const properties = compactProperties({
+    已進入判斷層: checkboxProperty(true),
+    關聯總控事件: relatedUrl ? urlProperty(relatedUrl) : undefined,
   });
+
+  try {
+    await notionRequest(`/v1/pages/${message.id}`, {
+      method: 'PATCH',
+      body: { properties },
+    });
+  } catch (error) {
+    if (!String(error.message || '').includes('關聯總控事件 is not a property')) throw error;
+    await notionRequest(`/v1/pages/${message.id}`, {
+      method: 'PATCH',
+      body: { properties: { 已進入判斷層: checkboxProperty(true) } },
+    });
+  }
 }
 
 function firstCreatedUrl(result) {

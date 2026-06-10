@@ -4,7 +4,7 @@ Daily scheduled reports that would normally be sent to Maggie must also be sent 
 
 This applies to all five scheduled report slots:
 
-- 08:00 morning brief
+- 08:30 morning brief
 - 10:00 morning follow-up
 - 13:00 midday follow-up
 - 17:00 afternoon follow-up

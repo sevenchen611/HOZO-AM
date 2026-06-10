@@ -3,3 +3,8 @@ node_modules/
 env.txt
 *.local
 line-keys/
+docs/user-ui-connected-preview.html
+docs/user-ui-line-*.html
+docs/user-ui-project-*.html
+docs/user-ui-task-*.html
+docs/user-ui-media/

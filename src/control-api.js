@@ -11,6 +11,7 @@ const RISK_DECISIONS_DATA_SOURCE_ID = process.env.HOZO_RISK_DECISIONS_DATA_SOURC
 const ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID = process.env.HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID || '';
 const CODEX_COMMANDS_DATA_SOURCE_ID = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
 const DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID = process.env.HOZO_DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID || '';
+const JUDGMENT_RULES_DATA_SOURCE_ID = process.env.HOZO_JUDGMENT_RULES_DATA_SOURCE_ID || '';
 const CONVERSATIONS_DATA_SOURCE_ID = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID || '';
 const MESSAGES_DATA_SOURCE_ID = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
 const RESPONSIBILITY_DATA_SOURCE_ID = process.env.HOZO_RESPONSIBILITY_DATA_SOURCE_ID || '';
@@ -67,8 +68,10 @@ async function handleControlRequest(req, res, pathname) {
       defaultReportTargetAutoResolveEnabled: Boolean(process.env.NOTION_TOKEN && process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID),
       codexCommandQueueConfigured: Boolean(CODEX_COMMANDS_DATA_SOURCE_ID),
       dailyReportSnapshotsConfigured: Boolean(DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID),
+      judgmentRulesConfigured: Boolean(JUDGMENT_RULES_DATA_SOURCE_ID),
+      userUiLoginEnabled: Boolean(process.env.HOZO_USER_UI_USERNAME && process.env.HOZO_USER_UI_PASSWORD),
       reportTypes: ['morning', 'daily', 'followup-morning', 'followup-midday', 'followup-afternoon'],
-      endpoints: ['POST /control/line/push', 'POST /control/reports/send', 'POST /control/reports/preview', 'POST /control/reports/approve', 'POST /control/codex-commands/test'],
+      endpoints: ['POST /control/line/push', 'POST /control/reports/send', 'POST /control/reports/preview', 'POST /control/reports/approve', 'POST /control/codex-commands/test', 'POST /control/tasks/update', 'POST /control/judgment-rules/create'],
     });
   }
 
@@ -83,7 +86,7 @@ async function handleControlRequest(req, res, pathname) {
       return sendJson(res, 200, result);
     }
 
-    if (!isAuthorized(req)) {
+    if (!isAuthorized(req) && !isUserUiAuthorized(req)) {
       return sendJson(res, 401, { error: 'Unauthorized' });
     }
 
@@ -106,6 +109,16 @@ async function handleControlRequest(req, res, pathname) {
 
     if (pathname === '/control/codex-commands/test') {
       const result = await createCodexCommandTest(body);
+      return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/control/tasks/update') {
+      const result = await updateTaskFromUserUi(req, body);
+      return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/control/judgment-rules/create') {
+      const result = await createJudgmentRuleFromUserUi(req, body);
       return sendJson(res, 200, result);
     }
 
@@ -185,6 +198,225 @@ async function createCodexCommandTest(body) {
   };
 }
 
+async function createJudgmentRuleFromUserUi(req, body) {
+  if (!process.env.NOTION_TOKEN) {
+    throw new Error('NOTION_TOKEN is not set.');
+  }
+  if (!JUDGMENT_RULES_DATA_SOURCE_ID) {
+    throw new Error('HOZO_JUDGMENT_RULES_DATA_SOURCE_ID is not set.');
+  }
+
+  const name = stringOrEmpty(body.name || body.ruleName);
+  const preferred = stringOrEmpty(body.preferred || body.preferredJudgment);
+  if (!name) {
+    throw new Error('規則名稱不可空白。');
+  }
+  if (!preferred) {
+    throw new Error('應該怎麼判斷不可空白。');
+  }
+
+  const now = new Date();
+  const editedBy = resolveUserUiEditor(req, body);
+  const appliesTo = normalizeMultiSelect(body.appliesTo || 'HOZO_AM');
+  const category = stringOrEmpty(body.category || 'Task extraction') || 'Task extraction';
+  const status = stringOrEmpty(body.status || 'Needs review') || 'Needs review';
+  const triggerPattern = stringOrEmpty(body.triggerPattern);
+  const avoided = stringOrEmpty(body.avoided || body.avoidedJudgment);
+  const reason = stringOrEmpty(body.reason);
+  const exceptions = stringOrEmpty(body.exceptions);
+  const checklistPlacement = stringOrEmpty(body.checklistPlacement || 'Manual task judgment rules');
+  const sourceNote = `User UI 手動新增｜${formatTaipeiDateTime(now)}｜${editedBy}`;
+
+  const page = await notionRequest('/v1/pages', {
+    method: 'POST',
+    body: {
+      parent: { type: 'data_source_id', data_source_id: JUDGMENT_RULES_DATA_SOURCE_ID },
+      properties: compactProperties({
+        'Rule Name': titleProperty(name),
+        Status: selectProperty(status),
+        'Applies To': multiSelectProperty(appliesTo),
+        'Preferred Judgment': richTextProperty(preferred),
+        'Avoided Judgment': avoided ? richTextProperty(avoided) : undefined,
+        Reason: reason ? richTextProperty(reason) : undefined,
+        'Trigger Pattern': triggerPattern ? richTextProperty(triggerPattern) : undefined,
+        Exceptions: exceptions ? richTextProperty(exceptions) : undefined,
+        'Checklist Placement': checklistPlacement ? selectProperty(checklistPlacement) : undefined,
+        'Last Verified': dateProperty(now),
+        'Source Case Count': numberProperty(0),
+      }),
+      children: [
+        paragraphProperty(`【手動加入任務判斷規則】${sourceNote}`),
+        paragraphProperty(`規則：${name}`),
+        paragraphProperty(`類別：${category}`),
+        paragraphProperty(`應該怎麼判斷：${preferred}`),
+        avoided ? paragraphProperty(`避免：${avoided}`) : undefined,
+        reason ? paragraphProperty(`原因：${reason}`) : undefined,
+        triggerPattern ? paragraphProperty(`觸發條件：${triggerPattern}`) : undefined,
+        exceptions ? paragraphProperty(`例外：${exceptions}`) : undefined,
+      ].filter(Boolean),
+    },
+  });
+
+  return {
+    ok: true,
+    pageId: page.id,
+    url: page.url,
+    name,
+    status,
+    appliesTo,
+    createdBy: editedBy,
+    createdAt: now.toISOString(),
+  };
+}
+
+async function updateTaskFromUserUi(req, body) {
+  if (!process.env.NOTION_TOKEN) {
+    throw new Error('NOTION_TOKEN is not set.');
+  }
+
+  const pageId = normalizeId(body.pageId || body.taskPageId || body.id);
+  if (!pageId) {
+    throw new Error('Task page id is required.');
+  }
+
+  const page = await assertTaskPage(pageId);
+  const submittedAt = new Date();
+  const updates = body.updates && typeof body.updates === 'object' ? body.updates : body;
+  const editedBy = stringOrEmpty(updates.editedBy || updates.editor || updates.userName) || 'User UI 使用者';
+  const properties = compactProperties({
+    狀態: taskPropertyUpdate(page, '狀態', normalizeOptionalTaskStatus(updates.status)),
+    確認狀態: taskPropertyUpdate(page, '確認狀態', stringOrEmpty(updates.confirmation)),
+    負責人: taskPropertyUpdate(page, '負責人', stringOrEmpty(updates.owner)),
+    下一步: taskPropertyUpdate(page, '下一步', stringOrEmpty(updates.next)),
+    優先級: taskPropertyUpdate(page, '優先級', stringOrEmpty(updates.priority)),
+    優先順序: taskPropertyUpdate(page, '優先順序', stringOrEmpty(updates.priority)),
+    截止日: taskPropertyUpdate(page, '截止日', stringOrEmpty(updates.dueDate)),
+    期限依據: taskPropertyUpdate(page, '期限依據', stringOrEmpty(updates.deadlineBasis)),
+    下次追蹤日: taskPropertyUpdate(page, '下次追蹤日', stringOrEmpty(updates.nextFollowupDate)),
+    逾期狀態: taskPropertyUpdate(page, '逾期狀態', stringOrEmpty(updates.overdueStatus)),
+    'Codex 判斷摘要': taskPropertyUpdate(page, 'Codex 判斷摘要', stringOrEmpty(updates.judgment)),
+    來源原文: taskPropertyUpdate(page, '來源原文', stringOrEmpty(updates.rawSource)),
+    最後更新: page.properties?.最後更新 ? dateProperty(submittedAt) : undefined,
+  });
+
+  if (!Object.keys(properties).length && !stringOrEmpty(updates.editNote) && !stringOrEmpty(updates.pageContent)) {
+    throw new Error('No supported task fields were provided.');
+  }
+
+  if (Object.keys(properties).length) {
+    await notionRequest(`/v1/pages/${pageId}`, {
+      method: 'PATCH',
+      body: { properties },
+    });
+  }
+
+  const editNote = stringOrEmpty(updates.editNote);
+  const pageContent = stringOrEmpty(updates.pageContent);
+  const children = [];
+  if (editNote) {
+    children.push(paragraphProperty(`【User UI 編輯】${formatTaipeiDateTime(submittedAt)}｜編輯者：${editedBy}｜${editNote}`));
+  }
+  if (pageContent) {
+    children.push(paragraphProperty(`【User UI 頁面內容更新】${formatTaipeiDateTime(submittedAt)}｜編輯者：${editedBy}`));
+    children.push(paragraphProperty(pageContent));
+  }
+  if (children.length) {
+    await notionRequest(`/v1/blocks/${pageId}/children`, {
+      method: 'PATCH',
+      body: { children },
+    });
+  }
+
+  return {
+    ok: true,
+    pageId,
+    url: page.url,
+    updatedProperties: Object.keys(properties),
+    noteAppended: Boolean(editNote),
+    pageContentAppended: Boolean(pageContent),
+    editedBy,
+    updatedAt: submittedAt.toISOString(),
+  };
+}
+
+function resolveUserUiEditor(req, updates) {
+  const bodyEditor = stringOrEmpty(updates.editedBy || updates.editor || updates.userName);
+  if (bodyEditor) {
+    return bodyEditor;
+  }
+
+  const basicUser = parseBasicAuth(req)?.username;
+  return basicUser || 'User UI 使用者';
+}
+
+async function assertTaskPage(pageId) {
+  const page = await notionFetchJson(`/v1/pages/${pageId}`);
+  const parentId = normalizeId(page.parent?.data_source_id || page.parent?.database_id || '');
+  if (parentId !== normalizeId(TASKS_DATA_SOURCE_ID)) {
+    throw new Error('Blocked Notion access: page is not in the HOZO AM task data source.');
+  }
+  return page;
+}
+
+function taskPropertyUpdate(page, propertyName, value) {
+  const property = page.properties?.[propertyName];
+  if (!property) {
+    return undefined;
+  }
+
+  const text = stringOrEmpty(value);
+  if (!text) {
+    return undefined;
+  }
+
+  if (property.type === 'status') {
+    return { status: { name: text } };
+  }
+  if (property.type === 'select') {
+    return selectProperty(text);
+  }
+  if (property.type === 'multi_select') {
+    return { multi_select: text.split(/[,，、]/).map((name) => ({ name: name.trim() })).filter((item) => item.name) };
+  }
+  if (property.type === 'rich_text') {
+    return richTextProperty(text);
+  }
+  if (property.type === 'title') {
+    return titleProperty(text);
+  }
+  if (property.type === 'url') {
+    return urlProperty(text);
+  }
+  if (property.type === 'date') {
+    return { date: { start: text } };
+  }
+  if (property.type === 'number') {
+    const number = Number(text);
+    return Number.isFinite(number) ? { number } : undefined;
+  }
+  if (property.type === 'checkbox') {
+    return checkboxProperty(/^(true|yes|1|是|已|完成)$/i.test(text));
+  }
+
+  return undefined;
+}
+
+function normalizeOptionalTaskStatus(value) {
+  const status = stringOrEmpty(value);
+  return status ? normalizeTaskStatus(status) : '';
+}
+
+function stringOrEmpty(value) {
+  return String(value || '').trim();
+}
+
+function normalizeMultiSelect(value) {
+  const values = Array.isArray(value)
+    ? value
+    : String(value || '').split(/[,，、]/);
+  return [...new Set(values.map((item) => stringOrEmpty(item)).filter(Boolean))];
+}
+
 function findCodexCommandTrigger(text) {
   const value = String(text || '');
   return CODEX_COMMAND_TRIGGERS.find((trigger) => trigger.pattern.test(value)) || null;
@@ -230,6 +462,38 @@ function isAuthorized(req) {
   const authorization = req.headers.authorization || '';
   const bearerToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : '';
   return headerKey === expected || bearerToken === expected;
+}
+
+function isUserUiAuthorized(req) {
+  const expectedUsername = process.env.HOZO_USER_UI_USERNAME;
+  const expectedPassword = process.env.HOZO_USER_UI_PASSWORD;
+  if (!expectedUsername || !expectedPassword) {
+    return false;
+  }
+
+  const credentials = parseBasicAuth(req);
+  return credentials?.username === expectedUsername && credentials.password === expectedPassword;
+}
+
+function parseBasicAuth(req) {
+  const authorization = String(req.headers.authorization || '');
+  if (!authorization.startsWith('Basic ')) {
+    return null;
+  }
+
+  try {
+    const decoded = Buffer.from(authorization.slice('Basic '.length), 'base64').toString('utf8');
+    const separatorIndex = decoded.indexOf(':');
+    if (separatorIndex < 0) {
+      return null;
+    }
+    return {
+      username: decoded.slice(0, separatorIndex),
+      password: decoded.slice(separatorIndex + 1),
+    };
+  } catch {
+    return null;
+  }
 }
 
 function isApprovalAuthorized(req, body) {
@@ -758,14 +1022,9 @@ async function buildReportMessage(reportType, customText) {
   const followupBaseUrl = process.env.FOLLOWUP_CONFIRMATION_URL || `${PUBLIC_BASE_URL}/reports/followup-confirmation`;
 
   if (['morning', 'morning-brief', '早報'].includes(reportType)) {
-    const dynamicText = await buildDynamicMorningBriefText();
-    if (dynamicText) {
-      return { type: 'text', text: clampLineText(dynamicText) };
-    }
-
     return {
       type: 'text',
-      text: `早上 8 點半晨報：\n${morningBriefUrl}\n\n目前無法讀取 HOZO 總控任務庫，請先檢查 Notion 連線與 HOZO_TASKS_DATA_SOURCE_ID。系統已停止使用舊樣本頁面，避免混入非 HOZO-AM 的資料。`,
+      text: `早上 8 點半行程與待辦報告：\n${morningBriefUrl}\n\n請確認今日行程、優先工作、未完成事項與需要決策的項目。`,
     };
   }
 
@@ -811,36 +1070,96 @@ async function buildDynamicMorningBriefText() {
   }
 
   try {
-    const tasks = await listOpenTasksForMorningBrief();
-    const grouped = groupMorningTasksByStatus(tasks);
-    const priorityTasks = tasks
-      .filter((task) => task.priority === '高' || ['待確認', '進行中', '等待回覆'].includes(task.status))
-      .slice(0, 5);
-    const goalTasks = tasks
-      .filter((task) => ['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus))
-      .slice(0, 5);
+    const model = await buildMorningBriefModel();
 
     return [
-      '早上 8 點半 HOZO-AM 任務狀態晨報',
-      `日期：${taipeiDateOnly(new Date())}`,
-      `開放任務：${tasks.length} 筆`,
+      '# 今日行程與待辦報告',
+      `2026-06-10｜08:30`,
       '',
-      '一、狀態分布',
-      ...Object.entries(grouped).map(([status, count]) => `- ${status}：${count} 筆`),
+      '## 今日行程',
+      ...model.scheduleItems.map((item) => `${item.time} ${item.title}：${item.note}`),
       '',
-      buildMorningTaskSection('二、今天優先看', priorityTasks),
+      buildMorningTaskSection('## 昨日未完成與延續事項', model.carryoverTasks),
       '',
-      buildMorningTaskSection('三、待目標追認', goalTasks),
+      buildMorningTaskSection('## 今天建議優先處理', model.priorityTasks),
       '',
-      '晨報頁：',
-      `${process.env.MORNING_BRIEF_URL || `${PUBLIC_BASE_URL}/reports/morning-brief`}`,
+      buildMorningTaskSection('## 今天需要你決策或回覆', model.decisionTasks),
       '',
-      '提醒：這份晨報直接讀取 HOZO 總控任務庫；舊 prototype 頁面已不作為任務狀態來源。',
+      '## 今日建議工作時段',
+      ...model.workBlocks.map((item) => `${item.time} ${item.note}`),
     ].join('\n');
   } catch (error) {
     console.warn(`Unable to build dynamic morning brief: ${error.message}`);
     return '';
   }
+}
+
+async function buildMorningBriefModel() {
+  const tasks = await listOpenTasksForMorningBrief();
+  const today = taipeiDateOnly(new Date());
+  const carryoverTasks = tasks
+    .filter((task) => ['等待回覆', '進行中', '待確認完成'].includes(task.status) || task.overdueStatus === '已逾期')
+    .sort(compareMorningTaskPriority)
+    .slice(0, 5);
+  const priorityTasks = tasks
+    .filter((task) => task.priority === '高' || ['待確認', '進行中', '等待回覆'].includes(task.status))
+    .sort(compareMorningTaskPriority)
+    .slice(0, 5);
+  const decisionTasks = tasks
+    .filter((task) => ['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus)
+      || /待確認|需決策|待主管|待回覆|待負責/.test(`${task.status} ${task.confirmation} ${task.nextStep}`))
+    .sort(compareMorningTaskPriority)
+    .slice(0, 4);
+
+  return {
+    today,
+    tasks,
+    openTaskCount: tasks.length,
+    scheduleItems: buildHozoMorningScheduleItems(),
+    carryoverTasks,
+    priorityTasks,
+    decisionTasks,
+    workBlocks: buildHozoMorningWorkBlocks(priorityTasks, decisionTasks),
+  };
+}
+
+function buildHozoMorningScheduleItems() {
+  return [
+    {
+      time: '08:30',
+      title: 'HOZO 早報確認',
+      note: '確認今日行程、優先工作、昨日延續事項與需要決策的項目。',
+      tag: '例行',
+    },
+    {
+      time: '10:00',
+      title: '上午追蹤確認',
+      note: '檢查早上新增訊息、候選任務與需要負責人口述目標的項目。',
+      tag: '需確認',
+    },
+    {
+      time: '13:00 / 17:00',
+      title: '午間與下午進度檢查',
+      note: '更新上午進度、等待回覆、現場事項與需要追問的任務。',
+      tag: '追蹤',
+    },
+    {
+      time: '20:30',
+      title: '每日總控狀態總結報告',
+      note: '收斂今天完成、未完成、風險與隔日優先事項。',
+      tag: '收斂',
+    },
+  ];
+}
+
+function buildHozoMorningWorkBlocks(priorityTasks, decisionTasks) {
+  const firstProject = priorityTasks[0]?.project || '今日優先任務';
+  const decisionProject = decisionTasks[0]?.project || '需決策事項';
+  return [
+    { time: '09:00-10:00', note: '整理昨晚到今早的新訊息，確認是否有新任務或新群組需要歸類。' },
+    { time: '10:20-12:00', note: `優先推進「${firstProject}」相關任務，先處理會卡住其他人的項目。` },
+    { time: '14:00-15:30', note: `處理「${decisionProject}」的目標口述、負責人確認與需要回覆的決策。` },
+  ];
 }
 
 async function listOpenTasksForMorningBrief() {
@@ -867,6 +1186,8 @@ async function listOpenTasksForMorningBrief() {
     owner: pageTextProperty(page, '負責人'),
     goalStatus: pageSelectProperty(page, 'Codex 目標確認'),
     nextStep: pageTextProperty(page, '下一步給負責人') || pageTextProperty(page, '下一步'),
+    overdueStatus: pageSelectProperty(page, '逾期狀態'),
+    updatedAt: pageTextProperty(page, '最後更新') || page.last_edited_time || '',
   }));
 }
 
@@ -886,18 +1207,52 @@ function buildMorningTaskSection(title, tasks) {
   return [
     title,
     ...tasks.map((task, index) => {
-      const parts = [
-        `${index + 1}. ${conciseReportText(task.name, 38)}`,
-        `專案：${task.project}`,
-        `狀態：${task.status}`,
-        `優先：${task.priority}`,
-      ];
-      if (task.goalStatus) parts.push(`目標：${task.goalStatus}`);
-      if (task.owner) parts.push(`負責：${task.owner}`);
-      if (task.nextStep) parts.push(`下一步：${conciseReportText(task.nextStep, 60)}`);
-      return parts.join('｜');
+      const action = morningTaskAction(task);
+      return `${index + 1}. ${conciseReportText(task.name, 46)}｜${task.project}｜${task.status}｜${action}`;
     }),
   ].join('\n');
+}
+
+function compareMorningTaskPriority(a, b) {
+  return morningTaskScore(b) - morningTaskScore(a)
+    || String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''));
+}
+
+function morningTaskScore(task) {
+  let score = task.priority === '高' ? 30 : task.priority === '中' ? 18 : 8;
+  if (['等待回覆', '進行中'].includes(task.status)) score += 14;
+  if (task.status === '待確認完成') score += 12;
+  if (['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus)) score += 12;
+  if (task.overdueStatus === '已逾期') score += 10;
+  if (/公司|銀行|法務|合約|證照|稅務/.test(task.name)) score += 6;
+  if (/工程|工務|設備|維修|施工/.test(task.name)) score += 5;
+  return score;
+}
+
+function morningTaskAction(task) {
+  if (['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus)) {
+    return `請 ${task.owner || '負責人'} 先口述完成目標與驗收標準。`;
+  }
+  if (task.status === '等待回覆') {
+    return `今天先追問回覆，避免卡住「${task.project}」。`;
+  }
+  if (task.status === '待確認完成') {
+    return '今天確認是否真的完成，補上證據或關閉條件。';
+  }
+  if (task.nextStep && !isDuplicateNextStep(task)) {
+    return conciseReportText(task.nextStep, 54);
+  }
+  return '今天確認下一步與負責人，避免只停在待確認。';
+}
+
+function isDuplicateNextStep(task) {
+  const name = normalizeReportComparableText(task.name);
+  const next = normalizeReportComparableText(task.nextStep);
+  return !next || name.includes(next) || next.includes(name);
+}
+
+function normalizeReportComparableText(value) {
+  return String(value || '').replace(/[，。、：:；;\s]/g, '').slice(0, 40);
 }
 
 async function buildDynamicDailyReportText(dailyReportUrl) {
@@ -2008,6 +2363,17 @@ function selectProperty(name) {
   return { select: { name } };
 }
 
+function multiSelectProperty(values) {
+  return {
+    multi_select: normalizeMultiSelect(values).map((name) => ({ name })),
+  };
+}
+
+function numberProperty(value) {
+  const number = Number(value);
+  return { number: Number.isFinite(number) ? number : 0 };
+}
+
 function dateProperty(value) {
   return { date: { start: value instanceof Date ? value.toISOString() : new Date(value).toISOString() } };
 }
@@ -2094,16 +2460,10 @@ async function serveReportPage(res, pathname) {
   }
 
   if (pathname === '/reports/morning-brief') {
-    const text = await buildDynamicMorningBriefText();
-    const html = buildMorningBriefHtml(text || [
-      '早上 8 點半 HOZO-AM 任務狀態晨報',
-      `日期：${taipeiDateOnly(new Date())}`,
-      '',
-      '目前無法讀取 HOZO 總控任務庫。',
-      '請檢查 Notion 連線、NOTION_TOKEN 與 HOZO_TASKS_DATA_SOURCE_ID。',
-      '',
-      '這個頁面已停止顯示舊 prototype 樣本，避免混入非 HOZO-AM 的資料。',
-    ].join('\n'));
+    const model = process.env.NOTION_TOKEN && TASKS_DATA_SOURCE_ID
+      ? await buildMorningBriefModel()
+      : null;
+    const html = buildMorningBriefHtml(model);
 
     res.writeHead(200, {
       ...corsHeaders(),
@@ -2123,9 +2483,19 @@ async function serveReportPage(res, pathname) {
   res.end(html);
 }
 
-function buildMorningBriefHtml(text) {
-  const reportDate = taipeiDateOnly(new Date());
-  const safeText = escapeHtml(text);
+function buildMorningBriefHtml(model) {
+  const reportDate = model?.today || taipeiDateOnly(new Date());
+  const reportContent = model ? formatMorningBriefDecisionText(model) : [
+    '# 今日行程與待辦報告',
+    '',
+    '目前無法讀取 HOZO 總控任務庫。',
+    '請檢查 Notion 連線、NOTION_TOKEN 與 HOZO_TASKS_DATA_SOURCE_ID。',
+  ].join('\n');
+  const scheduleItems = model?.scheduleItems || [];
+  const carryoverTasks = model?.carryoverTasks || [];
+  const priorityTasks = model?.priorityTasks || [];
+  const decisionTasks = model?.decisionTasks || [];
+  const workBlocks = model?.workBlocks || [];
   return `<!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -2133,7 +2503,7 @@ function buildMorningBriefHtml(text) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HOZO-AM 早上 8 點半任務狀態晨報</title>
   <style>
-    :root{--bg:#f6f7f4;--panel:#fff;--ink:#20242a;--muted:#66706b;--line:#d9ded6;--green:#2f6f5e;--shadow:0 10px 28px rgba(23,30,26,.08)}
+    :root{--bg:#f6f7f4;--panel:#fff;--ink:#20242a;--muted:#66706b;--line:#d9ded6;--green:#2f6f5e;--blue:#315f8c;--red:#9d3b3b;--shadow:0 10px 28px rgba(23,30,26,.08)}
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC",system-ui,sans-serif;line-height:1.6}
     .app{min-height:100vh;display:grid;grid-template-columns:260px minmax(0,1fr)}
@@ -2150,11 +2520,26 @@ function buildMorningBriefHtml(text) {
     .date-card{min-width:180px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow);text-align:right}
     .date-card strong{display:block;font-size:20px}
     .date-card span{display:block;color:var(--muted);font-size:13px}
+    .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
+    .metric{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:14px}
+    .metric strong{display:block;font-size:24px}
+    .metric span{color:var(--muted);font-size:13px}
     section{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden}
     .head{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:#fbfcfa}
     .head h2{margin:0;font-size:18px}
     .note{color:var(--muted);font-size:13px}
-    pre{margin:0;padding:16px;white-space:pre-wrap;font:inherit}
+    .schedule,.cards,.work{display:grid;gap:12px;padding:16px}
+    .item{border:1px solid var(--line);border-radius:8px;padding:12px;background:#fff}
+    .item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .item-title{font-weight:700}
+    .badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:12px;background:#edf3ef;color:#2f6f5e;white-space:nowrap}
+    .badge.red{background:#fff0f0;color:#9d3b3b}
+    .badge.blue{background:#edf4fb;color:#315f8c}
+    .item p{margin:8px 0 0;color:var(--muted)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{font-size:13px;color:var(--muted);background:#fbfcfa}
+    .empty{padding:16px;color:var(--muted)}
     textarea{width:100%;min-height:170px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:#fff;padding:9px 10px;color:var(--ink);font:inherit;line-height:1.6}
     .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
     .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:9px 14px;cursor:pointer}
@@ -2163,22 +2548,32 @@ function buildMorningBriefHtml(text) {
     .result{display:none;margin-top:16px;padding:14px 16px;border:1px solid #bfd9cd;background:#edf6f1;border-radius:8px;color:#1f4e42}
     .result.show{display:block}
     .result.error{border-color:#efc3c3;background:#fff0f0;color:#873333}
-    @media(max-width:820px){.app{display:block}aside{position:static;height:auto}.top{display:block}.date-card{text-align:left;margin-top:12px}main{padding:16px}}
+    @media(max-width:820px){.app{display:block}aside{position:static;height:auto}.top{display:block}.date-card{text-align:left;margin-top:12px}main{padding:16px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body>
   <div class="app">
     <aside>
-      <div class="brand"><strong>HOZO-AM 早報</strong><span>任務狀態、目標追認、今日優先</span></div>
-      <nav><a href="#brief">晨報內容</a><a href="#writeback">確認寫回</a></nav>
+      <div class="brand"><strong>早上 8 點半簡報</strong><span>HOZO 行程、待辦、今日優先</span></div>
+      <nav><a href="#calendar">今日行程</a><a href="#carryover">昨日未完成</a><a href="#priority">今日優先</a><a href="#decisions">需要決策</a><a href="#work">建議時段</a><a href="#writeback">確認寫回</a></nav>
     </aside>
     <main>
       <div class="top">
-        <div><h1>HOZO-AM 任務狀態晨報</h1><div class="subtitle">直接讀取 HOZO 總控任務庫，不使用舊樣本資料。</div></div>
+        <div><h1>今日行程與待辦報告</h1><div class="subtitle">每天早上 8 點半，先把今天的時間、昨天留下來的事情、最該推進的工作排清楚。</div></div>
         <div class="date-card"><strong>${escapeHtml(reportDate)}</strong><span>08:30｜Asia/Taipei</span></div>
       </div>
-      <section id="brief"><div class="head"><h2>晨報內容</h2><span class="note">來源：HOZO 總控任務庫</span></div><pre>${safeText}</pre></section>
-      <section id="writeback"><div class="head"><h2>修改後早報內容</h2><span class="note">確認後會寫回 HOZO 風險與決策庫</span></div><div style="padding:16px"><textarea id="reportContent">${safeText}</textarea></div></section>
+      <div class="metrics">
+        <div class="metric"><strong>${scheduleItems.length}</strong><span>今日行程</span></div>
+        <div class="metric"><strong>${carryoverTasks.length}</strong><span>昨日未完成</span></div>
+        <div class="metric"><strong>${priorityTasks.length}</strong><span>今日優先</span></div>
+        <div class="metric"><strong>${decisionTasks.length}</strong><span>需決策</span></div>
+      </div>
+      <section id="calendar"><div class="head"><h2>今日行程</h2><span class="note">由 HOZO 報告時段與本案任務節奏整理</span></div><div class="schedule">${renderMorningScheduleItems(scheduleItems)}</div></section>
+      <section id="carryover"><div class="head"><h2>昨日未完成與延續事項</h2><span class="note">由 HOZO 總控任務庫整理</span></div>${renderMorningTaskTable(carryoverTasks, '今日處理')}</section>
+      <section id="priority"><div class="head"><h2>今天建議優先處理</h2><span class="note">3 到 7 件，避免一天被切太碎</span></div><div class="cards">${renderMorningTaskCards(priorityTasks)}</div></section>
+      <section id="decisions"><div class="head"><h2>今天需要你決策或回覆</h2><span class="note">高風險或模糊事項不自動推進</span></div>${renderMorningDecisionTable(decisionTasks)}</section>
+      <section id="work"><div class="head"><h2>今日建議工作時段</h2><span class="note">依 HOZO 固定報告節奏安排</span></div><div class="work">${renderMorningWorkBlocks(workBlocks)}</div></section>
+      <section id="writeback"><div class="head"><h2>修改後早報內容</h2><span class="note">確認後會寫回 HOZO 風險與決策庫</span></div><div style="padding:16px"><textarea id="reportContent">${escapeHtml(reportContent)}</textarea></div></section>
       <div class="actions"><button class="btn primary js-confirm" onclick="confirmBrief()">確認並寫回</button></div><div class="result" id="result"></div>
     </main>
   </div>
@@ -2209,6 +2604,73 @@ function buildMorningBriefHtml(text) {
   </script>
 </body>
 </html>`;
+}
+
+function formatMorningBriefDecisionText(model) {
+  return [
+    '# 今日行程與待辦報告',
+    '',
+    `日期：${model.today}｜08:30`,
+    '',
+    '## 今日優先處理',
+    ...model.priorityTasks.map((task, index) => `${index + 1}. ${task.name}｜${morningTaskAction(task)}`),
+    '',
+    '## 需要決策或回覆',
+    ...model.decisionTasks.map((task, index) => `${index + 1}. ${task.name}｜建議：${morningDecisionSuggestion(task)}`),
+    '',
+    '## 今日建議工作時段',
+    ...model.workBlocks.map((item) => `${item.time} ${item.note}`),
+  ].join('\n');
+}
+
+function renderMorningScheduleItems(items) {
+  if (!items.length) return '<div class="empty">目前沒有行程資料。</div>';
+  return items.map((item) => `<article class="item">
+    <div class="item-head"><div><div class="item-title">${escapeHtml(item.time)}　${escapeHtml(item.title)}</div><p>${escapeHtml(item.note)}</p></div><span class="badge blue">${escapeHtml(item.tag || '行程')}</span></div>
+  </article>`).join('');
+}
+
+function renderMorningTaskTable(tasks, actionHeader) {
+  if (!tasks.length) return '<div class="empty">目前沒有昨日延續事項。</div>';
+  const rows = tasks.map((task) => `<tr>
+    <td>${escapeHtml(morningTaskAction(task))}</td>
+    <td>${escapeHtml(task.name)}</td>
+    <td>${escapeHtml(task.project)}</td>
+    <td>${escapeHtml(task.status)}</td>
+    <td>${escapeHtml(task.priority)}</td>
+  </tr>`).join('');
+  return `<table><thead><tr><th>${escapeHtml(actionHeader)}</th><th>事項</th><th>專案</th><th>狀態</th><th>優先</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderMorningTaskCards(tasks) {
+  if (!tasks.length) return '<div class="empty">目前沒有建議優先處理事項。</div>';
+  return tasks.map((task, index) => `<article class="item">
+    <div class="item-head"><div><div class="item-title">${index + 1}. ${escapeHtml(task.name)}</div><p>${escapeHtml(morningTaskAction(task))}</p></div><span class="badge">${escapeHtml(task.project)}</span></div>
+  </article>`).join('');
+}
+
+function renderMorningDecisionTable(tasks) {
+  if (!tasks.length) return '<div class="empty">目前沒有需要決策或回覆的項目。</div>';
+  const rows = tasks.map((task) => `<tr>
+    <td>${escapeHtml(task.name)}<br><span class="note">${escapeHtml(task.project)}｜${escapeHtml(task.status)}</span></td>
+    <td>${escapeHtml(morningDecisionSuggestion(task))}</td>
+    <td><span class="badge red">今天確認</span></td>
+  </tr>`).join('');
+  return `<table><thead><tr><th>事項</th><th>建議</th><th>你的決定</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderMorningWorkBlocks(items) {
+  if (!items.length) return '<div class="empty">目前沒有建議工作時段。</div>';
+  return items.map((item) => `<article class="item"><div class="item-title">${escapeHtml(item.time)}</div><p>${escapeHtml(item.note)}</p></article>`).join('');
+}
+
+function morningDecisionSuggestion(task) {
+  if (['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus)) {
+    return `請 ${task.owner || '負責人'} 說明完成目標、驗收標準與誰確認。`;
+  }
+  if (task.status === '等待回覆') return '今天先追問回覆；若仍未回覆，列入 17:00 跟催。';
+  if (task.status === '待確認完成') return '請確認是否可關閉；若不可關閉，補下一步與期限。';
+  return morningTaskAction(task);
 }
 
 function escapeHtml(value) {
