@@ -758,9 +758,14 @@ async function buildReportMessage(reportType, customText) {
   const followupBaseUrl = process.env.FOLLOWUP_CONFIRMATION_URL || `${PUBLIC_BASE_URL}/reports/followup-confirmation`;
 
   if (['morning', 'morning-brief', '早報'].includes(reportType)) {
+    const dynamicText = await buildDynamicMorningBriefText();
+    if (dynamicText) {
+      return { type: 'text', text: clampLineText(dynamicText) };
+    }
+
     return {
       type: 'text',
-      text: `早上 8 點晨報：\n${morningBriefUrl}\n\n請先做目標追認：今天新增或尚未確認的任務/專案，都要先問負責人「完成目標是什麼、怎樣叫完成、由誰驗收」。口述內容要寫進「目標口述原文」並上傳給 Codex 確認；確認前不列入真實進度。`,
+      text: `早上 8 點半晨報：\n${morningBriefUrl}\n\n目前無法讀取 HOZO 總控任務庫，請先檢查 Notion 連線與 HOZO_TASKS_DATA_SOURCE_ID。系統已停止使用舊樣本頁面，避免混入非 HOZO-AM 的資料。`,
     };
   }
 
@@ -798,6 +803,101 @@ async function buildReportMessage(reportType, customText) {
   }
 
   throw new Error('Unknown reportType. Use morning, daily, followup-morning, followup-midday, or followup-afternoon.');
+}
+
+async function buildDynamicMorningBriefText() {
+  if (!process.env.NOTION_TOKEN || !TASKS_DATA_SOURCE_ID) {
+    return '';
+  }
+
+  try {
+    const tasks = await listOpenTasksForMorningBrief();
+    const grouped = groupMorningTasksByStatus(tasks);
+    const priorityTasks = tasks
+      .filter((task) => task.priority === '高' || ['待確認', '進行中', '等待回覆'].includes(task.status))
+      .slice(0, 5);
+    const goalTasks = tasks
+      .filter((task) => ['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus))
+      .slice(0, 5);
+
+    return [
+      '早上 8 點半 HOZO-AM 任務狀態晨報',
+      `日期：${taipeiDateOnly(new Date())}`,
+      `開放任務：${tasks.length} 筆`,
+      '',
+      '一、狀態分布',
+      ...Object.entries(grouped).map(([status, count]) => `- ${status}：${count} 筆`),
+      '',
+      buildMorningTaskSection('二、今天優先看', priorityTasks),
+      '',
+      buildMorningTaskSection('三、待目標追認', goalTasks),
+      '',
+      '晨報頁：',
+      `${process.env.MORNING_BRIEF_URL || `${PUBLIC_BASE_URL}/reports/morning-brief`}`,
+      '',
+      '提醒：這份晨報直接讀取 HOZO 總控任務庫；舊 prototype 頁面已不作為任務狀態來源。',
+    ].join('\n');
+  } catch (error) {
+    console.warn(`Unable to build dynamic morning brief: ${error.message}`);
+    return '';
+  }
+}
+
+async function listOpenTasksForMorningBrief() {
+  const result = await notionRequest(`/v1/data_sources/${TASKS_DATA_SOURCE_ID}/query`, {
+    method: 'POST',
+    body: {
+      page_size: 100,
+      filter: {
+        and: [
+          { property: '狀態', select: { does_not_equal: '已完成' } },
+          { property: '狀態', select: { does_not_equal: '封存' } },
+        ],
+      },
+      sorts: [{ property: '最後更新', direction: 'descending' }],
+    },
+  });
+
+  return (result.results || []).map((page) => ({
+    name: pageTextProperty(page, '任務名稱'),
+    project: pageSelectProperty(page, '專案') || '未分類',
+    status: pageSelectProperty(page, '狀態') || '未設定',
+    confirmation: pageSelectProperty(page, '確認狀態') || '未設定',
+    priority: pageSelectProperty(page, '優先級') || '未設定',
+    owner: pageTextProperty(page, '負責人'),
+    goalStatus: pageSelectProperty(page, 'Codex 目標確認'),
+    nextStep: pageTextProperty(page, '下一步給負責人') || pageTextProperty(page, '下一步'),
+  }));
+}
+
+function groupMorningTasksByStatus(tasks) {
+  return tasks.reduce((groups, task) => {
+    const status = task.status || '未設定';
+    groups[status] = (groups[status] || 0) + 1;
+    return groups;
+  }, {});
+}
+
+function buildMorningTaskSection(title, tasks) {
+  if (!tasks.length) {
+    return `${title}\n目前沒有符合條件的任務。`;
+  }
+
+  return [
+    title,
+    ...tasks.map((task, index) => {
+      const parts = [
+        `${index + 1}. ${conciseReportText(task.name, 38)}`,
+        `專案：${task.project}`,
+        `狀態：${task.status}`,
+        `優先：${task.priority}`,
+      ];
+      if (task.goalStatus) parts.push(`目標：${task.goalStatus}`);
+      if (task.owner) parts.push(`負責：${task.owner}`);
+      if (task.nextStep) parts.push(`下一步：${conciseReportText(task.nextStep, 60)}`);
+      return parts.join('｜');
+    }),
+  ].join('\n');
 }
 
 async function buildDynamicDailyReportText(dailyReportUrl) {
@@ -1987,10 +2087,31 @@ function sendNoContent(res) {
   res.end();
 }
 
-function serveReportPage(res, pathname) {
+async function serveReportPage(res, pathname) {
   const reportFile = REPORT_ROUTES.get(pathname);
   if (!reportFile) {
     return sendJson(res, 404, { error: 'Report not found' });
+  }
+
+  if (pathname === '/reports/morning-brief') {
+    const text = await buildDynamicMorningBriefText();
+    const html = buildMorningBriefHtml(text || [
+      '早上 8 點半 HOZO-AM 任務狀態晨報',
+      `日期：${taipeiDateOnly(new Date())}`,
+      '',
+      '目前無法讀取 HOZO 總控任務庫。',
+      '請檢查 Notion 連線、NOTION_TOKEN 與 HOZO_TASKS_DATA_SOURCE_ID。',
+      '',
+      '這個頁面已停止顯示舊 prototype 樣本，避免混入非 HOZO-AM 的資料。',
+    ].join('\n'));
+
+    res.writeHead(200, {
+      ...corsHeaders(),
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
+    res.end(html);
+    return;
   }
 
   const html = readFileSync(new URL(reportFile, import.meta.url), 'utf8');
@@ -2000,6 +2121,104 @@ function serveReportPage(res, pathname) {
     'Cache-Control': 'no-store',
   });
   res.end(html);
+}
+
+function buildMorningBriefHtml(text) {
+  const reportDate = taipeiDateOnly(new Date());
+  const safeText = escapeHtml(text);
+  return `<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HOZO-AM 早上 8 點半任務狀態晨報</title>
+  <style>
+    :root{--bg:#f6f7f4;--panel:#fff;--ink:#20242a;--muted:#66706b;--line:#d9ded6;--green:#2f6f5e;--shadow:0 10px 28px rgba(23,30,26,.08)}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC",system-ui,sans-serif;line-height:1.6}
+    .app{min-height:100vh;display:grid;grid-template-columns:260px minmax(0,1fr)}
+    aside{position:sticky;top:0;height:100vh;padding:24px 18px;background:#24342f;color:#f4f7f2}
+    .brand strong{display:block;font-size:20px}
+    .brand span{display:block;margin-top:4px;color:#bed0c7;font-size:13px}
+    nav{display:grid;gap:8px;margin-top:28px}
+    nav a{color:#dce7e1;text-decoration:none;padding:9px 10px;border-radius:6px}
+    nav a:hover{background:rgba(255,255,255,.08)}
+    main{padding:28px}
+    .top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
+    h1{margin:0;font-size:28px;line-height:1.25}
+    .subtitle{margin-top:6px;color:var(--muted)}
+    .date-card{min-width:180px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow);text-align:right}
+    .date-card strong{display:block;font-size:20px}
+    .date-card span{display:block;color:var(--muted);font-size:13px}
+    section{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden}
+    .head{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:#fbfcfa}
+    .head h2{margin:0;font-size:18px}
+    .note{color:var(--muted);font-size:13px}
+    pre{margin:0;padding:16px;white-space:pre-wrap;font:inherit}
+    textarea{width:100%;min-height:170px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:#fff;padding:9px 10px;color:var(--ink);font:inherit;line-height:1.6}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
+    .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:9px 14px;cursor:pointer}
+    .btn.primary{border-color:var(--green);background:var(--green);color:#fff}
+    .btn:disabled{opacity:.65;cursor:wait}
+    .result{display:none;margin-top:16px;padding:14px 16px;border:1px solid #bfd9cd;background:#edf6f1;border-radius:8px;color:#1f4e42}
+    .result.show{display:block}
+    .result.error{border-color:#efc3c3;background:#fff0f0;color:#873333}
+    @media(max-width:820px){.app{display:block}aside{position:static;height:auto}.top{display:block}.date-card{text-align:left;margin-top:12px}main{padding:16px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand"><strong>HOZO-AM 早報</strong><span>任務狀態、目標追認、今日優先</span></div>
+      <nav><a href="#brief">晨報內容</a><a href="#writeback">確認寫回</a></nav>
+    </aside>
+    <main>
+      <div class="top">
+        <div><h1>HOZO-AM 任務狀態晨報</h1><div class="subtitle">直接讀取 HOZO 總控任務庫，不使用舊樣本資料。</div></div>
+        <div class="date-card"><strong>${escapeHtml(reportDate)}</strong><span>08:30｜Asia/Taipei</span></div>
+      </div>
+      <section id="brief"><div class="head"><h2>晨報內容</h2><span class="note">來源：HOZO 總控任務庫</span></div><pre>${safeText}</pre></section>
+      <section id="writeback"><div class="head"><h2>修改後早報內容</h2><span class="note">確認後會寫回 HOZO 風險與決策庫</span></div><div style="padding:16px"><textarea id="reportContent">${safeText}</textarea></div></section>
+      <div class="actions"><button class="btn primary js-confirm" onclick="confirmBrief()">確認並寫回</button></div><div class="result" id="result"></div>
+    </main>
+  </div>
+  <script>
+    const APPROVAL_API='/control/reports/approve';
+    async function confirmBrief(){
+      const result=document.getElementById('result');
+      const buttons=document.querySelectorAll('.js-confirm');
+      buttons.forEach(button=>{button.disabled=true;button.textContent='寫回中...'});
+      result.className='result show';
+      result.innerHTML='<strong>正在寫回早報確認...</strong>';
+      const reportContent=document.getElementById('reportContent').value.trim();
+      try{
+        const response=await fetch(APPROVAL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reportType:'morning',approvedBy:'陸昱晴',submittedAt:new Date().toISOString(),reportContent,decisions:[],tasks:[],notes:'08:30 HOZO-AM 動態早報確認寫回'})});
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok||!data.ok){throw new Error(data.error||'寫回失敗')}
+        result.className='result show';
+        result.innerHTML='<strong>早報已寫回 Notion。</strong><br><span>已建立 HOZO-AM 早報確認紀錄。</span>';
+      }catch(error){
+        result.className='result show error';
+        result.innerHTML='<strong>寫回失敗。</strong><br>'+escapeHtml(error.message||'未知錯誤');
+      }finally{
+        buttons.forEach(button=>{button.disabled=false;button.textContent='確認並寫回'});
+        result.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+    }
+    function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]))}
+  </script>
+</body>
+</html>`;
+}
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  }[char]));
 }
 
 function sendJson(res, statusCode, payload) {

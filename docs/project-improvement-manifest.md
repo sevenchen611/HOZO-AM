@@ -28,6 +28,7 @@ Do not copy production values from another project. Each project must use its ow
 | `AM-IMP-2026.0608.18` | Hourly LINE task reconciliation | Installed | 2026-06-08 | AM_Core package + `config/hourly-line-task-reconciliation.json` + `AGENTS.md` + `render.yaml` | HOZO hourly LINE judgement contract installed and cron defined for 08:10-22:10 Asia/Taipei; syntax and JSON checks passed. Render Blueprint sync/deploy still pending. |
 | `AM-IMP-2026.0608.19` | Total-control task table source text hide rule | Installed | 2026-06-08 | AM_Core package + Notion view update | HOZO AM total-control task Default view does not display `來源原文`; the property remains available for audit fallback and existing values were not erased. |
 | `AM-IMP-2026.0608.20` | SevenAM 08:00 Google Calendar agenda section | Blocked | 2026-06-08 | AM_Core package excluded target | This package is SevenAM-only and explicitly says HOZO AM should not install it. HOZO remains blocked/not applicable by package boundary. |
+| `HOTFIX-2026.0610.01` | HOZO-AM morning brief data-source isolation | Installed | 2026-06-10 | `src/control-api.js` + `reports/morning-brief-prototype.html` | `/reports/morning-brief` now renders from HOZO task data only; local HTTP check returned 200 and no stale sample markers. |
 
 ## Project-Specific Values
 
