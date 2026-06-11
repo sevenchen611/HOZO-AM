@@ -8,7 +8,9 @@ const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const channelSecret = process.env.LINE_CHANNEL_SECRET;
 const notionToken = process.env.NOTION_TOKEN;
 const conversationsDataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID;
+// Raw LINE event log only. Hourly task judgement reads the conversation master.
 const messagesDataSourceId = process.env.HOZO_MESSAGES_DATA_SOURCE_ID;
+const lineGroupMemberIndexDataSourceId = process.env.HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID || '';
 const attachmentsDataSourceId = process.env.HOZO_ATTACHMENTS_DATA_SOURCE_ID;
 const codexCommandsDataSourceId = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
 const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
@@ -48,6 +50,7 @@ const server = http.createServer(async (req, res) => {
       ok: true,
       notionConfigured,
       attachmentsConfigured: Boolean(attachmentsDataSourceId),
+      lineGroupMemberIndexConfigured: Boolean(lineGroupMemberIndexDataSourceId),
       codexCommandQueueConfigured: Boolean(codexCommandsDataSourceId),
       taskQueryReplyEnabled: Boolean(notionToken && tasksDataSourceId),
       codexCommandTriggers: codexCommandTriggers.map((trigger) => trigger.label),
@@ -1094,6 +1097,7 @@ async function storeLineEventInNotion(event, rawBody) {
 
   const display = await resolveDisplayNames(source, context);
   const conversation = await findOrCreateConversation(context, display, eventTime, text);
+  await maybeUpsertLineGroupMemberIndex({ source, context, display, conversation, eventTime });
   const uploadedContent = await maybeUploadLineContent(message, messageType, messageId);
   const messagePage = await createMessagePage({ conversationId: conversation.id, event, rawBody, messageId, messageType, text, eventTime, display, context });
 
@@ -1327,6 +1331,77 @@ async function findConversationPage(context) {
     body: { page_size: 1, filter: { property: context.identityProperty, rich_text: { equals: context.identityValue } } },
   });
 
+  return result.results?.[0] || null;
+}
+
+async function maybeUpsertLineGroupMemberIndex({ source, context, display, conversation, eventTime }) {
+  if (!lineGroupMemberIndexDataSourceId || !source?.userId || !['group', 'room'].includes(source.type)) {
+    return null;
+  }
+
+  try {
+    return await upsertLineGroupMemberIndex({ source, context, display, conversation, eventTime });
+  } catch (error) {
+    console.warn(`Unable to sync LINE group member index: ${error.message}`);
+    return null;
+  }
+}
+
+async function upsertLineGroupMemberIndex({ source, context, display, conversation, eventTime }) {
+  const targetType = source.roomId ? 'room' : 'group';
+  const targetId = source.roomId || source.groupId || '';
+  if (!targetId) return null;
+
+  const existing = await findLineGroupMemberIndexPage({ targetType, targetId, userId: source.userId });
+  const properties = {
+    對象類型: select(targetType),
+    GroupID: richText(targetType === 'group' ? targetId : ''),
+    RoomID: richText(targetType === 'room' ? targetId : ''),
+    群組顯示名稱: richText(display.conversationName || context.entityType || ''),
+    UserID: richText(source.userId),
+    成員顯示名稱: richText(display.actorName || source.userId),
+    成員狀態: select('active'),
+    來源: select('Webhook'),
+    LINE對話主檔: relation(conversation.id),
+    最後同步時間: date(eventTime),
+    最後出現時間: date(eventTime),
+    同步訊息: richText('Captured from incoming LINE webhook event.'),
+  };
+
+  if (existing) {
+    return notionRequest(`/v1/pages/${existing.id}`, {
+      method: 'PATCH',
+      body: { properties },
+    });
+  }
+
+  return notionRequest('/v1/pages', {
+    method: 'POST',
+    body: {
+      parent: { type: 'data_source_id', data_source_id: lineGroupMemberIndexDataSourceId },
+      properties: {
+        成員索引名稱: title(`${display.conversationName || targetId} / ${display.actorName || source.userId}`),
+        ...properties,
+      },
+    },
+  });
+}
+
+async function findLineGroupMemberIndexPage({ targetType, targetId, userId }) {
+  const targetProperty = targetType === 'room' ? 'RoomID' : 'GroupID';
+  const result = await notionRequest(`/v1/data_sources/${lineGroupMemberIndexDataSourceId}/query`, {
+    method: 'POST',
+    body: {
+      page_size: 1,
+      filter: {
+        and: [
+          { property: '對象類型', select: { equals: targetType } },
+          { property: targetProperty, rich_text: { equals: targetId } },
+          { property: 'UserID', rich_text: { equals: userId } },
+        ],
+      },
+    },
+  });
   return result.results?.[0] || null;
 }
 
@@ -1850,4 +1925,3 @@ const port = Number(process.env.PORT || 3000);
 server.listen(port, () => {
   console.log(`LINE webhook server is listening on port ${port}`);
 });
-

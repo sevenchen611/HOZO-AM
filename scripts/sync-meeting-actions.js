@@ -10,6 +10,8 @@ const defaultMeetingsDataSourceId = 'fd351c68-6dac-8298-8f0e-87ab1eb6027c';
 const meetingsDataSourceId = process.env.HOZO_MEETINGS_DATA_SOURCE_ID || defaultMeetingsDataSourceId;
 const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
 const progressReportsDataSourceId = process.env.HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID || '';
+const hierarchyPrompt = loadJsonFile(new URL('../config/conversation-task-hierarchy-prompt.json', import.meta.url));
+const hierarchyContract = loadJsonFile(new URL('../config/task-hierarchy-judgment-contract.json', import.meta.url));
 
 const args = parseArgs(process.argv.slice(2));
 const dryRun = Boolean(args['dry-run']);
@@ -37,6 +39,8 @@ try {
   console.log(JSON.stringify({
     ok: true,
     dryRun,
+    hierarchyPromptVersion: hierarchyPrompt.version || '',
+    hierarchyContractVersion: hierarchyContract.version || '',
     scannedMeetings: meetings.length,
     createdTasks: results.reduce((count, item) => count + item.createdTasks.length, 0),
     skippedTasks: results.reduce((count, item) => count + item.skippedTasks.length, 0),
@@ -770,6 +774,16 @@ function loadEnvFile(pathname) {
       continue;
     }
     process.env[match[1]] = match[2].replace(/^["']|["']$/g, '');
+  }
+}
+
+function loadJsonFile(pathname) {
+  if (!existsSync(pathname)) return {};
+  try {
+    return JSON.parse(readFileSync(pathname, 'utf8'));
+  } catch (error) {
+    console.warn(`Could not load JSON policy ${pathname}: ${error.message}`);
+    return {};
   }
 }
 

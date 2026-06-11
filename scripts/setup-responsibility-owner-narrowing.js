@@ -7,7 +7,7 @@ const notionToken = process.env.NOTION_TOKEN;
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
 const parentPageId = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID || '');
 const conversationsDataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID || '';
-const messagesDataSourceId = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
+const memberIndexDataSourceId = process.env.HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID || '';
 
 const command = String(process.argv[2] || 'create').trim().toLowerCase();
 const args = parseArgs(process.argv.slice(3));
@@ -16,7 +16,6 @@ let resolvedParentPageId = normalizeId(args.parent || process.env.HOZO_RESPONSIB
 if (!notionToken) fail('NOTION_TOKEN is not set.');
 if (!resolvedParentPageId) fail('HOZO_DATA_SOURCE_PARENT_BLOCK_ID is not set.');
 if (!conversationsDataSourceId) fail('HOZO_CONVERSATIONS_DATA_SOURCE_ID is not set.');
-if (!messagesDataSourceId) fail('HOZO_MESSAGES_DATA_SOURCE_ID is not set.');
 
 if (command === 'create') {
   const result = await createResponsibilityOwnerNarrowingDatabases();
@@ -92,6 +91,8 @@ async function seedResponsibilityOwnerNarrowingData({ responsibilityDataSourceId
   await assertHozoDataSource(responsibilityDataSourceId);
   await assertHozoDataSource(groupOptionsDataSourceId);
   await assertHozoDataSource(groupMembersDataSourceId);
+  if (!memberIndexDataSourceId) fail('HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID is not set.');
+  await assertHozoDataSource(memberIndexDataSourceId);
 
   const conversations = await queryAllPages(conversationsDataSourceId, {
     page_size: limit,
@@ -124,22 +125,22 @@ async function seedResponsibilityOwnerNarrowingData({ responsibilityDataSourceId
     groupOptions.push({ ...option, pageId: page.id, conversationPageId: conversation.id });
   }
 
-  const messages = await queryAllPages(messagesDataSourceId, {
+  const memberIndexRows = await queryAllPages(memberIndexDataSourceId, {
     page_size: limit,
-    filter: { property: '發話者 ID', rich_text: { is_not_empty: true } },
-    sorts: [{ property: '排序時間', direction: 'descending' }],
+    filter: { property: 'UserID', rich_text: { is_not_empty: true } },
+    sorts: [{ property: '最後出現時間', direction: 'descending' }],
   });
 
   const memberMap = new Map();
-  for (const message of messages) {
-    const relationIds = pageRelationIds(message, '對話主檔');
-    const groupOption = groupOptions.find((option) => relationIds.includes(option.conversationPageId));
+  for (const indexRow of memberIndexRows.map(normalizeMemberIndexRow)) {
+    if (!indexRow.userId || indexRow.status === 'left') continue;
+    const groupOption = groupOptions.find((option) => option.targetKey === indexRow.targetKey);
     if (!groupOption) continue;
-    const userId = pageText(message, '發話者 ID');
+    const userId = indexRow.userId;
     if (!userId || userId === groupOption.targetId) continue;
     const key = `${groupOption.pageId}:${userId}`;
     const existing = memberMap.get(key);
-    const seenAt = pageDate(message, '排序時間');
+    const seenAt = indexRow.lastSeenAt || indexRow.syncedAt;
     if (existing) {
       existing.count += 1;
       if (seenAt && (!existing.lastSeenAt || new Date(seenAt) > new Date(existing.lastSeenAt))) {
@@ -149,7 +150,7 @@ async function seedResponsibilityOwnerNarrowingData({ responsibilityDataSourceId
     }
     memberMap.set(key, {
       userId,
-      displayName: pageText(message, '發話者名稱') || '未命名成員',
+      displayName: indexRow.displayName || '未命名成員',
       groupPageId: groupOption.pageId,
       groupId: groupOption.targetId,
       groupName: groupOption.displayName,
@@ -167,7 +168,7 @@ async function seedResponsibilityOwnerNarrowingData({ responsibilityDataSourceId
       GroupID: richTextProperty(member.groupId),
       群組顯示名稱: richTextProperty(member.groupName),
       LINE群組: relationProperty([member.groupPageId]),
-      來源: richTextProperty('HOZO LINE 訊息紀錄'),
+      來源: richTextProperty('HOZO LINE 群組成員索引'),
       最後出現時間: member.lastSeenAt ? dateProperty(member.lastSeenAt) : undefined,
       出現次數: numberProperty(member.count),
       同步狀態: selectProperty('自動建立'),
@@ -406,9 +407,25 @@ function normalizeConversationOption(page) {
     customName,
     displayName,
     targetId,
+    targetKey: `${targetType}:${targetId}`,
     project: inferProject(haystack),
     messageCount: pageNumber(page, '訊息數（總）'),
     lastMessageAt: pageDate(page, '最後訊息時間'),
+  };
+}
+
+function normalizeMemberIndexRow(page) {
+  const targetType = selectName(page.properties?.['對象類型']) || 'group';
+  const targetId = targetType === 'room' ? pageText(page, 'RoomID') : pageText(page, 'GroupID');
+  return {
+    userId: pageText(page, 'UserID'),
+    displayName: pageText(page, '成員顯示名稱') || pageTitle(page, '成員索引名稱'),
+    targetType,
+    targetId,
+    targetKey: `${targetType}:${targetId}`,
+    status: selectName(page.properties?.['成員狀態']) || 'unknown',
+    syncedAt: pageDate(page, '最後同步時間'),
+    lastSeenAt: pageDate(page, '最後出現時間'),
   };
 }
 

@@ -8,6 +8,7 @@ const outputPath = path.resolve(args.output || path.join(projectRoot, 'docs', 'u
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
 const projectPrefix = resolveProjectPrefix(projectRoot, projectName, args.prefix);
 const userUiBasePath = normalizeUserUiBasePath(args.userUiBasePath || process.env.USER_UI_BASE_PATH || '');
+const conversationLedUserUi = args['conversation-led'] !== 'false';
 
 loadEnvFile(path.join(projectRoot, '.env'));
 loadEnvFile(path.resolve(projectRoot, '..', 'env.txt'));
@@ -23,7 +24,7 @@ const dataSources = {
   projectMaster: projectEnv('PROJECTS_DATA_SOURCE_ID') || args.projectDataSourceId || '',
   tasks: projectEnv('TASKS_DATA_SOURCE_ID') || '',
   conversations: projectEnv('CONVERSATIONS_DATA_SOURCE_ID') || '',
-  messages: projectEnv('MESSAGES_DATA_SOURCE_ID') || '',
+  messages: conversationLedUserUi ? '' : projectEnv('MESSAGES_DATA_SOURCE_ID') || '',
   attachments: projectEnv('ATTACHMENTS_DATA_SOURCE_ID') || '',
   meetings: projectEnv('MEETINGS_DATA_SOURCE_ID') || '',
   progressReports: projectEnv('PROGRESS_REPORTS_DATA_SOURCE_ID') || '',

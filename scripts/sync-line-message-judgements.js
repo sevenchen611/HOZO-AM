@@ -6,29 +6,42 @@ loadEnvFile('../env.txt');
 
 const notionToken = process.env.NOTION_TOKEN;
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
-const messagesDataSourceId = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
+const conversationsDataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID || '';
 const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
 const progressReportsDataSourceId = process.env.HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID || '';
+const outgoingActorName = process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
 const conversationProjectCache = new Map();
 const inRunCreatedTasks = new Map();
+const taskReconciliationPolicy = loadJsonFile(new URL('../config/hourly-line-task-reconciliation.json', import.meta.url));
+const hierarchyPrompt = loadJsonFile(new URL('../config/conversation-task-hierarchy-prompt.json', import.meta.url));
+const hierarchyContract = loadJsonFile(new URL('../config/task-hierarchy-judgment-contract.json', import.meta.url));
+const masterPromptPolicy = taskReconciliationPolicy.masterPromptPolicy || {};
 
 const args = parseArgs(process.argv.slice(2));
 const dryRun = Boolean(args['dry-run']);
 const includeOutgoing = Boolean(args['include-outgoing']);
 const includeOutgoingGroups = Boolean(args['include-outgoing-groups']);
+const groupsOnly = Boolean(args['groups-only']);
+const updateExistingOnly = Boolean(args['update-existing-only']);
+const skipProgress = Boolean(args['skip-progress']);
 const reprocess = Boolean(args.reprocess || args['include-judged']);
 const sinceHours = clampNumber(Number(args['since-hours'] || process.env.HOZO_LINE_JUDGEMENT_SINCE_HOURS || 36), 1, 24 * 14);
+const sinceIso = String(args['since-iso'] || '').trim();
 const limit = clampNumber(Number(args.limit || 50), 1, 100);
+const conversationContextLimit = clampNumber(Number(args['context-limit'] || process.env.HOZO_LINE_JUDGEMENT_CONTEXT_LIMIT || 20), 1, 50);
 
 if (!notionToken) fail('NOTION_TOKEN is not set.');
-if (!messagesDataSourceId) fail('HOZO_MESSAGES_DATA_SOURCE_ID is not set.');
+if (!conversationsDataSourceId) fail('HOZO_CONVERSATIONS_DATA_SOURCE_ID is not set.');
 if (!tasksDataSourceId) fail('HOZO_TASKS_DATA_SOURCE_ID is not set.');
 if (!progressReportsDataSourceId) fail('HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID is not set.');
 
 try {
   const startedAt = new Date();
   const messages = await listMessagesForJudgement();
-  const groupedMessages = groupMessagesByConversation(messages);
+  const groupedMessages = sortConversationGroupsForJudgement(groupMessagesByConversation(messages));
+  const mainControllerGroups = groupedMessages
+    .filter(isMainControllerConversationGroup)
+    .map((group) => group.conversationName || group.key);
   const results = [];
 
   for (const group of groupedMessages) {
@@ -42,13 +55,25 @@ try {
     dryRun,
     includeOutgoing,
     includeOutgoingGroups,
+    groupsOnly,
+    updateExistingOnly,
+    skipProgress,
     reprocess,
-    sinceHours,
+    since: sinceIso || `${sinceHours}h`,
+    sourceDataSource: 'HOZO_CONVERSATIONS_DATA_SOURCE_ID',
+    forbiddenSourceDataSource: 'HOZO_MESSAGES_DATA_SOURCE_ID',
+    judgmentPolicyVersion: masterPromptPolicy.version || '',
+    hierarchyPromptVersion: hierarchyPrompt.version || '',
+    hierarchyContractVersion: hierarchyContract.version || '',
+    mainControllerConversationLast: true,
+    mainControllerGroups,
+    conversationContextLimit,
     scannedMessages: messages.length,
     conversationGroups: groupedMessages.length,
     updatedExistingTasks: results.reduce((count, item) => count + item.updatedExistingTasks.filter((task) => task.action === 'updated-existing').length, 0),
     createdNewEventTasks: results.reduce((count, item) => count + item.createdTasks.filter((task) => task.action === 'created').length, 0),
     createdTasks: results.reduce((count, item) => count + item.createdTasks.filter((task) => task.action === 'created').length, 0),
+    skippedNewEventTasks: results.reduce((count, item) => count + item.createdTasks.filter((task) => task.action === 'skipped-new-task').length, 0),
     createdProgressReports: results.reduce((count, item) => count + item.createdProgressReports.filter((report) => report.action === 'created').length, 0),
     importantMessages: results.filter((item) => item.importanceScore > 0).length,
     markedJudged: results.filter((item) => item.markedJudged).length,
@@ -65,60 +90,162 @@ try {
 }
 
 async function listMessagesForJudgement() {
-  const since = new Date(Date.now() - sinceHours * 60 * 60 * 1000).toISOString();
+  const since = sinceIso || new Date(Date.now() - sinceHours * 60 * 60 * 1000).toISOString();
   const baseFilters = [
-    { property: '排序時間', date: { on_or_after: since } },
+    { property: '最後訊息時間', date: { on_or_after: since } },
   ];
 
-  if (!reprocess) {
-    baseFilters.unshift({ property: '已進入判斷層', checkbox: { equals: false } });
+  if (groupsOnly) {
+    baseFilters.push({ property: '對象類型', select: { equals: '群組' } });
   }
 
-  if (includeOutgoingGroups) {
-    const [lineMessages, outgoingGroupMessages] = await Promise.all([
-      queryMessagesForJudgement([...baseFilters, { property: '訊息來源', select: { equals: 'line' } }]),
-      queryMessagesForJudgement([
-        ...baseFilters,
-        { property: '訊息來源', select: { equals: 'ai-engine' } },
-        { property: '群組標記', checkbox: { equals: true } },
-      ]),
-    ]);
-
-    return [...lineMessages, ...outgoingGroupMessages]
-      .sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0))
-      .slice(0, limit);
-  }
-
-  const filters = includeOutgoing
-    ? baseFilters
-    : [...baseFilters, { property: '訊息來源', select: { equals: 'line' } }];
-
-  return queryMessagesForJudgement(filters);
+  const conversations = await queryConversationsForJudgement(baseFilters);
+  const targetConversations = reprocess ? conversations : conversations.filter(needsConversationJudgement);
+  const messageGroups = await Promise.all(targetConversations.map(conversationToJudgementMessages));
+  return messageGroups.flat()
+    .filter((message) => shouldIncludeConversationMessage(message))
+    .sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0));
 }
 
-async function queryMessagesForJudgement(filters) {
-  const result = await notionRequest(`/v1/data_sources/${messagesDataSourceId}/query`, {
+async function queryConversationsForJudgement(filters) {
+  const result = await notionRequest(`/v1/data_sources/${conversationsDataSourceId}/query`, {
     method: 'POST',
     body: {
       page_size: limit,
       filter: { and: filters },
-      sorts: [{ property: '排序時間', direction: 'ascending' }],
+      sorts: [{ property: '最後訊息時間', direction: 'descending' }],
     },
   });
 
-  const messages = (result.results || []).map(normalizeMessagePage);
-  return enrichMessagesWithConversationProject(messages);
+  return (result.results || []).map(normalizeConversationPage);
 }
 
-async function enrichMessagesWithConversationProject(messages) {
-  return Promise.all(messages.map(async (message) => {
-    const conversation = await getConversationProject(message.conversationId);
-    return {
-      ...message,
-      conversationProject: conversation.project,
-      conversationDisplayName: conversation.name || message.conversationName,
-    };
+async function conversationToJudgementMessages(conversation) {
+  const messages = await loadLatestConversationMessages(conversation);
+  return messages.map((message) => ({
+    ...message,
+    conversationProject: conversation.project,
+    conversationDisplayName: conversation.name,
   }));
+}
+
+async function loadLatestConversationMessages(conversation) {
+  const blocks = await getBlockChildren(conversation.id);
+  const parsed = parseConversationBlocks(conversation, blocks);
+  return parsed.slice(0, conversationContextLimit).reverse();
+}
+
+async function getBlockChildren(blockId) {
+  const blocks = [];
+  let startCursor;
+  do {
+    const query = startCursor ? `?page_size=100&start_cursor=${encodeURIComponent(startCursor)}` : '?page_size=100';
+    const result = await notionRequest(`/v1/blocks/${blockId}/children${query}`, { method: 'GET' });
+    blocks.push(...(result.results || []));
+    startCursor = result.has_more ? result.next_cursor : null;
+  } while (startCursor);
+  return blocks;
+}
+
+function parseConversationBlocks(conversation, blocks) {
+  const messages = [];
+  let current = null;
+
+  for (const block of blocks) {
+    const text = plainBlockText(block).trim();
+    if (!text || text.includes('LINE 對話記錄')) continue;
+
+    const meta = parseConversationMessageMeta(text);
+    if (meta) {
+      if (current) messages.push(finalizeConversationMessage(conversation, current, messages.length));
+      current = { ...meta, contentLines: [] };
+      continue;
+    }
+
+    if (current) current.contentLines.push(text);
+  }
+
+  if (current) messages.push(finalizeConversationMessage(conversation, current, messages.length));
+  return messages;
+}
+
+function parseConversationMessageMeta(text) {
+  const incoming = text.match(/^【(.+?)】(.+?) - (.+?)（(.+?)）$/);
+  if (incoming) {
+    return {
+      timeText: incoming[1],
+      conversationLabel: incoming[2].trim(),
+      actor: incoming[3].trim(),
+      type: messageTypeFromLabel(incoming[4]),
+      source: 'line',
+    };
+  }
+
+  const outgoing = text.match(/^【(.+?)】(.+?)：(.+?)$/);
+  if (outgoing) {
+    return {
+      timeText: outgoing[1],
+      conversationLabel: '',
+      actor: outgoing[2].trim(),
+      type: messageTypeFromLabel(outgoing[3]),
+      source: outgoing[2].trim() === outgoingActorName ? 'ai-engine' : 'line',
+    };
+  }
+
+  return null;
+}
+
+function finalizeConversationMessage(conversation, meta, index) {
+  const text = meta.contentLines.join('\n').trim();
+  const time = parseTaipeiDisplayTime(meta.timeText) || conversation.lastMessageTime || '';
+  const messageId = buildConversationMessageId(conversation.id, meta, text, index);
+  return {
+    id: messageId,
+    url: conversation.url,
+    sourceKind: 'conversation',
+    messageId,
+    actor: meta.actor,
+    source: meta.source,
+    type: meta.type,
+    time,
+    text,
+    judged: false,
+    conversationId: conversation.id,
+    conversationName: conversation.name || meta.conversationLabel,
+    conversationType: conversation.type,
+  };
+}
+
+function shouldIncludeConversationMessage(message) {
+  if (message.source !== 'ai-engine') return true;
+  if (includeOutgoing) return true;
+  if (includeOutgoingGroups && message.conversationType === '群組') return true;
+  return false;
+}
+
+function normalizeConversationPage(page) {
+  const properties = page.properties || {};
+  const name = textProperty(properties['LINE 對話名稱']) || textProperty(properties['自定義名稱']) || page.id;
+  const preview = textProperty(properties['最新訊息預覽']);
+  return {
+    id: page.id,
+    url: page.url,
+    name,
+    type: selectName(properties['對象類型']),
+    status: selectName(properties['監控狀態']),
+    lastMessageTime: dateValue(properties['最後訊息時間']),
+    lastJudgementTime: dateValue(properties['最後任務判斷時間']),
+    lastJudgementMessageTime: dateValue(properties['最後任務判斷訊息時間']),
+    judgementStatus: selectName(properties['任務判斷狀態']),
+    preview,
+    project: selectName(properties['總控專案']) || inferConversationProject(`${name}\n${preview}`),
+  };
+}
+
+function needsConversationJudgement(conversation) {
+  if (!conversation.lastMessageTime) return true;
+  if (!conversation.lastJudgementMessageTime) return true;
+  return new Date(conversation.lastMessageTime) > new Date(conversation.lastJudgementMessageTime);
 }
 
 async function getConversationProject(pageId) {
@@ -144,8 +271,49 @@ function groupMessagesByConversation(messages) {
   }
   return [...groups.entries()].map(([key, groupMessages]) => ({
     key,
+    conversationName: groupMessages[0]?.conversationDisplayName || groupMessages[0]?.conversationName || key,
+    conversationType: groupMessages[0]?.conversationType || '',
     messages: groupMessages.sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0)),
   }));
+}
+
+function sortConversationGroupsForJudgement(groups) {
+  return groups
+    .map((group, index) => ({ group, index, isMainController: isMainControllerConversationGroup(group) }))
+    .sort((a, b) => Number(a.isMainController) - Number(b.isMainController) || a.index - b.index)
+    .map((item) => item.group);
+}
+
+function isMainControllerConversationGroup(group) {
+  const name = group.conversationName || group.messages?.[0]?.conversationName || group.key || '';
+  return isMainControllerConversationName(name);
+}
+
+function isMainControllerConversationName(name) {
+  const normalizedName = normalizeControllerName(name);
+  if (!normalizedName) return false;
+  const aliases = getMainControllerAliases();
+  return aliases.some((alias) => normalizedName.includes(normalizeControllerName(alias)));
+}
+
+function getMainControllerAliases() {
+  const configured = masterPromptPolicy.mainControllerConversation?.projectNameBasedAliases || {};
+  const aliases = Object.values(configured)
+    .flat()
+    .filter((alias) => alias && !String(alias).includes('{'));
+  return [...new Set([
+    ...aliases,
+    'HOZO Junior',
+    'HOZO Jr.',
+    '好住 Junior',
+    '好住 Jr.',
+    'Seven Junior',
+    'Seven Jr.',
+  ])];
+}
+
+function normalizeControllerName(value) {
+  return String(value || '').replace(/[.\s_-]+/g, '').toLowerCase();
 }
 
 async function processMessage(message, runConversationMessages = []) {
@@ -184,6 +352,8 @@ async function processMessage(message, runConversationMessages = []) {
         await updateTaskWithEvidence(relatedTask, candidate, message, sameConversationContext);
         result.updatedExistingTasks.push({ action: 'updated-existing', pageId: relatedTask.id, url: relatedTask.url, name: relatedTask.name, candidate: candidate.name });
       }
+    } else if (updateExistingOnly) {
+      result.createdTasks.push({ action: 'skipped-new-task', name: candidate.name, reason: 'update-existing-only' });
     } else if (dryRun) {
       result.createdTasks.push({ action: 'dry-run', name: candidate.name, properties: candidate.taskProperties });
       inRunCreatedTasks.set(candidateKey, {
@@ -211,7 +381,7 @@ async function processMessage(message, runConversationMessages = []) {
       });
     }
 
-    if (candidate.progressProperties) {
+    if (candidate.progressProperties && !skipProgress) {
       try {
         const existingProgress = await findExistingProgressReport(candidate.progressName);
         if (existingProgress) {
@@ -229,7 +399,7 @@ async function processMessage(message, runConversationMessages = []) {
   }
 
   if (!dryRun && (!message.judged || reprocess)) {
-    await markMessageJudged(message, firstCreatedUrl(result));
+    await markConversationJudged(message);
     result.markedJudged = true;
   }
 
@@ -241,39 +411,7 @@ async function loadSameConversationContext(message, runConversationMessages = []
     .filter((item) => item.conversationId === message.conversationId || item.conversationName === message.conversationName)
     .filter((item) => !item.time || !message.time || new Date(item.time) <= new Date(message.time));
 
-  if (!message.conversationId) {
-    return runContext.slice(-12);
-  }
-
-  const filters = [
-    { property: '對話主檔', relation: { contains: message.conversationId } },
-  ];
-  if (message.time) {
-    filters.push({ property: '排序時間', date: { on_or_before: message.time } });
-  }
-
-  try {
-    const result = await notionRequest(`/v1/data_sources/${messagesDataSourceId}/query`, {
-      method: 'POST',
-      body: {
-        page_size: 12,
-        filter: { and: filters },
-        sorts: [{ property: '排序時間', direction: 'descending' }],
-      },
-    });
-
-    return (result.results || [])
-      .map(normalizeMessagePage)
-      .map((item) => ({
-        ...item,
-        conversationProject: message.conversationProject,
-        conversationDisplayName: message.conversationDisplayName,
-      }))
-      .sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0));
-  } catch (error) {
-    console.warn(`Unable to load same conversation context for ${message.messageId}: ${error.message}`);
-    return runContext.slice(-12);
-  }
+  return runContext.slice(-conversationContextLimit);
 }
 
 function analyzeMessage(message) {
@@ -550,21 +688,48 @@ function normalizeHozoProject(project) {
   return aliases.get(value) || value || '未分類';
 }
 
-function normalizeMessagePage(page) {
-  const properties = page.properties || {};
-  return {
-    id: page.id,
-    url: page.url,
-    messageId: textProperty(properties['訊息 ID']),
-    actor: textProperty(properties['發話者名稱']),
-    source: selectName(properties['訊息來源']),
-    type: selectName(properties['訊息類型']),
-    time: dateValue(properties['排序時間']),
-    text: textProperty(properties['文字內容']) || textProperty(properties['原始內容']),
-    judged: checkboxValue(properties['已進入判斷層']),
-    conversationId: relationId(properties['對話主檔']),
-    conversationName: relationMentionName(properties['對話主檔']),
-  };
+function messageTypeFromLabel(label) {
+  const value = String(label || '').trim();
+  if (/文字/.test(value)) return 'text';
+  if (/圖片/.test(value)) return 'image';
+  if (/檔案/.test(value)) return 'file';
+  if (/貼圖/.test(value)) return 'sticker';
+  if (/位置/.test(value)) return 'location';
+  if (/影片/.test(value)) return 'video';
+  if (/語音/.test(value)) return 'audio';
+  return 'unsupported';
+}
+
+function parseTaipeiDisplayTime(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})\s*(上午|下午)?\s*(\d{1,2}):(\d{2})/);
+  if (!match) return '';
+
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const meridiem = match[4] || '';
+  let hour = Number(match[5]);
+  const minute = Number(match[6]);
+  if (meridiem === '下午' && hour < 12) hour += 12;
+  if (meridiem === '上午' && hour === 12) hour = 0;
+
+  const date = new Date(Date.UTC(year, month, day, hour - 8, minute));
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+}
+
+function buildConversationMessageId(conversationId, meta, text, index) {
+  const hash = createHash('sha1')
+    .update([conversationId, meta.timeText, meta.actor, meta.type, text, index].join('\n'))
+    .digest('hex')
+    .slice(0, 12);
+  return `conversation:${conversationId}:${hash}`;
+}
+
+function plainBlockText(block) {
+  const value = block?.[block.type] || {};
+  const richText = value.rich_text || value.caption || [];
+  return richText.map((item) => item.plain_text || item.text?.content || '').join('');
 }
 
 function inferCategory(text) {
@@ -1340,31 +1505,24 @@ async function createProgressReport(candidate) {
   });
 }
 
-async function markMessageJudged(message, relatedUrl) {
+async function markConversationJudged(message) {
+  if (!message.conversationId) return;
+
   const properties = compactProperties({
-    已進入判斷層: checkboxProperty(true),
-    關聯總控事件: relatedUrl ? urlProperty(relatedUrl) : undefined,
+    最後任務判斷時間: dateProperty(new Date()),
+    最後任務判斷訊息時間: message.time ? dateProperty(message.time) : undefined,
+    任務判斷狀態: selectProperty('已判斷'),
   });
 
   try {
-    await notionRequest(`/v1/pages/${message.id}`, {
+    await notionRequest(`/v1/pages/${message.conversationId}`, {
       method: 'PATCH',
       body: { properties },
     });
   } catch (error) {
-    if (!String(error.message || '').includes('關聯總控事件 is not a property')) throw error;
-    await notionRequest(`/v1/pages/${message.id}`, {
-      method: 'PATCH',
-      body: { properties: { 已進入判斷層: checkboxProperty(true) } },
-    });
+    if (!String(error.message || '').includes('is not a property')) throw error;
+    console.warn(`Conversation judgement fields are not installed yet for ${message.conversationName || message.conversationId}.`);
   }
-}
-
-function firstCreatedUrl(result) {
-  const task = result.createdTasks.find((item) => item.url);
-  if (task?.url) return task.url;
-  const progress = result.createdProgressReports.find((item) => item.url);
-  return progress?.url || '';
 }
 
 async function notionRequest(pathname, { method, body }) {
@@ -1506,8 +1664,17 @@ function loadEnvFile(path) {
   }
 }
 
+function loadJsonFile(path) {
+  if (!existsSync(path)) return {};
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch (error) {
+    console.warn(`Could not load JSON policy ${path}: ${error.message}`);
+    return {};
+  }
+}
+
 function fail(message) {
   console.error(message);
   process.exit(1);
 }
-

@@ -31,6 +31,7 @@ Fill these values in Render. Sensitive values are intentionally not stored in th
 | `HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID` | `add70895-645c-4268-9763-3e4bcb2b5b95` |
 | `HOZO_RISK_DECISIONS_DATA_SOURCE_ID` | `1f6ef6e0-3f5f-49fb-8b80-add787898d7d` |
 | `HOZO_AUTOMATION_RUN_LOG_DATA_SOURCE_ID` | `5f7a870d-5a34-44a2-b1c8-a17171b6353a` |
+| `HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID` | `800976c4-59ca-44d2-866b-b43d513c23ce` |
 | `HOZO_REPORT_TARGET_TYPE` | `user` |
 | `HOZO_REPORT_TARGET_NAME_KEYWORD` | `Maggie` |
 | `HOZO_CRON_ALERTS_ENABLED` | `true` |
@@ -54,4 +55,3 @@ HOZO_PUBLIC_BASE_URL=https://hozo-am-line-oa-webhook.onrender.com
 CONTROL_API_URL=https://hozo-am-line-oa-webhook.onrender.com/control/reports/send
 CONTROL_LINE_PUSH_URL=https://hozo-am-line-oa-webhook.onrender.com/control/line/push
 ```
-

@@ -58,6 +58,8 @@ services:
         value: bdab58cf-be1f-4e10-85bd-3ab1b9d5e527
       - key: HOZO_LINE_GROUP_MEMBERS_DATA_SOURCE_ID
         value: 685ddbd8-a7da-42a3-b526-07f335c1bb9e
+      - key: HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID
+        value: 800976c4-59ca-44d2-866b-b43d513c23ce
       - key: HOZO_REPORT_TARGET_ID
         sync: false
       - key: HOZO_REPORT_TARGET_TYPE
@@ -142,6 +144,8 @@ services:
         value: bdab58cf-be1f-4e10-85bd-3ab1b9d5e527
       - key: HOZO_LINE_GROUP_MEMBERS_DATA_SOURCE_ID
         value: 685ddbd8-a7da-42a3-b526-07f335c1bb9e
+      - key: HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID
+        value: 800976c4-59ca-44d2-866b-b43d513c23ce
 
   - type: cron
     name: hozo-am-morning-brief
