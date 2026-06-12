@@ -1,11 +1,11 @@
-# Postgres 佇列暫不建：Render 每帳戶只允許一顆免費 Postgres，名額已被
-# sevenam-queue-db 佔用。HOZO 測試期 webhook 直接寫 Notion（無 DATABASE_URL
-# 時自動退回同步模式）。轉正式時把下方註解打開並用付費方案：
-# databases:
-#   - name: hozoam-queue-db
-#     plan: basic-256mb
-#     databaseName: hozoam_queue
-#     user: hozoam
+databases:
+  # 訊息持久化佇列：用帳戶唯一的免費 Postgres 名額（sevenam-queue-db 已轉付費讓出）。
+  # 免費版 30 天到期，HOZO 測試轉正式時改 plan: basic-256mb。
+  # 注意：要等 SevenAM 的 Blueprint 先 sync（付費升級生效）後再 sync 這邊。
+  - name: hozoam-queue-db
+    plan: free
+    databaseName: hozoam_queue
+    user: hozoam
 
 services:
   - type: web
@@ -73,3 +73,7 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hozoam-queue-db
+          property: connectionString
