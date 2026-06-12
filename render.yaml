@@ -1,6 +1,11 @@
-# 注意：HOZO 測試期間不建 Postgres 佇列（Render 帳戶資源上限 25 已滿）。
-# 沒有 DATABASE_URL 時 webhook 自動退回「直接寫 Notion」模式，功能不受影響，
-# 只是少了 Notion 斷線時的訊息緩衝。正式化時再加回 databases 區塊。
+databases:
+  # 訊息持久化佇列（使用者決策 2026-06-13：Postgres 一律放 Render）。
+  # free 方案 30 天後到期，正式使用請升級為 basic-256mb 以上付費方案。
+  # 若 Blueprint sync 報資源上限錯誤，先刪除已下線的舊 cron 釋放額度再 sync。
+  - name: hozoam-queue-db
+    plan: free
+    databaseName: hozoam_queue
+    user: hozoam
 
 services:
   - type: web
@@ -68,3 +73,7 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hozoam-queue-db
+          property: connectionString
