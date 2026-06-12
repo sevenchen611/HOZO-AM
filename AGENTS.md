@@ -13,14 +13,16 @@ The system answers:
 1. What is the current status of each HOZO project?
 2. What should happen next, and who needs to be reminded?
 
-## Business Context（案場結構）
+## Business Context（公司與案場結構）
 
-HOZO 好住寓好 is a 包租代管（sublease & property management）business. There are currently **two cases（案場）**, and tenants, 工務（repair/engineering）and 房務（housekeeping）work all split across them:
+**Company**: 好住寓好股份有限公司 (abbreviation: **HOZO** or 好住寓好). Business: 包租代管 — currently mainly 包租 (master-lease/sublease). Note: the 寓 character is 公寓's 寓, never 遇/御.
 
-1. **櫻桃計畫** — the 櫻桃/櫻花商務會館 site (handed over from Debbie 2026-06-01; legacy contacts: Amber for finance, 信翰 for cleaning).
-2. **明義街 46 號** — the 明義街 site (e.g. tenant group 明義街46號2之2; 2F construction: electric meters, network, dryer/shelving).
+There are currently **two cases（案場）** with standard names. Tenants, 工務（repair/engineering）and 房務（housekeeping）work all split across them:
 
-Tenant inquiries and issues will keep arriving for both sites separately. When judging conversations and creating tasks, always identify **which 案場 the matter belongs to** and record it in the task title or body (the controlled project vocabulary stays functional — 房務管理, 工務維修管理, etc. — so the 案場 must be made explicit in the task itself).
+1. **寓好草悟道** （備註：明義街 46 號）— e.g. tenant group 明義街46號2之2; 2F construction: electric meters, network, dryer/shelving.
+2. **寓見櫻桃** （備註：櫻桃計畫，櫻桃/櫻花商務會館）— handed over from Debbie 2026-06-01; legacy contacts: Amber for finance, 信翰 for cleaning.
+
+Tenant inquiries and issues will keep arriving for both sites separately. The total-control task database has a **案場 select property** with exactly these options: `寓好草悟道`, `寓見櫻桃`, `公司層級` (company-level / cross-site). When judging conversations and creating tasks, always identify which 案場 the matter belongs to, set the 案場 property, and use the standard site names (not the 備註 aliases) in task titles. The controlled project vocabulary stays functional — 房務管理, 工務維修管理, etc. — the 案場 dimension is carried by this property.
 
 ## Main Actors
 
