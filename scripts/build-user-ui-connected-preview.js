@@ -1064,6 +1064,19 @@ function link(url, label) {
   return `<a href="${escapeHtml(url)}"${attrs}>${escapeHtml(label || url)}</a>`;
 }
 
+function notionUrl(item) {
+  return item?.notionUrl || item?.url || '';
+}
+
+function notionPageLink(item, label = '開啟 Notion 頁面') {
+  const url = notionUrl(item);
+  return url ? link(url, label) : '<span class="muted">未保留 Notion 連結</span>';
+}
+
+function itemTitleWithNotionLink(item, title, uiUrl) {
+  return `${link(uiUrl || item?.uiUrl, title || item?.name || 'Open')}<div class="muted">${notionPageLink(item, '開啟 Notion 任務頁')}</div>`;
+}
+
 function formatDateTime(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -1444,6 +1457,7 @@ function renderHtml(model) {
             return `<article class="card">
             <h3>${link(item.uiUrl, item.name)}</h3>
             <p class="muted">${escapeHtml(short(item.goal || item.next, 160))}</p>
+            <p>${notionPageLink(item, '開啟 Notion 專案頁')}</p>
             <p><span class="badge ${statusClass(item.status)}">${escapeHtml(item.status || 'No status')}</span> ${item.owner ? `<span class="badge neutral">${escapeHtml(item.owner)}</span>` : ''} <span class="badge neutral">任務 ${taskCount}</span></p>
           </article>`;
           })}
@@ -1482,6 +1496,7 @@ function renderHtml(model) {
           ${cards(model.conversations, (item, index) => `<article class="card" id="line-conversation-${index}">
             <h3>${link(item.uiUrl, item.name || '(unnamed conversation)')}</h3>
             <p class="muted">${escapeHtml(short(item.preview, 130))}</p>
+            <p>${notionPageLink(item, '開啟 Notion 對話頁')}</p>
             <p>
               ${(item.project || '未綁定專案').split(',').map((projectName) => `<span class="badge ${item.project ? 'ok' : 'wait'}">Project: ${escapeHtml(projectName.trim())}</span>`).join(' ')}
               <span class="badge neutral">${escapeHtml(item.type || 'LINE')}</span>
@@ -1525,6 +1540,7 @@ function renderHtml(model) {
           ${cards(model.meetings, (item) => `<article class="card">
             <h3>${link(item.url, item.name)}</h3>
             <p class="muted">${escapeHtml(short(item.summary, 160))}</p>
+            <p>${notionPageLink(item, '開啟 Notion 會議頁')}</p>
             <p><span class="badge neutral">${escapeHtml(item.date || 'No date')}</span> <span class="badge neutral">${escapeHtml(item.department || item.category || 'Meeting')}</span></p>
           </article>`)}
         </div>
@@ -1583,7 +1599,7 @@ function renderHtml(model) {
   <script>
     const panels = Array.from(document.querySelectorAll('.view-panel'));
     const navLinks = Array.from(document.querySelectorAll('.nav [data-view]'));
-    const storagePrefix = 'sevenam-user-ui:';
+    const storagePrefix = 'hozo-am-user-ui:';
     let attachmentBasicAuth = sessionStorage.getItem(storagePrefix + 'basicAuth') || '';
     const viewLabels = {
       overview: '檔案總覽',
@@ -1891,6 +1907,7 @@ function renderProjectOnlyHtml(model, project, index) {
         <span class="badge ${statusClass(project.status)}">${escapeHtml(project.status || 'No status')}</span>
         ${project.owner ? `<span class="badge neutral">${escapeHtml(project.owner)}</span>` : ''}
       </p>
+      <p>${notionPageLink(project, '開啟 Notion 專案頁')}</p>
       <div class="note">這是單一專案頁。此頁只顯示「${escapeHtml(project.name)}」的資料，不顯示其他專案。</div>
       <section class="section">
         <h2>專案資訊</h2>
@@ -1901,6 +1918,7 @@ function renderProjectOnlyHtml(model, project, index) {
             <tr><th>下一步</th><td>${escapeHtml(project.next || '')}</td></tr>
             <tr><th>主要風險</th><td>${escapeHtml(project.risk || '')}</td></tr>
             <tr><th>成功條件</th><td>${escapeHtml(project.success || '')}</td></tr>
+            <tr><th>Notion Page</th><td>${notionPageLink(project, '開啟 Notion 專案頁')}</td></tr>
             <tr><th>LINE 對話</th><td>${renderProjectConversationLinks(project, model.conversations)}</td></tr>
           </tbody>
         </table>
@@ -2026,7 +2044,7 @@ function renderTaskOnlyHtml(model, task) {
             </div>
             <div class="field">
               <label for="editedBy">編輯者</label>
-              <input id="editedBy" name="editedBy" value="" placeholder="例如：Seven">
+              <input id="editedBy" name="editedBy" value="" placeholder="例如：Maggie">
             </div>
             <div class="field">
               <label for="taskStatus">狀態</label>
@@ -2093,6 +2111,7 @@ function renderTaskOnlyHtml(model, task) {
         <table>
           <tbody>
             <tr><th>所屬專案</th><td>${project ? link(project.uiUrl, project.name) : escapeHtml(task.project || '')}</td></tr>
+            <tr><th>Notion Page</th><td>${notionPageLink(task, '開啟 Notion 任務頁')}</td></tr>
             <tr><th>負責人</th><td>${escapeHtml(task.owner || '')}</td></tr>
             <tr><th>確認狀態</th><td>${escapeHtml(task.confirmation || '')}</td></tr>
             <tr><th>來源</th><td>${escapeHtml(task.source || '')}</td></tr>
@@ -2127,7 +2146,7 @@ function renderTaskOnlyHtml(model, task) {
   <script>
     const taskPageId = ${jsString(task.id)};
     const backLink = document.querySelector('[data-back-link]');
-    const storagePrefix = 'sevenam-user-ui:';
+    const storagePrefix = 'hozo-am-user-ui:';
     const apiInput = document.getElementById('apiBaseUrl');
     const editorInput = document.getElementById('editedBy');
     const statusNode = document.getElementById('saveStatus');
@@ -2257,6 +2276,7 @@ function renderConversationOnlyHtml(model, conversation) {
             <tr><th>最新訊息預覽</th><td>${escapeHtml(conversation.preview || '')}</td></tr>
             <tr><th>最後訊息時間</th><td>${escapeHtml(conversation.latestAt || '')}</td></tr>
             <tr><th>訊息數</th><td>${escapeHtml(conversation.count || String(conversationMessages.length))}</td></tr>
+            <tr><th>Notion Page</th><td>${notionPageLink(conversation, '開啟 Notion 對話頁')}</td></tr>
           </tbody>
         </table>
       </section>
@@ -2348,7 +2368,7 @@ function taskTableRows(tasks) {
   if (!tasks.length) return '<tr><td colspan="5" class="muted">No records.</td></tr>';
   return sortTasksByRecentActivity(tasks).map((item) => `
     <tr data-task-row data-status="${escapeHtml(item.status || 'No status')}" data-project="${escapeHtml(item.project || 'No project')}">
-      <td>${link(item.uiUrl, item.name)}</td>
+      <td>${itemTitleWithNotionLink(item, item.name, item.uiUrl)}</td>
       <td><span class="badge ${statusClass(item.status)}">${escapeHtml(item.status || 'No status')}</span></td>
       <td>${escapeHtml(item.project || 'No project')}</td>
       <td>${escapeHtml(item.owner || '')}</td>
@@ -2373,7 +2393,7 @@ function projectTaskRows(tasks) {
   if (!tasks.length) return '<tr><td colspan="4" class="muted">No records.</td></tr>';
   return sortTasksByRecentActivity(tasks).map((item) => `
     <tr data-project-task-row data-status="${escapeHtml(item.status || 'No status')}">
-      <td>${link(item.uiUrl, item.name)}</td>
+      <td>${itemTitleWithNotionLink(item, item.name, item.uiUrl)}</td>
       <td><span class="badge ${statusClass(item.status)}">${escapeHtml(item.status || 'No status')}</span></td>
       <td>${escapeHtml(item.owner || '')}</td>
       <td>${escapeHtml(short(item.next, 150))}</td>
@@ -2402,7 +2422,7 @@ function attachmentTableRows(attachments) {
     const sourceLinks = [
       item.source ? link(item.source, 'Source') : '',
       item.conversionUrl ? link(item.conversionUrl, '轉檔頁') : '',
-      item.url ? link(item.url, '附件紀錄') : '',
+      item.url ? link(item.url, '開啟 Notion 附件頁') : '',
     ].filter(Boolean).join('<br>');
     return `
     <tr data-attachment-row="${escapeHtml(item.id)}">
@@ -2459,7 +2479,7 @@ function taskProjectGroups(tasks) {
         <thead><tr><th>Task</th><th>Status</th><th>Owner</th><th>Next step</th></tr></thead>
         <tbody>${projectTasks.map((item) => `
           <tr data-task-card data-status="${escapeHtml(item.status || 'No status')}">
-            <td>${link(item.uiUrl, item.name)}</td>
+            <td>${itemTitleWithNotionLink(item, item.name, item.uiUrl)}</td>
             <td><span class="badge ${statusClass(item.status)}">${escapeHtml(item.status || 'No status')}</span></td>
             <td>${escapeHtml(item.owner || '')}</td>
             <td>${escapeHtml(short(item.next, 140))}</td>
@@ -2575,6 +2595,7 @@ function renderProjectDetailSection(project, index, taskItems, conversationItems
         <tr><th>下一步</th><td>${escapeHtml(project.next || '')}</td></tr>
         <tr><th>主要風險</th><td>${escapeHtml(project.risk || '')}</td></tr>
         <tr><th>成功條件</th><td>${escapeHtml(project.success || '')}</td></tr>
+        <tr><th>Notion Page</th><td>${notionPageLink(project, '開啟 Notion 專案頁')}</td></tr>
         <tr><th>LINE 對話</th><td>${renderProjectConversationLinks(project, conversationItems)}</td></tr>
       </tbody>
     </table>
@@ -2587,7 +2608,7 @@ function renderProjectDetailSection(project, index, taskItems, conversationItems
     <table>
       <thead><tr><th>Task</th><th>Status</th><th>Owner</th><th>Next step</th></tr></thead>
       <tbody>${rows(projectTasks, [
-        { value: (item) => link(item.uiUrl, item.name), html: true },
+        { value: (item) => itemTitleWithNotionLink(item, item.name, item.uiUrl), html: true },
         { value: (item) => `<span class="badge ${statusClass(item.status)}">${escapeHtml(item.status)}</span>`, html: true },
         { value: 'owner' },
         { value: (item) => short(item.next, 150) },
@@ -3291,8 +3312,8 @@ function isAssistantLineArchiveHead(value) {
 }
 
 function renderLineArchiveMedia(body, model = {}) {
-  const ids = [...String(body || '').matchAll(/(?:圖片|檔案|影片|語音)\s*[:：]\s*([A-Za-z0-9_-]{10,})|\[(?:image|file|video|audio)\]\s*([A-Za-z0-9_-]{10,})/gi)]
-    .map((match) => match[1] || match[2])
+  const ids = [...String(body || '').matchAll(/(?:圖片|檔案|影片|語音)\s*[:：]\s*([A-Za-z0-9_.-]{10,})|\[(?:image|file|video|audio)\]\s*([A-Za-z0-9_.-]{10,})|([A-Za-z0-9_-]{10,}\.(?:png|jpe?g|gif|webp|pdf))/gi)]
+    .map((match) => match[1] || match[2] || match[3])
     .filter(Boolean);
   if (!ids.length) return '';
   const messageMap = new Map();
@@ -3304,15 +3325,36 @@ function renderLineArchiveMedia(body, model = {}) {
   const media = [];
   for (const id of ids) {
     const message = messageMap.get(normalizeId(id));
-    if (!message) continue;
-    const html = renderMessageContent(message, attachmentsForMessage(message, model.attachments || []));
-    const mediaOnly = html.match(/<div class="message-media">[\s\S]*?<\/div>/)?.[0] || '';
+    let mediaOnly = '';
+    if (message) {
+      const html = renderMessageContent(message, attachmentsForMessage(message, model.attachments || []));
+      mediaOnly = html.match(/<div class="message-media">[\s\S]*?<\/div>/)?.[0] || '';
+    } else {
+      mediaOnly = renderLocalArchiveMediaFallback(id);
+    }
     if (mediaOnly && !seen.has(mediaOnly)) {
       seen.add(mediaOnly);
       media.push(mediaOnly);
     }
   }
   return media.join('');
+}
+
+function renderLocalArchiveMediaFallback(id) {
+  const mediaId = String(id || '').trim();
+  if (!mediaId) return '';
+  const candidates = mediaId.includes('.')
+    ? [`user-ui-media/${mediaId}`]
+    : ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'].map((extension) => `user-ui-media/${mediaId}.${extension}`);
+  const localUrl = candidates.find((candidate) => existsSync(path.join(path.dirname(outputPath), candidate))) || '';
+  if (localUrl) {
+    return `<div class="message-media">${renderMessageMedia({
+      type: inferMediaType(mediaId, localUrl),
+      name: mediaId,
+      url: localUrl,
+    })}</div>`;
+  }
+  return `<div class="message-media"><span class="message-file">${escapeHtml(mediaId)}（原圖目前不可取）</span></div>`;
 }
 
 function tasksForProject(project, taskItems) {

@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HOZO AM LINE 對話主檔全量重建候選任務</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 24px; color: #1f2933; background: #f7f8fa; }
+    h1 { font-size: 24px; margin: 0 0 12px; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 16px 0 22px; }
+    .metric { background: #fff; border: 1px solid #d9dee7; padding: 12px; border-radius: 8px; }
+    .metric b { display: block; font-size: 22px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { border: 1px solid #d9dee7; padding: 8px; vertical-align: top; font-size: 13px; }
+    th { background: #edf1f7; text-align: left; }
+    pre { white-space: pre-wrap; margin: 0; max-width: 520px; }
+    a { color: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <h1>HOZO AM LINE 對話主檔全量重建候選任務</h1>
+  <p>來源規則：只讀 LINE 對話主檔，不讀 LINE 訊息紀錄。候選任務尚未寫入正式任務庫。</p>
+  <p>判斷規範：Conversation-to-task event-line judgment / 未標示版本；主控群組最後分析。</p>
+  <div class="summary">
+    <div class="metric"><span>封存舊任務</span><b>51</b></div>
+    <div class="metric"><span>掃描對話</span><b>16</b></div>
+    <div class="metric"><span>掃描訊息</span><b>103</b></div>
+    <div class="metric"><span>候選任務</span><b>23</b></div>
+  </div>
+  <table>
+    <thead><tr><th>#</th><th>候選任務</th><th>專案</th><th>優先</th><th>負責人</th><th>對話</th><th>發言者</th><th>最新時間</th><th>來源證據</th></tr></thead>
+    <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>營運：確認測試：服務已重新啟動</strong><br><span>由負責人確認判斷結果，決定是否轉成正式任務。</span></td>
+      <td>營運</td>
+      <td>高</td>
+      <td>Seven陳聖文</td>
+      <td><a href="https://app.notion.com/p/Seven-37551c686dac8111a10dfd4300f3bf83">Seven陳聖文</a></td>
+      <td>Seven陳聖文</td>
+      <td>2026/06/05 14:08</td>
+      <td><pre>【2026/06/05 14:08】Seven陳聖文：1780639688256-cce33e0a-ff3b-4f93-9528-1467ec2cc72f.jpg
+【2026/6/5 下午1:59】Seven陳聖文（檔案）
+sample.pdf
+【2026/6/5 下午1:55】好住管家（文字訊息）
+重啟確認測試：服務已重新啟動，這是一則傳給你自己的測試訊息。
+【2026/6/5 下午1:44】Seven陳聖文（檔案）
+sample.pdf
+【2026/6/5 下午1:28】Seven陳聖文（檔案）
+sample.pdf
+【2026/6/5 下午1:17】Seven陳聖文（檔案）
+【2026/6/5 中午12:15】Seven陳聖文（檔案）
+【2026/6/5 上午9:51】Seven陳聖文（檔案）
+【2026/6/5 上午9:12】好住管家（圖片）
+【2026/6/5 上午9:12】好住管家（文字訊息）
+測試（可下載 URL）: image + conversation link + attachment DB 觀察。
+【2026/6/5 上午9:11】好住管家（圖片）
+【2026/6/5 上午9:11】好住管家（文字訊息）
+這是純文字測試：我用「最早期」流程做一個對照，圖片/檔案主檔以連結+分流為主。
+【2026/6/5 上午9:11】好住管家（圖片）
+【2026/6/5 上午9:11】好住管家（文字訊息）
+這是純文字測試：我用「最早期」流程做一個對照，圖片/檔案主檔以連結+分流為主。
+【2026/6/5 上午9:11】好住管家（圖片）
+【2026/6/5 上午9:11】好住管家（文字訊息）
+這是純文字測試：我用「最早期」流程做一個對照，圖片/檔案主檔以連結+分流為主。
+【2026/6/5 上午8:57】Seven陳聖文（檔案）
+【2026/6/5 上午8:53】好住管家（圖片）
+【2026/6/5 上午8:53】好住管家（文字訊息）
+第二輪直接圖片測試：請確認這張圖有被以 block embed 呈現。
+【2026/6/5 上午8:53】好住管家（圖片）
+【2026/6/5 上午8:53】好住管家（文字訊息）
+這是第二波圖片同步測試：請確認 Notion 是否有新訊息與圖片。
+【2026/6/5 上午8:53】好住管家（圖片）
+【2026/6/5 上午8:53】好住管家（文字訊息）
+這是第二波圖片同步測試：請確認 Notion 是否有新訊息與圖片。
+【2026/6/5 上午8:52】好住管家（圖片）
+【2026/6/5 上午8:52】好住管家（文字訊息）
+這是圖片同步測試：請到 Notion 看看是否有圖片 embed。
+【2026/6/5 上午8:52】好住管家（圖片）
+【2026/6/5 上午8:52】好住管家（文字訊息）
+這是圖片同步測試：請到 Notion 看看是否有圖片 embed。
+【2026/6/5 上午8:51】好住管家（文字訊息）
+這是自動化測試：文字訊息：你可回到 Notion 對話主檔查看。
+【2026/6/5 上午8:50】好住管家（文字訊息）
+這是自動化測試：文字訊息：你可回到 Notion 對話主檔查看。
+【2026/6/5 上午8:31】好住管家（文字訊息）
+今天天氣陰陰的，但是溫度還蠻舒服的。
+【2026/6/5 上午8:16】好住管家（文字訊息）
+早安，你好
+【2026/6/5 上午8:05】Seven陳聖文（檔案）
+【2026/6/5 上午8:04】Seven陳聖文（檔案）
+【2026/6/5 清晨7:54】Seven陳聖文（檔案）
+財金109企業參訪_5109027101陳聖文.docx
+【2026/6/5 清晨7:49】Seven陳聖文（檔案）
+財金109企業參訪_5109027101陳聖文.docx
+【2026/6/5 清晨7:48】Seven陳聖文（圖片）
+【2026/6/5 清晨7:48】Seven陳聖文（文字訊息）
+直123
+【2026/6/5 清晨7:45】Seven陳聖文（圖片）
+1780616758276-fcbe3edb-5304-46ed-a8f0-94a72ea21618.jpg
+【2026/6/5 清晨7:45】Seven陳聖文（檔案）
+財金109企業參訪_5109027101陳聖文.docx
+【2026/6/5 凌晨1:31】Seven陳聖文（檔案）
+明義街-房型平面圖.pdf
+【2026/6/5 凌晨1:29】Seven陳聖文（文字訊息）
+有收到
+【2026/6/5 凌晨1:28】Seven陳聖文（圖片）
+1780594099721-19d2a700-70f0-4ca1-b186-3f75f79fd2e0.jpg
+【2026/6/5 凌晨1:28】Seven陳聖文（圖片）
+1780594097873-680dc151-2ccc-4ee4-a37d-6a37bccb7eab.jpg
+【2026/6/5 凌晨1:27】好住管家（文字訊息）
+這是最後一次本機測試：請回「有收到」給我（你現在看到這則就回覆一下）
+【2026/6/5 凌晨1:27】好住管家（文字訊息）
+server復活測試
+【2025/10/9 晚上8:19】Seven陳聖文（文字訊息）
+從ngrok測試外部webhook 2026-06-05
+【2026/6/5 凌晨1:25】好住管家（文字訊息）
+這是重新測試：機器人確認收到，請回覆有無寫進 Notion 對話主檔
+【2026/6/5 凌晨1:16】好住管家（文字訊息）
+今天測試一則訊息，服務重啟後驗證
+【2026/6/5 凌晨1:12】好住管家（文字訊息）
+你剛剛的命令我已收到，現在直接回覆你：
+
+現在是幾點？
+【2026/6/5 凌晨1:11】Seven陳聖文（文字訊息）
+Codex 現在是幾點？
+【2026/6/5 凌晨1:08】好住管家（文字訊息）
+已收到 Codex 指令，已進入待處理佇列。
+
+已收指令：你可以做什麼？
+【2026/6/5 凌晨1:08】Seven陳聖文（文字訊息）
+Codex，你可以做什麼？
+【2026/6/5 凌晨1:07】好住管家（文字訊息）
+已收到 Codex 指令，已進入待處理佇列。
+
+已收指令：現在是幾點？
+【2026/6/5 凌晨1:07】Seven陳聖文（文字訊息）
+Codex 現在是幾點？
+【2026/6/5 凌晨1:06】Seven陳聖文（文字訊息）
+Codex，你看一下現在是幾點？
+【2026/6/5 凌晨1:03】好住管家（文字訊息）
+已收到 Codex 指令，已進入待處理佇列。
+
+已收指令：你現在有收到嗎
+【2026/6/5 凌晨1:03】Seven陳聖文（文字訊息）
+Codex 你現在有收到嗎
+【2026/6/5 凌晨1:03】Seven陳聖文（文字訊息）
+Codex，好的，你如果有收到的話，請回覆我喔。
+【2026/6/5 凌晨1:02】好住管家（文字訊息）
+已收到 Codex 指令，已進入待處理佇列。
+
+已收指令：你現在有收到嗎
+【2026/6/5 凌晨1:02】Seven陳聖文（文字訊息）
+Codex 你現在有收到嗎
+【2026/6/5 凌晨12:57】Seven陳聖文（文字訊息）
+Codex，如果你有收到我的命令，請告訴我「收到了」
+【2026/6/5 凌晨12:56】Seven陳聖文（文字訊息）
+Codex 測試回報 2026-06-04-...
+【2026/6/5 凌晨12:40】Seven陳聖文（文字訊息）
+C O D E X 內部測試
+【2026/6/5 凌晨12:30】Seven陳聖文（文字訊息）
+Codex 最終驗證
+【2026/6/5 凌晨12:09】Seven陳聖文（文字訊息）
+Codex 測試新資料夾啟動
+【2026/6/4 晚上11:59】Seven陳聖文（文字訊息）
+Codex 測試回報 2026-06-04-...
+【2026/6/4 晚上11:57】Seven陳聖文（文字訊息）
+Codex，你現在有收到嗎？有收到回覆我
+【2026/6/4 晚上11:56】Seven陳聖文（文字訊息）
+Codex 這是監控測試
+【2026/6/4 晚上11:51】Seven陳聖文（文字訊息）
+Codex，我現在做一次測試，如果你有收到我的訊息跟我講有。
+【2026/6/4 晚上11:51】Seven陳聖文（文字訊息）
+12345
+【2026/6/4 晚上11:49】Seven陳聖文（文字訊息）
+測試訊號 from local check
+【2026/6/4 晚上11:40】Seven陳聖文（文字訊息）
+Codex 這次確定測試
+【2026/6/4 晚上11:36】Seven陳聖文（文字訊息）
+Codex 再測一次 你收到嗎
+【2026/6/4 晚上11:33】Seven陳聖文（文字訊息）
+Codex 幫我回報你剛剛有收到這則指令了嗎
+【2026/6/4 晚上11:25】Seven陳聖文（文字訊息）
+Codex，那我現在想要再測試一次，你看看有沒有收到，如果有收到跟我回覆有。
+【2026/6/4 晚上11:23】Seven陳聖文（文字訊息）
+好的，那我再測試一次，你看看這樣可不可以？
+【2026/6/4 晚上11:21】Seven陳聖文（文字訊息）
+好，我想說我們先行溝通就好了。我現在先發這個訊息給你，你有收到再跟我講；如果沒有，你就說沒有。
+【2026/6/4 晚上11:20】Line OA（文字訊息）
+測試流程啟動：你現在可以在 Line 傳一則指令到我（例如「/status」或「列出目前目錄」）。我這邊收到後會執行，並透過 /webhook/line/send 回傳結果。
+【2026/6/4 晚上11:16】Line OA（文字訊息）
+[handoff 正式流程] 這則訊息請透過 /webhook/line/send 送出，同步到 CRM。
+【2026/6/4 晚上10:51】好住管家（文字訊息）
+補測：請用 send 路由發，確認會記錄 OA 名稱與橘色 metadata。
+【2026/6/4 晚上10:51】Line OA（文字訊息）
+這次改成 /webhook/line/send 測試。
+【2026/6/4 晚上10:31】Line OA（文字訊息）
+我測試從 Codex 直接發訊息給 Seven（OA ID 標籤檢查）
+【2026/6/4 晚上10:31】Line OA（文字訊息）
+我測試從 Codex 直接發訊息給 Seven（LINE OA 標註再驗）
+【2026/6/4 晚上10:30】Line OA（文字訊息）
+我測試從 Codex 直接發訊息給 Seven（來自 OA 發送紀錄檢測）
+【2026/6/4 晚上10:21】Seven陳聖文（檔案）
+11_27_歡慶戈們回娘家!_(回覆).xlsx
+【2026/6/4 晚上10:19】Seven陳聖文（文字訊息）
+y y y
+【2026/6/4 晚上10:06】Seven陳聖文（檔案）
+個案討論.rtf.txt
+【2026/6/4 晚上10:19】Seven陳聖文（文字訊息）
+uyyu
+【2026/6/4 晚上10:09】Seven陳聖文（檔案）
+【2026/6/4 晚上10:06】Seven陳聖文（檔案）
+【2026/6/4 晚上10:01】Seven陳聖文（檔案）
+【2026/6/4 晚上9:59】Seven陳聖文（檔案）
+【2026/6/4 晚上9:56】Seven陳聖文（檔案）
+【2026/6/4 晚上9:49】Seven陳聖文（檔案）
+【2026/6/4 晚上9:47】Seven陳聖文（檔案）
+【2026/6/4 晚上9:38】Seven陳聖文（檔案）
+【2026/6/4 晚上9:37】Seven陳聖文（檔案）
+【2026/6/4 晚上9:21】Seven陳聖文（檔案）
+【2026/6/4 晚上9:16】Seven陳聖文（檔案）
+【2026/6/4 晚上8:47】Seven陳聖文（檔案）
+【2026/6/4 晚上8:31】Seven陳聖文（檔案）
+【2026/6/4 晚上8:15】Seven陳聖文（檔案）
+【2026/6/4 晚上8:15】Seven陳聖文（文字訊息）
+good job
+【2026/6/4 晚上8:00】Seven陳聖文（檔案）
+程果科技股東協議書_法人變更對照版_已更新.docx.docx
+【2026/6/4 晚上7:49】Seven陳聖文（檔案）
+Book1.xlsx.xlsx
+【2026/6/4 晚上7:26】Seven陳聖文（文字訊息）
+44455556
+【2026/6/4 晚上7:21】Seven陳聖文（檔案）
+程果科技股東協議書_法人變更對照版_已更新.docx
+【2026/6/4 下午6:59】Seven陳聖文（文字訊息）
+888888
+【2026/6/4 下午6:39】Seven陳聖文（檔案）
+Book1.xlsx
+【2026/6/4 下午6:29】Seven陳聖文（文字訊息）
+ttttt
+【2026/6/4 下午6:28】Seven陳聖文（文字訊息）
+https://margin-yapping-rai
+【2026/6/4 下午6:19】Seven陳聖文（檔案）
+(租賃補充協議)_-最終版.docx
+【2026/6/4 下午6:09】Seven陳聖文（檔案）
+(經營權移轉)_-最終版.docx
+【2026/6/4 下午5:57】Seven陳聖文（檔案）
+(經營權移轉)_-雙方協議調整版2026.1.12.docx
+【2026/6/4 下午5:54】Seven陳聖文（文字訊息）
+55555
+【2026/6/4 下午5:50】Seven陳聖文（檔案）
+(經營權移轉)_-雙方協議調整版2026.1.12.docx
+【2026/6/4 下午5:50】Seven陳聖文（檔案）
+1.pdf
+【2026/6/4 下午5:49】Seven陳聖文（檔案）
+2026-04-27_人力資源部門組織改善計畫.txt
+【2026/6/4 下午5:49】Seven陳聖文（圖片）
+1780566543000-dade6ae2-da15-4101-ba63-a59e1ab3b4fb.jpg
+【2026/6/4 下午5:48】Seven陳聖文（文字訊息）
+66666
+【2026/6/4 下午5:21】Seven陳聖文（文字訊息）
+https://developers.line.biz/console/channel/2009385650/messaging-api?status=success
+【2026/6/4 下午5:20】Seven陳聖文（圖片）
+1780564853461-799e022b-7375-4f53-a697-687812862ed5.jpg
+【2026/6/4 下午5:20】Seven陳聖文（檔案）
+1.pdf
+【2026/6/4 下午5:19】Seven陳聖文（文字訊息）
+77777777
+【2026/6/4 下午4:23】Seven陳聖文（檔案）
+1.pdf
+【2026/6/4 下午4:22】Seven陳聖文（檔案）
+程果科技股東協議書_法人變更對照版_已更新.docx
+【2026/6/4 下午4:20】Seven陳聖文（圖片）
+1780561206928-fb8ef761-8e09-4201-af60-d4d256fba661.jpg
+【2026/6/4 下午4:18】Seven陳聖文（文字訊息）
+it looks work again
+【2026/6/4 下午4:17】Seven陳聖文（文字訊息）
+i don't know what is hapen
+【2026/6/4 下午4:14】Seven陳聖文（文字訊息）
+【2026/6/4 下午4:16】Seven陳聖文（文字訊息）
+try it
+it is good now
+【2026/6/4 下午4:14】Seven陳聖文（文字訊息）
+let do it
+我現在有一些事情要測試，讓我測試一下
+【2026/6/4 下午4:00】Seven陳聖文（文字訊息）
+1234
+【2026/6/4 下午4:01】Seven陳聖文（文字訊息）
+5678
+【2026/6/4 下午4:06】Seven陳聖文（文字訊息）
+seven
+【2026/6/4 下午4:07】Seven陳聖文（文字訊息）
+11
+【2026/6/4 下午4:15】Seven陳聖文（文字訊息）
+let's try some thing new
+【2026/6/4 下午4:15】Seven陳聖文（文字訊息）
+come back
+manual test upload block
+媒體：260525.868017596.1.INV.pdf.pdf、成真咖啡個案討論_20210227.pdf.pdf、課程三.pdf.pdf、360.jpg.jpg.jpg、640px-Fronalpstock_big.jpg、640px-Fronalpstock_big.jpg、640px-Fronalpstock_big.jpg、課程三.pdf.pdf、360.jpg.jpg、800px-Google_2015_logo.svg.png、800px-Google_2015_logo.svg.png、800px-Google_2015_logo.svg.png、800px-Google_2015_logo.svg.png、課程三.pdf.pdf、個案討論.rtf.txt.txt、1780616925537-f98ece2d-920b-49ca-8f97-03b53312dcb6.jpg.jpg、20201211_幹部會議.rtf.txt.txt、個案討論.rtf.txt.txt、課程三.pdf.pdf、word_text.txt.txt、pdf_text.txt.txt、word_text.txt.txt、pdf_text.txt.txt、word_text.txt.txt、pdf_text.txt.txt、word_text.txt.txt、Book1.xlsx.xlsx.xlsx、程果科技股東協議書_法人變更對照版.docx.docx、程果科技股東協議書_法人變更對照版_已更新.docx.docx、程果科技股東協議書_法人變更對照版_已更新.docx.docx.docx、Book1.xlsx.xlsx.xlsx、程果科技股東協議書_法人變更對照版_已更新.docx.docx、Book1.xlsx.xlsx、(租賃補充協議)_-最終版.docx.docx、(經營權移轉)_-最終版.docx.docx、(經營權移轉)_-雙方協議調整版2026.1.12.docx.docx、(%E7%B6%93%E7%87%9F%E6%AC%8A%E7%A7%BB%E8%BD%89)_-%E9%9B%99%E6%96%B9%E5%8D%94%E8%AD%B0%E8%AA%BF%E6%95%B4%E7%89%882026.1.12.docx、1.pdf、2026-04-27_%E4%BA%BA%E5%8A%9B%E8%B3%87%E6%BA%90%E9%83%A8%E9%96%80%E7%B5%84%E7%B9%94%E6%94%B9%E5%96%84%E8%A8%88%E7%95%AB.txt、1780566543000-dade6ae2-da15-4101-ba63-a59e1ab3b4fb.jpg、1780564853461-799e022b-7375-4f53-a697-687812862ed5.jpg、1.pdf、1.pdf、%E7%A8%8B%E6%9E%9C%E7%A7%91%E6%8A%80%E8%82%A1%E6%9D%B1%E5%8D%94%E8%AD%B0%E6%9B%B8_%E6%B3%95%E4%BA%BA%E8%AE%8A%E6%9B%B4%E5%B0%8D%E7%85%A7%E7%89%88_%E5%B7%B2%E6%9B%B4%E6%96%B0.docx、1780561206928-fb8ef761-8e09-4201-af60-d4d256fba661.jpg、test_manual.txt</pre></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>財務：發票（收據）」開立記錄 不過本週課程提到關於包租代管業開立發票/收據</strong><br><span>由負責人確認判斷結果，決定是否轉成正式任務。</span></td>
+      <td>財務</td>
+      <td>高</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b">HOZO 公司群</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/09 22:45</td>
+      <td><pre>【2026/06/09 22:45】昱晴 Maggie：功能上，目前在經過這一週多實際處理後，希望新增房客端「發票（收據）」開立記錄
+
+不過本週課程提到關於包租代管業開立發票/收據，這部分可能還有需要探討，可以待公司設立後再確認實務做法</pre></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>財務：發票給客人 後天（週四）下課後預計到明義街202修繕處理 如果要這兩日的話可能週三到總</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>財務</td>
+      <td>高</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b">HOZO 公司群</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/09 15:21</td>
+      <td><pre>【2026/06/09 15:21】昱晴 Maggie：哈囉seven哥
+課程是本週一到週四全天，週五考試喔！
+
+明後天的話，
+明天（週三）下課後約傍晚我會到總部用印合約、拿備品、開發票給客人
+後天（週四）下課後預計到明義街202修繕處理 
+
+如果要這兩日的話可能週三到總部後可以喔
+大約要17:30後，方便嗎？</pre></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>未分類：補登） HOZO 入站測試 2026-06-07 【2026/6/7 下午9:28】S</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>未分類</td>
+      <td>高</td>
+      <td>Seven陳聖文</td>
+      <td><a href="https://app.notion.com/p/Seven-37551c686dac8111a10dfd4300f3bf83">Seven陳聖文</a></td>
+      <td>Seven陳聖文</td>
+      <td>2026/06/07 21:45</td>
+      <td><pre>【2026/06/07 21:45】Seven陳聖文：我必須再測試看看你是不是真的打通了。
+【2026/6/7 下午9:29】Seven陳聖文（文字訊息｜人工補登）
+HOZO 入站測試 2026-06-07
+【2026/6/7 下午9:28】Seven陳聖文（文字訊息｜人工補登）
+HRO 入站測試 2026-06-07
+【2026/6/6 晚上8:15】Seven陳聖文（文字訊息）
+好的，那我覺得這樣應該也可以
+【2026/6/6 晚上8:11】好住管家（文字訊息）
+這是一則由程式主動送出的 LINE OA 測試訊息
+【2026/6/6 晚上8:08】好住管家（文字訊息）
+我透過 LINE OA 發訊息給自己（經由 Bridge 同步 CRM）
+【2026/6/6 下午5:25】Seven陳聖文（檔案）
+【2026/6/6 下午5:25】Seven陳聖文（圖片）
+【2026/6/6 下午5:25】Seven陳聖文（文字訊息）
+好，我這次會測試訊息、圖片跟檔案三個格式
+【2026/6/6 下午5:23】Seven陳聖文（文字訊息）
+再測試一次
+【2026/6/5 晚上7:59】Seven陳聖文（檔案）
+【2026/6/5 晚上7:59】Seven陳聖文（檔案）
+【2026/6/5 晚上7:53】Seven陳聖文（檔案）
+sample.pdf
+【2026/6/5 晚上7:44】Seven陳聖文（檔案）
+sample.pdf
+【2026/6/5 晚上7:36】Seven陳聖文（圖片）
+【2026/6/5 晚上7:28】Seven陳聖文（圖片）
+【2026/6/5 晚上7:28】Seven陳聖文（圖片）
+【2026/6/5 晚上7:29】Seven陳聖文（圖片）
+【2026/6/5 晚上7:19】Seven陳聖文（檔案）
+sample.pdf
+【2026/6/5 晚上7:19】Seven陳聖文（圖片）
+1780658361086-9be6d6ac-5765-465c-896b-fb20a4ada58c.jpg
+【2026/6/5 晚上7:19】Seven陳聖文（文字訊息）
+再做一次
+【2026/6/5 晚上7:18】Seven陳聖文（文字訊息）
+測試看看
+【2026/6/5 晚上7:09】Seven陳聖文（檔案）
+sample.pdf
+【2026/6/5 下午6:05】Seven陳聖文（文字訊息）
+h h h h
+【2026/6/5 下午3:23】Seven陳聖文（文字訊息）
+我的 User ID 還是沒有幫我改回來
+【2026/6/5 下午3:21】Seven陳聖文（文字訊息）
+幫我測試看看
+【2026/6/5 下午3:09】Seven陳聖文（文字訊息）
+我是 Seven，幫我改回來
+媒體：sample.pdf.pdf、1780737942682、茶覺旅2026年3月亨利零用金請款13032.xlsx.xlsx、browserconfig.xml.txt.txt、1780659409138、1780659065430、1780658941542</pre></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>未分類：確認過路線問題</strong><br><span>由負責人確認判斷結果，決定是否轉成正式任務。</span></td>
+      <td>未分類</td>
+      <td>中</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td>2026/06/10 09:54</td>
+      <td><pre>【2026/06/10 09:54】Bonnie～蔡雅婷🌷：@昱晴 Maggie 壞消息，元冠環保已答覆，他們確認過路線問題，無法承接！</pre></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><strong>未分類：需要我提供什麼</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>未分類</td>
+      <td>中</td>
+      <td>OrangeHsu_哲</td>
+      <td><a href="https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf">HOZO好住工務群組</a></td>
+      <td>OrangeHsu_哲</td>
+      <td>2026/06/08 12:52</td>
+      <td><pre>【2026/06/08 12:52】OrangeHsu_哲：使用 UOF 可以在這裡查到表單資訊  若資訊不足 看還需要我提供什麼，再跟我說。
+5月份主要是有二單，較急迫，未先報價就施作了。</pre></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><strong>營運：請問明日的討論 除基本的近期事項彙報討論 我這邊目前需要準備什麼資訊嗎？</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>營運</td>
+      <td>高</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b">HOZO 公司群</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/09 22:05</td>
+      <td><pre>【2026/06/09 22:05】昱晴 Maggie：好的
+明天17:30-19:00
+我可能會再加一組櫻桃看房
+我盡量早點結束所有事項
+
+請問明日的討論
+除基本的近期事項彙報討論
+我這邊目前需要準備什麼資訊嗎？</pre></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><strong>未分類：提供給妳參考</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>未分類</td>
+      <td>中</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td>2026/06/08 14:53</td>
+      <td><pre>【2026/06/08 14:53】Bonnie～蔡雅婷🌷：@昱晴 Maggie 台中市政府沿街垃圾清運，我們也有查詢了喔！提供給妳參考，如下...
+每週一二四五六14:30停-西屯路二段268之7號。</pre></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td><strong>未分類：請問明天早上可以過來嗎？</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>高</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>山田智里</td>
+      <td>2026/06/07 11:06</td>
+      <td><pre>【2026/06/07 11:06】山田智里：@昱晴 Maggie 請問明天早上可以過來嗎？</pre></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td><strong>未分類：安排 您到時再跟我說時間方不方便喔！</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>中</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/07 10:52</td>
+      <td><pre>【2026/06/07 10:52】昱晴 Maggie：好呦～
+我週四晚上19:00後可以安排
+您到時再跟我說時間方不方便喔！</pre></td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td><strong>未分類：協助找尋會館這邊垃圾清運廠商</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>中</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td>2026/06/05 13:43</td>
+      <td><pre>【2026/06/05 13:43】Bonnie～蔡雅婷🌷：@昱晴 Maggie 上次Seven有交代協助找尋會館這邊垃圾清運廠商，目前問了幾家狀況供妳參考！</pre></td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td><strong>未分類：1334 【2026/6/4 晚上10:54】好住管家（文字訊息） 測試</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>中</td>
+      <td>Seven陳聖文</td>
+      <td><a href="https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b">HOZO 公司群</a></td>
+      <td>Seven陳聖文</td>
+      <td>2026/06/10 11:56</td>
+      <td><pre>【2026/06/10 11:56】Seven陳聖文：1334
+【2026/6/4 晚上10:54】好住管家（文字訊息）
+測試中</pre></td>
+    </tr>
+    <tr>
+      <td>13</td>
+      <td><strong>未分類：需要用印</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>高</td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/09 15:35</td>
+      <td><pre>【2026/06/09 15:35】昱晴 Maggie：@Bonnie～蔡雅婷🌷 
+哈囉Bonnie 
+我這邊有一份紙本合約需要用印，預計明天17:30左右過去用印喔感謝</pre></td>
+    </tr>
+    <tr>
+      <td>14</td>
+      <td><strong>未分類：麻煩開單謝謝</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>低</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf">HOZO好住工務群組</a></td>
+      <td>Roger 王士豪</td>
+      <td>2026/06/10 15:55</td>
+      <td><pre>【2026/06/10 15:55】Roger 王士豪：@昱晴 Maggie 安裝層架的部分工資是兩個人3000，再麻煩開單謝謝</pre></td>
+    </tr>
+    <tr>
+      <td>15</td>
+      <td><strong>未分類：確認 謝謝！</strong><br><span>由負責人確認判斷結果，決定是否轉成正式任務。</span></td>
+      <td>未分類</td>
+      <td>低</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf">HOZO好住工務群組</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/08 12:53</td>
+      <td><pre>【2026/06/08 12:53】昱晴 Maggie：好呦～我再確認
+謝謝！</pre></td>
+    </tr>
+    <tr>
+      <td>16</td>
+      <td><strong>營運：提供嗎？ 新的旅客入住時我這邊可以一併推薦給旅客(emoji)</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>營運</td>
+      <td>低</td>
+      <td>John</td>
+      <td><a href="https://app.notion.com/p/HOZO-37551c686dac81d9ad94fb1ba7c12cc1">HOZO品牌設計</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/08 10:32</td>
+      <td><pre>【2026/06/08 10:32】昱晴 Maggie：@John 🦁 哈囉John 
+我有看到櫻桃電梯內有這一張房客優惠 詢問櫻桃同仁後他們沒有檔案
+
+您這邊有檔案可以提供嗎？
+新的旅客入住時我這邊可以一併推薦給旅客(emoji)</pre></td>
+    </tr>
+    <tr>
+      <td>17</td>
+      <td><strong>未分類：發霉的痕跡</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>未分類</td>
+      <td>低</td>
+      <td>山田智里</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>山田智里</td>
+      <td>2026/06/07 11:06</td>
+      <td><pre>【2026/06/07 11:06】山田智里：浴室的牆壁有許多發霉的痕跡</pre></td>
+    </tr>
+    <tr>
+      <td>18</td>
+      <td><strong>未分類：我也有做測試</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>低</td>
+      <td>OrangeHsu_哲</td>
+      <td><a href="https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf">HOZO好住工務群組</a></td>
+      <td>OrangeHsu_哲</td>
+      <td>2026/06/08 12:55</td>
+      <td><pre>【2026/06/08 12:55】OrangeHsu_哲：我也有做測試單 但已作廢</pre></td>
+    </tr>
+    <tr>
+      <td>19</td>
+      <td><strong>未分類：這是套用新版 AS Line群組名稱 的測試</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>低</td>
+      <td>Seven陳聖文</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>Seven陳聖文</td>
+      <td>2026/06/05 15:28</td>
+      <td><pre>【2026/06/05 15:28】Seven陳聖文：這是套用新版 AS Line群組名稱 的測試訊息</pre></td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td><strong>未分類：我要去台北星期四下午回台中，正確時間還未定</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>低</td>
+      <td>山田智里</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>山田智里</td>
+      <td>2026/06/07 10:20</td>
+      <td><pre>【2026/06/07 10:20】山田智里：我要去台北星期四下午回台中，正確時間還未定</pre></td>
+    </tr>
+    <tr>
+      <td>21</td>
+      <td><strong>未分類：山田小姐 早安 這週我有課程 週三傍晚大約18:00過去看看可以嗎？</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>低</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/07 09:44</td>
+      <td><pre>【2026/06/07 09:44】昱晴 Maggie：山田小姐 早安
+這週我有課程
+週三傍晚大約18:00過去看看可以嗎？</pre></td>
+    </tr>
+    <tr>
+      <td>22</td>
+      <td><strong>未分類：t e s t 【2026/6/5 下午2:09】Seven陳聖文（文字訊息） hello</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>低</td>
+      <td>Seven陳聖文</td>
+      <td><a href="https://app.notion.com/p/Seven-37551c686dac8111a10dfd4300f3bf83">Seven陳聖文</a></td>
+      <td>Seven陳聖文</td>
+      <td>2026/06/05 15:08</td>
+      <td><pre>【2026/06/05 15:08】Seven陳聖文：t e s t
+【2026/6/5 下午2:09】Seven陳聖文（文字訊息）
+hello</pre></td>
+    </tr>
+    <tr>
+      <td>23</td>
+      <td><strong>未分類：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>未分類</td>
+      <td>低</td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td>2026/06/05 13:47</td>
+      <td><pre>【2026/06/05 13:47】Bonnie～蔡雅婷🌷：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果</pre></td>
+    </tr></tbody>
+  </table>
+</body>
+</html>

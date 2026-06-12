@@ -1,0 +1,1368 @@
+{
+  "ok": true,
+  "dryRun": false,
+  "archiveCurrent": true,
+  "createTasks": true,
+  "sourceDataSource": "HOZO_CONVERSATIONS_DATA_SOURCE_ID",
+  "forbiddenSourceDataSource": "HOZO_MESSAGES_DATA_SOURCE_ID",
+  "mode": "full-conversation-master-rebuild-candidates",
+  "judgmentPolicy": {
+    "name": "",
+    "version": "",
+    "mainControllerConversationLast": true,
+    "mainControllerConversations": []
+  },
+  "startedAt": "2026-06-11T01:28:37.888Z",
+  "finishedAt": "2026-06-11T01:29:43.756Z",
+  "snapshotPath": "D:\\Codex_project\\HOZO_AM\\line-oa-webhook\\reports\\task-rebuild\\hozo-am-task-archive-snapshot-20260611092837.json",
+  "candidateJsonPath": "D:\\Codex_project\\HOZO_AM\\line-oa-webhook\\reports\\task-rebuild\\hozo-am-conversation-rebuild-candidates-20260611092837.json",
+  "candidateHtmlPath": "D:\\Codex_project\\HOZO_AM\\line-oa-webhook\\reports\\task-rebuild\\hozo-am-conversation-rebuild-candidates-20260611092837.html",
+  "counts": {
+    "totalTasks": 92,
+    "activeTasksBeforeArchive": 18,
+    "archivedTasks": 18,
+    "conversations": 16,
+    "conversationMessages": 103,
+    "rawCandidates": 18,
+    "dedupedCandidates": 18,
+    "outputCandidates": 18,
+    "createdTasks": 18
+  },
+  "archiveResults": {
+    "requested": true,
+    "archived": 18,
+    "skipped": 74,
+    "results": [
+      {
+        "id": "37c51c68-6dac-8184-bc42-eec98d2c0a1c",
+        "title": "房務管理：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-812c-9a55-cdc9f38dcaba",
+        "title": "住客服務與體驗管理：山田小姐 早安 這週我有課程 週三傍晚大約18:00過去看看可以嗎？",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-81c8-bac1-c55b062d5142",
+        "title": "住客服務與體驗管理：我要去台北星期四下午回台中，正確時間還未定",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-8192-b1fb-e5422b207b78",
+        "title": "自動化：我也有做測試",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-81c6-8022-d92c070629dc",
+        "title": "房務管理：發霉的痕跡",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-8124-81da-c48ae1b3ab23",
+        "title": "住客服務與體驗管理：提供嗎？ 新的旅客入住時我這邊可以一併推薦給旅客(emoji)",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-810c-82cd-f1670c6a4fff",
+        "title": "工務維修管理：麻煩開單謝謝",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-81d2-b680-e918b38f85ec",
+        "title": "財務與帳務管理：需要用印",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-818d-b989-e07b21bcfd71",
+        "title": "自動化：1334 【2026/6/4 晚上10:54】好住管家（文字訊息） 測試",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-8189-8e44-cd55975ba59e",
+        "title": "工務維修管理：協助找尋會館這邊垃圾清運廠商",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-81d3-9d8a-eadf709ca5e7",
+        "title": "住客服務與體驗管理：安排 您到時再跟我說時間方不方便喔！",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-8124-b0da-f09754710346",
+        "title": "住客服務與體驗管理：請問明天早上可以過來嗎？",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-810d-b8e1-c3192ad56ecb",
+        "title": "房務管理：提供給妳參考",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-81ba-92f4-dc1d0785f506",
+        "title": "公司治理：請問明日的討論 除基本的近期事項彙報討論 我這邊目前需要準備什麼資訊嗎？",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-8154-b2f6-c5520cfe5a6c",
+        "title": "財務與帳務管理：需要我提供什麼",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-81b9-8d55-ca29823df19e",
+        "title": "工務維修管理：確認過路線問題",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-81be-a296-c8b31d7d3538",
+        "title": "財務與帳務管理：發票給客人 後天（週四）下課後預計到明義街202修繕處理 如果要這兩日的話可能週三到總",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-81ad-b4f5-e2246ffa641b",
+        "title": "財務與帳務管理：發票（收據）」開立記錄 不過本週課程提到關於包租代管業開立發票/收據",
+        "previousStatus": "待確認",
+        "action": "archived"
+      },
+      {
+        "id": "37c51c68-6dac-8108-b000-ed8c11e420e7",
+        "title": "未分類：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-813d-8960-ccfc9490fc57",
+        "title": "未分類：t e s t 【2026/6/5 下午2:09】Seven陳聖文（文字訊息） hello",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-8187-b205-de998c34689b",
+        "title": "未分類：山田小姐 早安 這週我有課程 週三傍晚大約18:00過去看看可以嗎？",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-81dc-907b-d41cb6b6ab06",
+        "title": "未分類：我要去台北星期四下午回台中，正確時間還未定",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-813e-afc8-cb11425b932d",
+        "title": "未分類：這是套用新版 AS Line群組名稱 的測試",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-8163-b7e6-f623113b0197",
+        "title": "未分類：我也有做測試",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-81f8-aba0-c67e7f3cd053",
+        "title": "未分類：發霉的痕跡",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-812c-9816-e1e4259e9083",
+        "title": "營運：提供嗎？ 新的旅客入住時我這邊可以一併推薦給旅客(emoji)",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-818c-8fd6-e22d6df0840c",
+        "title": "未分類：確認 謝謝！",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-81d5-8b3a-fab8cedb72ea",
+        "title": "未分類：麻煩開單謝謝",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-818e-ba21-e40efa6758e8",
+        "title": "未分類：需要用印",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-811c-b1e0-eaa6fb55f871",
+        "title": "未分類：1334 【2026/6/4 晚上10:54】好住管家（文字訊息） 測試",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-81a3-a2f7-dadc7c7b194a",
+        "title": "未分類：協助找尋會館這邊垃圾清運廠商",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-8112-9a12-f3ef0144a0cc",
+        "title": "未分類：安排 您到時再跟我說時間方不方便喔！",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-81c8-94a8-d9996e7b52e7",
+        "title": "未分類：請問明天早上可以過來嗎？",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-814a-822b-c57a6cac989e",
+        "title": "未分類：提供給妳參考",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-8185-8940-da9b3dfe51d4",
+        "title": "營運：請問明日的討論 除基本的近期事項彙報討論 我這邊目前需要準備什麼資訊嗎？",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-8131-a9f4-d00eed45e992",
+        "title": "未分類：需要我提供什麼",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-8177-adeb-f6fc44e930b4",
+        "title": "未分類：確認過路線問題",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-815d-b337-d37ade971a9e",
+        "title": "未分類：補登） HOZO 入站測試 2026-06-07 【2026/6/7 下午9:28】S",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-81f6-935c-f8abbb4ad811",
+        "title": "財務：發票給客人 後天（週四）下課後預計到明義街202修繕處理 如果要這兩日的話可能週三到總",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-8161-a50e-d6fe32310274",
+        "title": "財務：發票（收據）」開立記錄 不過本週課程提到關於包租代管業開立發票/收據",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37c51c68-6dac-81d4-a932-c2f937b1f936",
+        "title": "營運：確認測試：服務已重新啟動",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81e6-8014-da53b15aff01",
+        "title": "弱電與資訊維修費用佐證確認（UOF 表單與 5 月急件）",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-810e-a238-d4c36229d145",
+        "title": "清運與維護：整併垃圾清運方案、信翰清潔配合、飲水機位置與公共區域維護。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-815c-945d-c79f8f5e7e3e",
+        "title": "營運交接：整併櫻花商務會館 6/1 交接、Debbie 對接、清潔與床單更換流程。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81f4-9605-c805c69c1e97",
+        "title": "通路與定價：整併 591、Airbnb、Booking.com 上架規範與四人房/大雙/小雙階梯定價模板。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8159-adff-ee8ab45ac372",
+        "title": "LINE OA 與 PMS：整併密碼鎖遠端發送、拍照點收、房客入住/退房清單與官網後台聯動。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81ba-9e96-ceb961f13797",
+        "title": "裝修與軟裝標準：整併石晶板、SPC、暖色系、床墊床架、洗沐備品、杯具、拖鞋、Dyson 等採購決策。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81b4-8abe-dc942449ee58",
+        "title": "品牌與官網：確認 HOZO/寓好命名、LOGO、官網首頁風格、案場標示與真人帶看影片。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8187-88ba-f2fdfd263d73",
+        "title": "租賃合約與公證：整併 12 份拆分租賃合約、公證時程、房東 5/25 前簽署安排。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8101-9ffa-f9d57f9f924c",
+        "title": "公司設立與帳戶：完成公司登記、統編取得、銀行對公帳戶/籌備戶流程。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8184-aca4-e25e2268b558",
+        "title": "工務與房務 SOP：整併信翰/哲文公務群組、施工進退場回報、清潔與床單配合流程。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8146-813e-e04ab37ae6bb",
+        "title": "交接素材整理：整併 Google 雲端硬碟、房型照片、591 刊登素材。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8191-a57f-d0f016e472c3",
+        "title": "自動化點交與電子合約：整併 LINE 回傳照片、證件/房況存檔、電子合約 PDF 與公司大小章。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8111-9ffd-cc1e4d6d8abf",
+        "title": "PMS 後台優化：整併房間租金顯示、租約版本、成租人個人備註/喜好欄位。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81db-9506-c06250f673a0",
+        "title": "官網與品牌內容：整併 hozo.com.tw、官方 Email、設備設施清單、FAQ、企業合作專區與品牌口號。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81e2-b309-f6a58be425fc",
+        "title": "牌照與考照：整併 Karen 牌照借用協議、每月費用、Maggie 代管人證照課程與候補追蹤。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-810f-9e23-df50f5c1bed8",
+        "title": "公司設立與會計師：Maggie 與 Anita 對接，處理特許行業審核、地址可登記性、資本額與股權文件。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8130-8a3a-d8dffad9b5af",
+        "title": "會議自動化：Seven 持續開發錄音轉會議記錄與待辦事項的流程。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81aa-a94c-f7bffab12ba2",
+        "title": "商務會館租約檢視：整併租賃合約檢查、法條確認與修改。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-818c-8dfb-cddacd5e68c2",
+        "title": "房務與管理溝通：Maggie 協調 Debby 與信翰溝通，並尋找其他承攬房務同仁。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8154-871a-ec5c33f822fc",
+        "title": "設備採購與安裝：整併洗烘衣機、烘被機、工區飲水機與哲文評估安裝。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-817e-be15-d5d687a9820a",
+        "title": "591 刊登與帳號綁定：確認商務會館帳號綁定、刊登內容與電話策略。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-814f-b2ff-d0842f917cda",
+        "title": "公證與租約追蹤：Seven 追蹤 2 月份財主約公證，預計 2026-07 中旬至 2026-07-31 前完成。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81e0-b02c-faa929848232",
+        "title": "公司設立文件：Maggie 提供負責人身分證、健保卡、公司名稱與會計師所需資料。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8111-b48e-cbd5e83a5d39",
+        "title": "Notion 權限與資料庫：開放 Maggie 相關頁面、負責人欄位與會議記錄權限。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8131-872e-ccfd11614a30",
+        "title": "磁扣與門鎖資料：向房東索取磁扣、房卡、感應機器原始設定資料與廠商資訊。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-818f-96c4-ca446b5667e5",
+        "title": "洗烘設備進場：確認洗衣機、烘衣機、投幣機配送與安裝。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8107-a23c-e9eb1c2bd5ef",
+        "title": "二樓電表與網路：追蹤阿豪、深哥的獨立電表與第四台網路線施工時間。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81e3-b058-dc776dfe2705",
+        "title": "實體合約用印流程：建立 Maggie、Seven、Bonnie 群組，處理好好簽以外的實體用印需求。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8108-b9a3-cd2d7ca24092",
+        "title": "零用金與報帳：Maggie 與 Amber 對接 10 萬元預支款，建立支出記錄並銜接後續 Notion/軟體記帳。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8171-a02e-cedd41bbcfa3",
+        "title": "特許行業證照規費：向會計師確認個人證照更換為公司證照的行政費用。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-812e-b4b5-c749743a4190",
+        "title": "包租代管：處理房客/客戶問題 - @John 🦁 哈囉John 我有看到櫻桃電梯內有這一張房客優惠",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8137-8922-d136c8a4820d",
+        "title": "原始待辦 6 項，保留為 6 個可追蹤工作包：",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8162-bc11-c2adace067d7",
+        "title": "二樓電表與網路：Seven 找阿豪確認明義街二樓電表安裝方式，並延續第四台網路線施工追蹤。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8166-8b60-f3bcaa109995",
+        "title": "明義街設備與空間：購買二樓烘衣機固定鐵架，追蹤洗衣設備、飲水機、格柵門、磁扣門鎖等現場事項。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8184-8817-f0c84ba2015b",
+        "title": "LINE OA 與 AI 客服：設定官方 LINE 帳號 AI 自動回覆，整合入住日期、房型需求與詐騙/無效諮詢初篩。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81e9-9070-d7d44303fda2",
+        "title": "垃圾清運與清潔維護：6 月採 PT 巡檢過渡，7 月前接洽隔壁棟或清運商",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-819d-b5d5-cada068efa25",
+        "title": "租金折扣制度：維持月租原價、季租 95 折、年租 9 折，若出租不佳再評估季租 9 折或年租 85/8 折。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81f3-9255-f2920a471997",
+        "title": "未分類：確認決策 - 是不是真的打通了",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8169-a3fc-f68a453818b0",
+        "title": "租金押金移轉：Maggie 向 Amber 索取櫻桃案場 6 月剩餘租金與押金明細並完成移轉。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8178-b04c-fd420886fa2f",
+        "title": "合約資料數位化：將現有紙本合約錄入雲端 Excel/系統，包含起訖日、押金、租金、房號。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-818a-ac33-c4937d03fb08",
+        "title": "公司設立課程與證照：Maggie 參加 2026-06-08 稅務/設立課程，並延續代管證照與特許行業規費追蹤。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-81ef-ad2b-f6cb4ffffecb",
+        "title": "會計師確認 2 董 1 監文件。",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37a51c68-6dac-8192-a210-ff7b6f0df4fb",
+        "title": "公司開戶與驗資：Maggie 至國泰辦理公司設立開戶",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37851c68-6dac-8143-9aa8-d9e47cef828c",
+        "title": "公司設立、銀行開戶與法務合規收尾",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37851c68-6dac-8151-8234-f2629471efbc",
+        "title": "LINE OA / Notion 自動化與點收功能",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37851c68-6dac-815d-84e1-d6e5cc63b17c",
+        "title": "櫻桃商務會館交接、房務與維運",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37851c68-6dac-817b-a6c6-ea9b9e84b9dd",
+        "title": "場域工程、設備與基礎設施整備",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37851c68-6dac-8181-b797-ca85752518d2",
+        "title": "通路上架、月租規範與帶看內容",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37851c68-6dac-8182-8360-fdd62a418e19",
+        "title": "客房備品與設備採購",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37851c68-6dac-81b1-8197-e95234c0694f",
+        "title": "品牌名稱、官網與官方數位資產建置",
+        "status": "封存",
+        "action": "skipped"
+      },
+      {
+        "id": "37851c68-6dac-81e1-9aad-cf9e95ccbc84",
+        "title": "租賃合約、公證與簽約處理",
+        "status": "封存",
+        "action": "skipped"
+      }
+    ]
+  },
+  "createResults": {
+    "requested": true,
+    "created": 18,
+    "skipped": 0,
+    "results": [
+      {
+        "id": "49f1b3d5c155",
+        "pageId": "37c51c68-6dac-8160-92c9-cc9ea1093ea8",
+        "url": "https://app.notion.com/p/37c51c686dac816092c9cc9ea1093ea8",
+        "title": "財務與帳務管理：發票（收據）」開立記錄 不過本週課程提到關於包租代管業開立發票/收據",
+        "action": "created"
+      },
+      {
+        "id": "611d1da11657",
+        "pageId": "37c51c68-6dac-81d5-a5b0-dffbc667ef56",
+        "url": "https://app.notion.com/p/202-37c51c686dac81d5a5b0dffbc667ef56",
+        "title": "財務與帳務管理：發票給客人 後天（週四）下課後預計到明義街202修繕處理 如果要這兩日的話可能週三到總",
+        "action": "created"
+      },
+      {
+        "id": "489c2bf97cf3",
+        "pageId": "37c51c68-6dac-810b-b230-f03532a7cab9",
+        "url": "https://app.notion.com/p/37c51c686dac810bb230f03532a7cab9",
+        "title": "工務維修管理：確認過路線問題",
+        "action": "created"
+      },
+      {
+        "id": "90c53753dc36",
+        "pageId": "37c51c68-6dac-8165-acc9-cfb058844045",
+        "url": "https://app.notion.com/p/37c51c686dac8165acc9cfb058844045",
+        "title": "財務與帳務管理：需要我提供什麼",
+        "action": "created"
+      },
+      {
+        "id": "91c40012a307",
+        "pageId": "37c51c68-6dac-818e-86d1-d648f0fe8856",
+        "url": "https://app.notion.com/p/37c51c686dac818e86d1d648f0fe8856",
+        "title": "公司治理：請問明日的討論 除基本的近期事項彙報討論 我這邊目前需要準備什麼資訊嗎？",
+        "action": "created"
+      },
+      {
+        "id": "d97c7d33ea75",
+        "pageId": "37c51c68-6dac-81d8-9da2-edd5630bf907",
+        "url": "https://app.notion.com/p/37c51c686dac81d89da2edd5630bf907",
+        "title": "房務管理：提供給妳參考",
+        "action": "created"
+      },
+      {
+        "id": "31c2147d065d",
+        "pageId": "37c51c68-6dac-814f-afbd-d8d0d6dcd358",
+        "url": "https://app.notion.com/p/37c51c686dac814fafbdd8d0d6dcd358",
+        "title": "住客服務與體驗管理：請問明天早上可以過來嗎？",
+        "action": "created"
+      },
+      {
+        "id": "94d1d3cfc7ce",
+        "pageId": "37c51c68-6dac-8189-a936-fa97710daf9b",
+        "url": "https://app.notion.com/p/37c51c686dac8189a936fa97710daf9b",
+        "title": "住客服務與體驗管理：安排 您到時再跟我說時間方不方便喔！",
+        "action": "created"
+      },
+      {
+        "id": "017d23e8b5b0",
+        "pageId": "37c51c68-6dac-818e-876a-c4980fdf734f",
+        "url": "https://app.notion.com/p/37c51c686dac818e876ac4980fdf734f",
+        "title": "工務維修管理：協助找尋會館這邊垃圾清運廠商",
+        "action": "created"
+      },
+      {
+        "id": "310d34e04337",
+        "pageId": "37c51c68-6dac-81eb-86c1-cd9a3551ffa9",
+        "url": "https://app.notion.com/p/1334-2026-6-4-10-54-37c51c686dac81eb86c1cd9a3551ffa9",
+        "title": "自動化：1334 【2026/6/4 晚上10:54】好住管家（文字訊息） 測試",
+        "action": "created"
+      },
+      {
+        "id": "276c14d26ead",
+        "pageId": "37c51c68-6dac-8132-b546-f8b84c9cf755",
+        "url": "https://app.notion.com/p/37c51c686dac8132b546f8b84c9cf755",
+        "title": "財務與帳務管理：需要用印",
+        "action": "created"
+      },
+      {
+        "id": "a06a98787c12",
+        "pageId": "37c51c68-6dac-8186-888e-dee43ac497d6",
+        "url": "https://app.notion.com/p/37c51c686dac8186888edee43ac497d6",
+        "title": "工務維修管理：麻煩開單謝謝",
+        "action": "created"
+      },
+      {
+        "id": "071ba3a9a326",
+        "pageId": "37c51c68-6dac-81e8-b834-c56996b3f788",
+        "url": "https://app.notion.com/p/emoji-37c51c686dac81e8b834c56996b3f788",
+        "title": "住客服務與體驗管理：提供嗎？ 新的旅客入住時我這邊可以一併推薦給旅客(emoji)",
+        "action": "created"
+      },
+      {
+        "id": "d6b8d4621bc8",
+        "pageId": "37c51c68-6dac-81b0-b0ea-c9f32639205e",
+        "url": "https://app.notion.com/p/37c51c686dac81b0b0eac9f32639205e",
+        "title": "房務管理：發霉的痕跡",
+        "action": "created"
+      },
+      {
+        "id": "a222a35474c7",
+        "pageId": "37c51c68-6dac-817a-abcf-dfce16f17d3a",
+        "url": "https://app.notion.com/p/37c51c686dac817aabcfdfce16f17d3a",
+        "title": "自動化：我也有做測試",
+        "action": "created"
+      },
+      {
+        "id": "c0a44df6be28",
+        "pageId": "37c51c68-6dac-81e3-9d32-f9cdfcb9cb70",
+        "url": "https://app.notion.com/p/37c51c686dac81e39d32f9cdfcb9cb70",
+        "title": "住客服務與體驗管理：我要去台北星期四下午回台中，正確時間還未定",
+        "action": "created"
+      },
+      {
+        "id": "605998d5ae87",
+        "pageId": "37c51c68-6dac-8145-bf25-e33683b17388",
+        "url": "https://app.notion.com/p/18-00-37c51c686dac8145bf25e33683b17388",
+        "title": "住客服務與體驗管理：山田小姐 早安 這週我有課程 週三傍晚大約18:00過去看看可以嗎？",
+        "action": "created"
+      },
+      {
+        "id": "b7e04359f9f0",
+        "pageId": "37c51c68-6dac-8169-88e6-f5a8320f450e",
+        "url": "https://app.notion.com/p/37c51c686dac816988e6f5a8320f450e",
+        "title": "房務管理：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果",
+        "action": "created"
+      }
+    ]
+  },
+  "conversations": [
+    {
+      "id": "37851c68-6dac-81ed-a732-d10ddc9b39d1",
+      "name": "昱晴Maggie",
+      "project": "",
+      "type": "個人",
+      "url": "https://app.notion.com/p/U480627aaad7650bdd40117714fa69bc1-37851c686dac81eda732d10ddc9b39d1",
+      "isMainController": false,
+      "messageCount": 19,
+      "candidateCount": 0
+    },
+    {
+      "id": "37551c68-6dac-8111-a10d-fd4300f3bf83",
+      "name": "Seven陳聖文",
+      "project": "",
+      "type": "個人",
+      "url": "https://app.notion.com/p/Seven-37551c686dac8111a10dfd4300f3bf83",
+      "isMainController": false,
+      "messageCount": 21,
+      "candidateCount": 0
+    },
+    {
+      "id": "37551c68-6dac-81a1-8ab3-ef417201fdbf",
+      "name": "HOZO好住工務群組",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf",
+      "isMainController": false,
+      "messageCount": 12,
+      "candidateCount": 3
+    },
+    {
+      "id": "37b51c68-6dac-8127-a56d-f008e5c16a35",
+      "name": "群組 C7bd8b1b1985a58421d3f06058cd812ef",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C7bd8b1b1985a58421d3f06058cd812ef-37b51c686dac8127a56df008e5c16a35",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-8176-bb37-d7b4fcba41b9",
+      "name": "群組 C7bd8b1b1985a58421d3f06058cd812ef",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C7bd8b1b1985a58421d3f06058cd812ef-37b51c686dac8176bb37d7b4fcba41b9",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-81f5-bc72-ecf56b88041f",
+      "name": "群組 C7bd8b1b1985a58421d3f06058cd812ef",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C7bd8b1b1985a58421d3f06058cd812ef-37b51c686dac81f5bc72ecf56b88041f",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-81c1-a7c9-d32aa8321acc",
+      "name": "群組 C7bd8b1b1985a58421d3f06058cd812ef",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C7bd8b1b1985a58421d3f06058cd812ef-37b51c686dac81c1a7c9d32aa8321acc",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-8191-9f8f-d4b0d4df15ad",
+      "name": "群組 C3a3b94137b5a3a72033c35843159ebc7",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C3a3b94137b5a3a72033c35843159ebc7-37b51c686dac81919f8fd4b0d4df15ad",
+      "isMainController": false,
+      "messageCount": 6,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-81ee-9b1a-f0a5122f0941",
+      "name": "群組 C6ee57d34e78be91a93d35e8905128e48",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C6ee57d34e78be91a93d35e8905128e48-37b51c686dac81ee9b1af0a5122f0941",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-812f-be15-eddaf412342c",
+      "name": "群組 C6ee57d34e78be91a93d35e8905128e48",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C6ee57d34e78be91a93d35e8905128e48-37b51c686dac812fbe15eddaf412342c",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "name": "HOZO 公司群",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "isMainController": false,
+      "messageCount": 9,
+      "candidateCount": 4
+    },
+    {
+      "id": "37b51c68-6dac-81b2-9498-fc8adb5f5d4b",
+      "name": "群組 C3a3b94137b5a3a72033c35843159ebc7",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C3a3b94137b5a3a72033c35843159ebc7-37b51c686dac81b29498fc8adb5f5d4b",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37651c68-6dac-8108-8997-f3762906d4de",
+      "name": "HOZO好住公司設立協助",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "isMainController": false,
+      "messageCount": 8,
+      "candidateCount": 5
+    },
+    {
+      "id": "37951c68-6dac-8192-ac30-c75468d45035",
+      "name": "HOZO好住寓好公司設立",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37951c686dac8192ac30c75468d45035",
+      "isMainController": false,
+      "messageCount": 2,
+      "candidateCount": 0
+    },
+    {
+      "id": "37551c68-6dac-81d9-ad94-fb1ba7c12cc1",
+      "name": "HOZO品牌設計",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37551c686dac81d9ad94fb1ba7c12cc1",
+      "isMainController": false,
+      "messageCount": 7,
+      "candidateCount": 1
+    },
+    {
+      "id": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "name": "明義街46號2之2",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "isMainController": false,
+      "messageCount": 12,
+      "candidateCount": 5
+    }
+  ],
+  "candidates": [
+    {
+      "id": "49f1b3d5c155",
+      "title": "財務與帳務管理：發票（收據）」開立記錄 不過本週課程提到關於包租代管業開立發票/收據",
+      "project": "財務與帳務管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "昱晴 Maggie",
+      "conversationName": "HOZO 公司群",
+      "conversationId": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "firstTime": "2026-06-09T14:45:00.000Z",
+      "latestTime": "2026-06-09T14:45:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 12,
+      "reasons": [
+        "明確交辦",
+        "期限或時間",
+        "交付或承諾"
+      ],
+      "nextStep": "由負責人確認判斷結果，決定是否轉成正式任務。",
+      "evidence": "【2026/06/09 22:45】昱晴 Maggie：功能上，目前在經過這一週多實際處理後，希望新增房客端「發票（收據）」開立記錄\n\n不過本週課程提到關於包租代管業開立發票/收據，這部分可能還有需要探討，可以待公司設立後再確認實務做法",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "611d1da11657",
+      "title": "財務與帳務管理：發票給客人 後天（週四）下課後預計到明義街202修繕處理 如果要這兩日的話可能週三到總",
+      "project": "財務與帳務管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "昱晴 Maggie",
+      "conversationName": "HOZO 公司群",
+      "conversationId": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "firstTime": "2026-06-09T07:21:00.000Z",
+      "latestTime": "2026-06-09T07:21:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 12,
+      "reasons": [
+        "明確交辦",
+        "期限或時間",
+        "交付或承諾"
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/09 15:21】昱晴 Maggie：哈囉seven哥\n課程是本週一到週四全天，週五考試喔！\n\n明後天的話，\n明天（週三）下課後約傍晚我會到總部用印合約、拿備品、開發票給客人\n後天（週四）下課後預計到明義街202修繕處理 \n\n如果要這兩日的話可能週三到總部後可以喔\n大約要17:30後，方便嗎？",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "489c2bf97cf3",
+      "title": "工務維修管理：確認過路線問題",
+      "project": "工務維修管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "昱晴",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-10T01:54:00.000Z",
+      "latestTime": "2026-06-10T01:54:00.000Z",
+      "speakers": [
+        "Bonnie～蔡雅婷🌷"
+      ],
+      "score": 9,
+      "reasons": [
+        "明確交辦",
+        "等待或卡點"
+      ],
+      "nextStep": "由負責人確認判斷結果，決定是否轉成正式任務。",
+      "evidence": "【2026/06/10 09:54】Bonnie～蔡雅婷🌷：@昱晴 Maggie 壞消息，元冠環保已答覆，他們確認過路線問題，無法承接！",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "90c53753dc36",
+      "title": "財務與帳務管理：需要我提供什麼",
+      "project": "財務與帳務管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "OrangeHsu_哲",
+      "conversationName": "HOZO好住工務群組",
+      "conversationId": "37551c68-6dac-81a1-8ab3-ef417201fdbf",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf",
+      "firstTime": "2026-06-08T04:52:00.000Z",
+      "latestTime": "2026-06-08T04:52:00.000Z",
+      "speakers": [
+        "OrangeHsu_哲"
+      ],
+      "score": 9,
+      "reasons": [
+        "明確交辦",
+        "交付或承諾"
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/08 12:52】OrangeHsu_哲：使用 UOF 可以在這裡查到表單資訊  若資訊不足 看還需要我提供什麼，再跟我說。\n5月份主要是有二單，較急迫，未先報價就施作了。",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "91c40012a307",
+      "title": "公司治理：請問明日的討論 除基本的近期事項彙報討論 我這邊目前需要準備什麼資訊嗎？",
+      "project": "公司治理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "昱晴 Maggie",
+      "conversationName": "HOZO 公司群",
+      "conversationId": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "firstTime": "2026-06-09T14:05:00.000Z",
+      "latestTime": "2026-06-09T14:05:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 8,
+      "reasons": [
+        "明確交辦",
+        "期限或時間"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/09 22:05】昱晴 Maggie：好的\n明天17:30-19:00\n我可能會再加一組櫻桃看房\n我盡量早點結束所有事項\n\n請問明日的討論\n除基本的近期事項彙報討論\n我這邊目前需要準備什麼資訊嗎？",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "d97c7d33ea75",
+      "title": "房務管理：提供給妳參考",
+      "project": "房務管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "昱晴",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-08T06:53:00.000Z",
+      "latestTime": "2026-06-08T06:53:00.000Z",
+      "speakers": [
+        "Bonnie～蔡雅婷🌷"
+      ],
+      "score": 8,
+      "reasons": [
+        "明確交辦",
+        "期限或時間"
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/08 14:53】Bonnie～蔡雅婷🌷：@昱晴 Maggie 台中市政府沿街垃圾清運，我們也有查詢了喔！提供給妳參考，如下...\n每週一二四五六14:30停-西屯路二段268之7號。",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "31c2147d065d",
+      "title": "住客服務與體驗管理：請問明天早上可以過來嗎？",
+      "project": "住客服務與體驗管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "昱晴",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T03:06:00.000+00:00",
+      "latestTime": "2026-06-07T03:06:00.000+00:00",
+      "speakers": [
+        "山田智里"
+      ],
+      "score": 8,
+      "reasons": [
+        "明確交辦",
+        "期限或時間"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/07 11:06】山田智里：@昱晴 Maggie 請問明天早上可以過來嗎？",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "94d1d3cfc7ce",
+      "title": "住客服務與體驗管理：安排 您到時再跟我說時間方不方便喔！",
+      "project": "住客服務與體驗管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "昱晴 Maggie",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T02:52:00.000Z",
+      "latestTime": "2026-06-07T02:52:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 8,
+      "reasons": [
+        "明確交辦",
+        "期限或時間"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/07 10:52】昱晴 Maggie：好呦～\n我週四晚上19:00後可以安排\n您到時再跟我說時間方不方便喔！",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "017d23e8b5b0",
+      "title": "工務維修管理：協助找尋會館這邊垃圾清運廠商",
+      "project": "工務維修管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "昱晴",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-05T05:43:00.000Z",
+      "latestTime": "2026-06-05T05:43:00.000Z",
+      "speakers": [
+        "Bonnie～蔡雅婷🌷"
+      ],
+      "score": 8,
+      "reasons": [
+        "明確交辦",
+        "期限或時間"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/05 13:43】Bonnie～蔡雅婷🌷：@昱晴 Maggie 上次Seven有交代協助找尋會館這邊垃圾清運廠商，目前問了幾家狀況供妳參考！",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "310d34e04337",
+      "title": "自動化：1334 【2026/6/4 晚上10:54】好住管家（文字訊息） 測試",
+      "project": "自動化",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "Seven陳聖文",
+      "conversationName": "HOZO 公司群",
+      "conversationId": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "firstTime": "2026-06-10T03:56:00.000+00:00",
+      "latestTime": "2026-06-10T03:56:00.000+00:00",
+      "speakers": [
+        "Seven陳聖文"
+      ],
+      "score": 7,
+      "reasons": [
+        "期限或時間",
+        "交付或承諾"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/10 11:56】Seven陳聖文：1334\n【2026/6/4 晚上10:54】好住管家（文字訊息）\n測試中",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "276c14d26ead",
+      "title": "財務與帳務管理：需要用印",
+      "project": "財務與帳務管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "Bonnie～蔡雅婷🌷",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-09T07:35:00.000Z",
+      "latestTime": "2026-06-09T07:35:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 7,
+      "reasons": [
+        "期限或時間",
+        "交付或承諾"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/09 15:35】昱晴 Maggie：@Bonnie～蔡雅婷🌷 \n哈囉Bonnie \n我這邊有一份紙本合約需要用印，預計明天17:30左右過去用印喔感謝",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "a06a98787c12",
+      "title": "工務維修管理：麻煩開單謝謝",
+      "project": "工務維修管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "昱晴",
+      "conversationName": "HOZO好住工務群組",
+      "conversationId": "37551c68-6dac-81a1-8ab3-ef417201fdbf",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf",
+      "firstTime": "2026-06-10T07:55:00.000Z",
+      "latestTime": "2026-06-10T07:55:00.000Z",
+      "speakers": [
+        "Roger 王士豪"
+      ],
+      "score": 5,
+      "reasons": [
+        "明確交辦"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/10 15:55】Roger 王士豪：@昱晴 Maggie 安裝層架的部分工資是兩個人3000，再麻煩開單謝謝",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "071ba3a9a326",
+      "title": "住客服務與體驗管理：提供嗎？ 新的旅客入住時我這邊可以一併推薦給旅客(emoji)",
+      "project": "住客服務與體驗管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "John",
+      "conversationName": "HOZO品牌設計",
+      "conversationId": "37551c68-6dac-81d9-ad94-fb1ba7c12cc1",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37551c686dac81d9ad94fb1ba7c12cc1",
+      "firstTime": "2026-06-08T02:32:00.000Z",
+      "latestTime": "2026-06-08T02:32:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 5,
+      "reasons": [
+        "明確交辦"
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/08 10:32】昱晴 Maggie：@John 🦁 哈囉John \n我有看到櫻桃電梯內有這一張房客優惠 詢問櫻桃同仁後他們沒有檔案\n\n您這邊有檔案可以提供嗎？\n新的旅客入住時我這邊可以一併推薦給旅客(emoji)",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "d6b8d4621bc8",
+      "title": "房務管理：發霉的痕跡",
+      "project": "房務管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "山田智里",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T03:06:00.000+00:00",
+      "latestTime": "2026-06-07T03:06:00.000+00:00",
+      "speakers": [
+        "山田智里"
+      ],
+      "score": 5,
+      "reasons": [
+        "明確交辦"
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/07 11:06】山田智里：浴室的牆壁有許多發霉的痕跡",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "a222a35474c7",
+      "title": "自動化：我也有做測試",
+      "project": "自動化",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "OrangeHsu_哲",
+      "conversationName": "HOZO好住工務群組",
+      "conversationId": "37551c68-6dac-81a1-8ab3-ef417201fdbf",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf",
+      "firstTime": "2026-06-08T04:55:00.000Z",
+      "latestTime": "2026-06-08T04:55:00.000Z",
+      "speakers": [
+        "OrangeHsu_哲"
+      ],
+      "score": 4,
+      "reasons": [
+        "交付或承諾"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/08 12:55】OrangeHsu_哲：我也有做測試單 但已作廢",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "c0a44df6be28",
+      "title": "住客服務與體驗管理：我要去台北星期四下午回台中，正確時間還未定",
+      "project": "住客服務與體驗管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "山田智里",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T02:20:00.000Z",
+      "latestTime": "2026-06-07T02:20:00.000Z",
+      "speakers": [
+        "山田智里"
+      ],
+      "score": 3,
+      "reasons": [
+        "期限或時間"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/07 10:20】山田智里：我要去台北星期四下午回台中，正確時間還未定",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "605998d5ae87",
+      "title": "住客服務與體驗管理：山田小姐 早安 這週我有課程 週三傍晚大約18:00過去看看可以嗎？",
+      "project": "住客服務與體驗管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "昱晴 Maggie",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T01:44:00.000Z",
+      "latestTime": "2026-06-07T01:44:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 3,
+      "reasons": [
+        "期限或時間"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/07 09:44】昱晴 Maggie：山田小姐 早安\n這週我有課程\n週三傍晚大約18:00過去看看可以嗎？",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "b7e04359f9f0",
+      "title": "房務管理：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果",
+      "project": "房務管理",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "Bonnie～蔡雅婷🌷",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-05T05:47:00.000Z",
+      "latestTime": "2026-06-05T05:47:00.000Z",
+      "speakers": [
+        "Bonnie～蔡雅婷🌷"
+      ],
+      "score": 3,
+      "reasons": [
+        "期限或時間"
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/05 13:47】Bonnie～蔡雅婷🌷：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    }
+  ]
+}

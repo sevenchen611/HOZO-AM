@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HOZO AM LINE 對話主檔全量重建候選任務</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 24px; color: #1f2933; background: #f7f8fa; }
+    h1 { font-size: 24px; margin: 0 0 12px; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 16px 0 22px; }
+    .metric { background: #fff; border: 1px solid #d9dee7; padding: 12px; border-radius: 8px; }
+    .metric b { display: block; font-size: 22px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { border: 1px solid #d9dee7; padding: 8px; vertical-align: top; font-size: 13px; }
+    th { background: #edf1f7; text-align: left; }
+    pre { white-space: pre-wrap; margin: 0; max-width: 520px; }
+    a { color: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <h1>HOZO AM LINE 對話主檔全量重建候選任務</h1>
+  <p>來源規則：只讀 LINE 對話主檔，不讀 LINE 訊息紀錄。候選任務尚未寫入正式任務庫。</p>
+  <p>判斷規範：Conversation-to-task event-line judgment / 未標示版本；主控群組最後分析。</p>
+  <div class="summary">
+    <div class="metric"><span>封存舊任務</span><b>23</b></div>
+    <div class="metric"><span>掃描對話</span><b>16</b></div>
+    <div class="metric"><span>掃描訊息</span><b>103</b></div>
+    <div class="metric"><span>候選任務</span><b>18</b></div>
+  </div>
+  <table>
+    <thead><tr><th>#</th><th>候選任務</th><th>專案</th><th>優先</th><th>負責人</th><th>對話</th><th>發言者</th><th>最新時間</th><th>來源證據</th></tr></thead>
+    <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>財務與帳務管理：發票（收據）」開立記錄 不過本週課程提到關於包租代管業開立發票/收據</strong><br><span>由負責人確認判斷結果，決定是否轉成正式任務。</span></td>
+      <td>財務與帳務管理</td>
+      <td>高</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b">HOZO 公司群</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/09 22:45</td>
+      <td><pre>【2026/06/09 22:45】昱晴 Maggie：功能上，目前在經過這一週多實際處理後，希望新增房客端「發票（收據）」開立記錄
+
+不過本週課程提到關於包租代管業開立發票/收據，這部分可能還有需要探討，可以待公司設立後再確認實務做法</pre></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>財務與帳務管理：發票給客人 後天（週四）下課後預計到明義街202修繕處理 如果要這兩日的話可能週三到總</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>財務與帳務管理</td>
+      <td>高</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b">HOZO 公司群</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/09 15:21</td>
+      <td><pre>【2026/06/09 15:21】昱晴 Maggie：哈囉seven哥
+課程是本週一到週四全天，週五考試喔！
+
+明後天的話，
+明天（週三）下課後約傍晚我會到總部用印合約、拿備品、開發票給客人
+後天（週四）下課後預計到明義街202修繕處理 
+
+如果要這兩日的話可能週三到總部後可以喔
+大約要17:30後，方便嗎？</pre></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>工務維修管理：確認過路線問題</strong><br><span>由負責人確認判斷結果，決定是否轉成正式任務。</span></td>
+      <td>工務維修管理</td>
+      <td>中</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td>2026/06/10 09:54</td>
+      <td><pre>【2026/06/10 09:54】Bonnie～蔡雅婷🌷：@昱晴 Maggie 壞消息，元冠環保已答覆，他們確認過路線問題，無法承接！</pre></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>財務與帳務管理：需要我提供什麼</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>財務與帳務管理</td>
+      <td>中</td>
+      <td>OrangeHsu_哲</td>
+      <td><a href="https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf">HOZO好住工務群組</a></td>
+      <td>OrangeHsu_哲</td>
+      <td>2026/06/08 12:52</td>
+      <td><pre>【2026/06/08 12:52】OrangeHsu_哲：使用 UOF 可以在這裡查到表單資訊  若資訊不足 看還需要我提供什麼，再跟我說。
+5月份主要是有二單，較急迫，未先報價就施作了。</pre></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>公司治理：請問明日的討論 除基本的近期事項彙報討論 我這邊目前需要準備什麼資訊嗎？</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>公司治理</td>
+      <td>高</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b">HOZO 公司群</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/09 22:05</td>
+      <td><pre>【2026/06/09 22:05】昱晴 Maggie：好的
+明天17:30-19:00
+我可能會再加一組櫻桃看房
+我盡量早點結束所有事項
+
+請問明日的討論
+除基本的近期事項彙報討論
+我這邊目前需要準備什麼資訊嗎？</pre></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><strong>房務管理：提供給妳參考</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>房務管理</td>
+      <td>中</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td>2026/06/08 14:53</td>
+      <td><pre>【2026/06/08 14:53】Bonnie～蔡雅婷🌷：@昱晴 Maggie 台中市政府沿街垃圾清運，我們也有查詢了喔！提供給妳參考，如下...
+每週一二四五六14:30停-西屯路二段268之7號。</pre></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><strong>住客服務與體驗管理：請問明天早上可以過來嗎？</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>住客服務與體驗管理</td>
+      <td>高</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>山田智里</td>
+      <td>2026/06/07 11:06</td>
+      <td><pre>【2026/06/07 11:06】山田智里：@昱晴 Maggie 請問明天早上可以過來嗎？</pre></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><strong>住客服務與體驗管理：安排 您到時再跟我說時間方不方便喔！</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>住客服務與體驗管理</td>
+      <td>中</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/07 10:52</td>
+      <td><pre>【2026/06/07 10:52】昱晴 Maggie：好呦～
+我週四晚上19:00後可以安排
+您到時再跟我說時間方不方便喔！</pre></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td><strong>工務維修管理：協助找尋會館這邊垃圾清運廠商</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>工務維修管理</td>
+      <td>中</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td>2026/06/05 13:43</td>
+      <td><pre>【2026/06/05 13:43】Bonnie～蔡雅婷🌷：@昱晴 Maggie 上次Seven有交代協助找尋會館這邊垃圾清運廠商，目前問了幾家狀況供妳參考！</pre></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td><strong>自動化：1334 【2026/6/4 晚上10:54】好住管家（文字訊息） 測試</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>自動化</td>
+      <td>中</td>
+      <td>Seven陳聖文</td>
+      <td><a href="https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b">HOZO 公司群</a></td>
+      <td>Seven陳聖文</td>
+      <td>2026/06/10 11:56</td>
+      <td><pre>【2026/06/10 11:56】Seven陳聖文：1334
+【2026/6/4 晚上10:54】好住管家（文字訊息）
+測試中</pre></td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td><strong>財務與帳務管理：需要用印</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>財務與帳務管理</td>
+      <td>高</td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/09 15:35</td>
+      <td><pre>【2026/06/09 15:35】昱晴 Maggie：@Bonnie～蔡雅婷🌷 
+哈囉Bonnie 
+我這邊有一份紙本合約需要用印，預計明天17:30左右過去用印喔感謝</pre></td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td><strong>工務維修管理：麻煩開單謝謝</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>工務維修管理</td>
+      <td>低</td>
+      <td>昱晴</td>
+      <td><a href="https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf">HOZO好住工務群組</a></td>
+      <td>Roger 王士豪</td>
+      <td>2026/06/10 15:55</td>
+      <td><pre>【2026/06/10 15:55】Roger 王士豪：@昱晴 Maggie 安裝層架的部分工資是兩個人3000，再麻煩開單謝謝</pre></td>
+    </tr>
+    <tr>
+      <td>13</td>
+      <td><strong>住客服務與體驗管理：提供嗎？ 新的旅客入住時我這邊可以一併推薦給旅客(emoji)</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>住客服務與體驗管理</td>
+      <td>低</td>
+      <td>John</td>
+      <td><a href="https://app.notion.com/p/HOZO-37551c686dac81d9ad94fb1ba7c12cc1">HOZO品牌設計</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/08 10:32</td>
+      <td><pre>【2026/06/08 10:32】昱晴 Maggie：@John 🦁 哈囉John 
+我有看到櫻桃電梯內有這一張房客優惠 詢問櫻桃同仁後他們沒有檔案
+
+您這邊有檔案可以提供嗎？
+新的旅客入住時我這邊可以一併推薦給旅客(emoji)</pre></td>
+    </tr>
+    <tr>
+      <td>14</td>
+      <td><strong>房務管理：發霉的痕跡</strong><br><span>確認需要補齊或交付的資料，指定負責人與期限。</span></td>
+      <td>房務管理</td>
+      <td>低</td>
+      <td>山田智里</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>山田智里</td>
+      <td>2026/06/07 11:06</td>
+      <td><pre>【2026/06/07 11:06】山田智里：浴室的牆壁有許多發霉的痕跡</pre></td>
+    </tr>
+    <tr>
+      <td>15</td>
+      <td><strong>自動化：我也有做測試</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>自動化</td>
+      <td>低</td>
+      <td>OrangeHsu_哲</td>
+      <td><a href="https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf">HOZO好住工務群組</a></td>
+      <td>OrangeHsu_哲</td>
+      <td>2026/06/08 12:55</td>
+      <td><pre>【2026/06/08 12:55】OrangeHsu_哲：我也有做測試單 但已作廢</pre></td>
+    </tr>
+    <tr>
+      <td>16</td>
+      <td><strong>住客服務與體驗管理：我要去台北星期四下午回台中，正確時間還未定</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>住客服務與體驗管理</td>
+      <td>低</td>
+      <td>山田智里</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>山田智里</td>
+      <td>2026/06/07 10:20</td>
+      <td><pre>【2026/06/07 10:20】山田智里：我要去台北星期四下午回台中，正確時間還未定</pre></td>
+    </tr>
+    <tr>
+      <td>17</td>
+      <td><strong>住客服務與體驗管理：山田小姐 早安 這週我有課程 週三傍晚大約18:00過去看看可以嗎？</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>住客服務與體驗管理</td>
+      <td>低</td>
+      <td>昱晴 Maggie</td>
+      <td><a href="https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1">明義街46號2之2</a></td>
+      <td>昱晴 Maggie</td>
+      <td>2026/06/07 09:44</td>
+      <td><pre>【2026/06/07 09:44】昱晴 Maggie：山田小姐 早安
+這週我有課程
+週三傍晚大約18:00過去看看可以嗎？</pre></td>
+    </tr>
+    <tr>
+      <td>18</td>
+      <td><strong>房務管理：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果</strong><br><span>請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。</span></td>
+      <td>房務管理</td>
+      <td>低</td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td><a href="https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de">HOZO好住公司設立協助</a></td>
+      <td>Bonnie～蔡雅婷🌷</td>
+      <td>2026/06/05 13:47</td>
+      <td><pre>【2026/06/05 13:47】Bonnie～蔡雅婷🌷：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果</pre></td>
+    </tr></tbody>
+  </table>
+</body>
+</html>

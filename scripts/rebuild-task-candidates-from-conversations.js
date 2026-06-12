@@ -17,14 +17,15 @@ const masterPromptPolicy = taskReconciliationPolicy.masterPromptPolicy || {};
 const args = parseArgs(process.argv.slice(2));
 const dryRun = Boolean(args['dry-run']);
 const archiveCurrent = Boolean(args['archive-current']);
+const createTasks = Boolean(args['create-tasks']);
 const limitConversations = numberArg(args['limit-conversations'], 0);
 const candidateLimit = numberArg(args['candidate-limit'], 0);
 const minScore = numberArg(args['min-score'], 3);
 const runId = formatRunId(new Date());
 const outputDir = path.join(root, 'reports', 'task-rebuild');
-const snapshotPath = path.join(outputDir, `sevenam-task-archive-snapshot-${runId}.json`);
-const candidateJsonPath = path.join(outputDir, `sevenam-conversation-rebuild-candidates-${runId}.json`);
-const candidateHtmlPath = path.join(outputDir, `sevenam-conversation-rebuild-candidates-${runId}.html`);
+const snapshotPath = path.join(outputDir, `hozo-am-task-archive-snapshot-${runId}.json`);
+const candidateJsonPath = path.join(outputDir, `hozo-am-conversation-rebuild-candidates-${runId}.json`);
+const candidateHtmlPath = path.join(outputDir, `hozo-am-conversation-rebuild-candidates-${runId}.html`);
 
 if (!notionToken) throw new Error('NOTION_TOKEN is not set.');
 if (!conversationsDataSourceId) throw new Error('HOZO_CONVERSATIONS_DATA_SOURCE_ID is not set.');
@@ -73,11 +74,15 @@ for (const conversation of conversations) {
 const dedupedCandidates = dedupeCandidates(allCandidates)
   .sort((a, b) => b.score - a.score || new Date(b.latestTime || 0) - new Date(a.latestTime || 0));
 const finalCandidates = candidateLimit ? dedupedCandidates.slice(0, candidateLimit) : dedupedCandidates;
+const createResults = createTasks
+  ? await createRebuiltTasks(finalCandidates)
+  : { requested: false, created: 0, skipped: finalCandidates.length, results: [] };
 
 const result = {
   ok: true,
   dryRun,
   archiveCurrent,
+  createTasks,
   sourceDataSource: 'HOZO_CONVERSATIONS_DATA_SOURCE_ID',
   forbiddenSourceDataSource: 'HOZO_MESSAGES_DATA_SOURCE_ID',
   mode: 'full-conversation-master-rebuild-candidates',
@@ -104,8 +109,10 @@ const result = {
     rawCandidates: allCandidates.length,
     dedupedCandidates: dedupedCandidates.length,
     outputCandidates: finalCandidates.length,
+    createdTasks: createResults.created,
   },
   archiveResults,
+  createResults,
   conversations: conversationDetails,
   candidates: finalCandidates,
 };
@@ -117,11 +124,158 @@ console.log(JSON.stringify({
   ok: true,
   dryRun,
   archiveCurrent,
+  createTasks,
   snapshotPath,
   candidateJsonPath,
   candidateHtmlPath,
   counts: result.counts,
 }, null, 2));
+
+async function createRebuiltTasks(candidates) {
+  const results = [];
+  let created = 0;
+  for (const candidate of candidates) {
+    if (dryRun) {
+      created += 1;
+      results.push({ id: candidate.id, title: candidate.title, action: 'dry-run-create' });
+      continue;
+    }
+
+    const properties = compactProperties({
+      任務名稱: titleProperty(candidate.title),
+      專案: selectProperty(candidate.project),
+      狀態: selectProperty('待確認'),
+      確認狀態: selectProperty('未確認'),
+      優先級: selectProperty(candidate.priority),
+      負責人: richTextProperty(candidate.owner, 500),
+      來源: selectProperty('LINE'),
+      下一步: richTextProperty(candidate.nextStep, 900),
+      來源原文: richTextProperty(candidate.evidence, 1900),
+      'Codex 判斷摘要': richTextProperty(buildCandidateJudgment(candidate), 1900),
+      最後更新: dateProperty(new Date()),
+      期限依據: richTextProperty('全量重建預設：待確認任務先由負責人補期限或由下一輪追蹤判斷。', 900),
+      下次追蹤日: dateProperty(nextTaipeiDate(1)),
+      逾期狀態: selectProperty('未逾期'),
+      任務層級: selectProperty(candidate.taskLevel || '父任務'),
+      階層判斷狀態: selectProperty('已判斷'),
+      階層判斷時間: dateProperty(new Date()),
+      信心等級: selectProperty(candidate.score >= 10 ? '高' : candidate.score >= 6 ? '中' : '低'),
+      完成目標定義: richTextProperty(completionDefinitionForCandidate(candidate), 900),
+      完成門檻: richTextProperty('事件線中的待確認、等待回覆、補資料或處理事項都有結論，並已把結果回填到任務紀錄。', 900),
+      完成百分比: { number: candidate.status === '重建候選' ? 20 : 0 },
+      事件線識別: richTextProperty(candidate.id, 500),
+    });
+
+    const page = await notionRequest('/v1/pages', {
+      method: 'POST',
+      body: {
+        parent: { type: 'data_source_id', data_source_id: tasksDataSourceId },
+        properties,
+        children: rebuiltTaskBlocks(candidate),
+      },
+    });
+    created += 1;
+    results.push({ id: candidate.id, pageId: page.id, url: page.url, title: candidate.title, action: 'created' });
+  }
+  return { requested: true, created, skipped: candidates.length - created, results };
+}
+
+function buildCandidateJudgment(candidate) {
+  return [
+    `重建批次：${runId}`,
+    `來源群組：${candidate.conversationName}`,
+    `任務層級：${candidate.taskLevel || '父任務'}`,
+    `判斷分數：${candidate.score}`,
+    `成立理由：${candidate.reasons.join('、') || '對話中包含可追蹤事項'}`,
+    `重建規則：${candidate.sourcePolicy}`,
+  ].join('\n');
+}
+
+function rebuiltTaskBlocks(candidate) {
+  const evidenceLines = candidate.evidence.split(/\n{2,}/).map((line) => line.trim()).filter(Boolean);
+  return [
+    headingBlock('任務控制紀錄', 2),
+    paragraphBlock(`建立方式：${dryRun ? '試跑' : '全量重建'}｜批次：${runId}`),
+    paragraphBlock(`來源對話群組：${candidate.conversationName}`),
+    paragraphBlock(`關聯頁面：${candidate.conversationUrl || candidate.conversationName}`),
+    headingBlock('任務判斷', 3),
+    bulletedBlock(`任務類型：LINE 對話全量重建候選任務。`),
+    bulletedBlock(`任務層級：${candidate.taskLevel || '父任務'}。`),
+    bulletedBlock(`所屬專案：${candidate.project}`),
+    bulletedBlock(`目前狀態：待確認；確認狀態：未確認。`),
+    bulletedBlock(`責任判斷：${candidate.owner}`),
+    bulletedBlock(`判斷理由：${candidate.reasons.join('、') || '對話內含可追蹤事項'}。`),
+    headingBlock('證據與處理紀錄', 3),
+    ...evidenceLines.flatMap((line) => lineArchiveBlocks(candidate, line)),
+    ...(candidate.media.length ? [
+      headingBlock('相關媒體與附件', 3),
+      ...candidate.media.slice(0, 20).map((item) => bulletedBlock(`${item.type || 'media'}：${item.name || item.lineMessageId || item.url}`)),
+    ] : []),
+    headingBlock('下一步', 3),
+    bulletedBlock(candidate.nextStep),
+  ];
+}
+
+function completionDefinitionForCandidate(candidate) {
+  const text = `${candidate.title}\n${candidate.evidence}`;
+  if (/明義街46號2之2|發霉|燈不/.test(text)) return '完成到場查看，確認燈光不足與浴室發霉的處理方式，並回覆住客後續安排或完成結果。';
+  if (/垃圾清運|元冠環保|清運廠商/.test(text)) return '確認可承接的垃圾清運廠商或替代清運方案，並把結果回覆給需要安排的人。';
+  if (/弱電|資訊維修|費用|UOF/.test(text)) return '確認 UOF 表單、圖片與費用表是否足以核對弱電/資訊維修費用；不足則列出需補資料。';
+  if (/層架|烘衣機|工資|開單/.test(text)) return '確認層架與烘衣機安裝項目、工資金額與是否可開單。';
+  if (/發票|收據/.test(text)) return '確認房客端發票/收據開立紀錄的需求與公司設立後的實務做法。';
+  if (/官方\s*LINE|管理員/.test(text)) return '確認指定人員是否已成功加入官方 LINE 管理員，並可執行後台管理。';
+  if (/房客優惠|櫻桃|素材/.test(text)) return '取得或確認櫻桃房客優惠素材檔案，供新旅客入住推薦使用。';
+  if (/排程|錯誤|Render|User UI|報告/.test(text)) return '確認系統錯誤原因，修復後以一次報告或 User UI 驗證結果證明恢復正常。';
+  return '確認此事件線是否仍需追蹤，補齊負責人、期限與完成條件後執行到有明確結論。';
+}
+
+function lineArchiveBlocks(candidate, line) {
+  const match = line.match(/^【(.+?)】(.+?)：([\s\S]*)$/);
+  if (!match) return [paragraphBlock(line)];
+  const type = inferArchiveType(match[3], candidate.media);
+  const header = `【${match[1]}】${candidate.conversationName} - ${match[2]}（${type}）`;
+  const body = normalizeEvidenceBody(match[3], candidate, type, match[1], match[2]);
+  return [paragraphBlock(header), paragraphBlock(body)];
+}
+
+function inferArchiveType(text, media) {
+  if (/媒體：/.test(text)) {
+    if ((media || []).some((item) => item.type === 'image')) return '圖片訊息';
+    if ((media || []).some((item) => ['file', 'pdf'].includes(item.type))) return '檔案訊息';
+    return '媒體訊息';
+  }
+  return '文字訊息';
+}
+
+function normalizeEvidenceBody(text, candidate, type, timeText, actor) {
+  const parsedTime = parseTaipeiDisplayTime(timeText);
+  const evidenceDate = parsedTime ? new Date(parsedTime) : (candidate.latestTime ? new Date(candidate.latestTime) : null);
+  const lines = [
+    evidenceDate ? `日期：${formatDateOnly(evidenceDate)}` : '',
+    evidenceDate ? `時間：${formatTimeOnly(evidenceDate)}` : '',
+    `群組：${candidate.conversationName}`,
+    `使用者：${actor || '未知發話者'}`,
+    `訊息類型：${type.replace(/訊息$/, '')}`,
+    `內容：${String(text || '').replace(/\n媒體：[\s\S]*$/, '').trim()}`,
+  ].filter(Boolean);
+  const mediaLine = String(text || '').match(/\n媒體：([\s\S]+)$/)?.[1]?.trim();
+  if (mediaLine) lines.push(`媒體：${mediaLine}`);
+  return lines.join('\n');
+}
+
+function nextTaipeiDate(days) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + days);
+  return date;
+}
+
+function formatDateOnly(date) {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+}
+
+function formatTimeOnly(date) {
+  return new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hour12: false }).format(date);
+}
 
 async function archiveActiveTasks(tasks) {
   const results = [];
@@ -171,24 +325,20 @@ async function appendArchiveNote(pageId, note) {
 }
 
 function buildConversationCandidates(conversation, messages) {
-  const candidates = [];
-  let current = null;
-
+  const groups = new Map();
   for (const message of messages) {
     if (!message.text || isAssistantOperation(message) || isLowValueMessage(message.text)) continue;
     const score = scoreMessage(message.text);
     if (score < minScore) continue;
 
-    const topic = inferTopic(message.text);
-    const project = conversation.project || inferProject(`${conversation.name}\n${message.text}`);
-    const key = `${project}:${conversation.name}:${topic}`;
-
-    if (!current || current.key !== key || minutesBetween(current.latestTime, message.time) > 180) {
-      if (current) candidates.push(finalizeCandidate(current));
-      current = {
+    const project = normalizeProjectName(conversation.project) || inferProject(`${conversation.name}\n${message.text}`);
+    const eventKey = inferEventLineKey(conversation, message);
+    const key = `${project}:${conversation.name}:${eventKey}`;
+    if (!groups.has(key)) {
+      groups.set(key, {
         key,
         project,
-        topic,
+        topic: '',
         conversationName: conversation.name,
         conversationId: conversation.id,
         conversationUrl: conversation.url,
@@ -199,9 +349,12 @@ function buildConversationCandidates(conversation, messages) {
         messages: [],
         score: 0,
         reasons: new Set(),
-      };
+      });
     }
-
+    const current = groups.get(key);
+    if (!current.firstTime || timestampMs(message.time) < timestampMs(current.firstTime)) {
+      current.firstTime = message.time;
+    }
     current.latestTime = message.time || current.latestTime;
     if (message.actor) current.speakers.add(message.actor);
     current.messages.push(message);
@@ -209,12 +362,22 @@ function buildConversationCandidates(conversation, messages) {
     for (const reason of scoreReasons(message.text)) current.reasons.add(reason);
   }
 
-  if (current) candidates.push(finalizeCandidate(current));
-  return candidates;
+  return [...groups.values()]
+    .map((candidate) => {
+      candidate.messages.sort((a, b) => timestampMs(a.time) - timestampMs(b.time));
+      candidate.topic = inferEventLineTitle(candidate);
+      return finalizeCandidate(candidate);
+    })
+    .filter((candidate) => !shouldSuppressCandidate(candidate));
+}
+
+function timestampMs(value) {
+  const time = Date.parse(value || '');
+  return Number.isFinite(time) ? time : 0;
 }
 
 function finalizeCandidate(candidate) {
-  const evidenceMessages = candidate.messages.slice(-6);
+  const evidenceMessages = candidate.messages.slice(-12);
   const sourceText = evidenceMessages.map((message) => {
     const time = message.time ? formatTaipeiDateTime(new Date(message.time)) : '未記錄時間';
     const mediaText = message.media?.length
@@ -223,12 +386,13 @@ function finalizeCandidate(candidate) {
     return `【${time}】${message.actor || '未知'}：${message.text}${mediaText}`;
   }).join('\n\n');
   const media = dedupeMedia(evidenceMessages.flatMap((message) => message.media || []));
-  const title = clampText(`${candidate.project}：${candidate.topic}`, 90);
+  const title = clampText(candidate.topic, 90);
+  const project = projectForEventTitle(title) || normalizeProjectName(inferProject(`${title}\n${sourceText}`)) || candidate.project;
   const nextStep = inferNextStep(sourceText);
   return {
     id: hashText(`${candidate.key}:${candidate.firstTime}:${candidate.latestTime}:${sourceText.slice(0, 160)}`),
     title,
-    project: candidate.project,
+    project,
     status: '重建候選',
     confirmation: '待人工確認',
     priority: inferPriority(sourceText, candidate.score),
@@ -240,13 +404,68 @@ function finalizeCandidate(candidate) {
     latestTime: candidate.latestTime,
     speakers: [...candidate.speakers],
     score: Math.min(candidate.score, 30),
-    reasons: [...candidate.reasons],
+    reasons: uniqueValues([...candidate.reasons].map((reason) => reason.label || String(reason)).filter(Boolean)),
     nextStep,
     evidence: sourceText,
     media,
     sourcePolicy: '從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。',
     promptPolicyVersion: masterPromptPolicy.version || '',
+    taskLevel: '父任務',
   };
+}
+
+function projectForEventTitle(title) {
+  const text = String(title || '');
+  if (/明義街46號2之2/.test(text)) return '住客服務與體驗管理';
+  if (/垃圾清運/.test(text)) return '房務管理';
+  if (/發票|收據/.test(text)) return '財務與帳務管理';
+  if (/紙本合約|用印/.test(text)) return '公司治理';
+  if (/弱電|資訊維修|費用佐證/.test(text)) return '財務與帳務管理';
+  if (/層架|烘衣機|工資|開單/.test(text)) return '工務維修管理';
+  if (/品牌|櫻桃|素材/.test(text)) return '品牌官網';
+  if (/官方 LINE|管理員/.test(text)) return '自動化';
+  return '';
+}
+
+function inferEventLineKey(conversation, message) {
+  const haystack = `${conversation.name}\n${message.text}`;
+  if (/明義街46號2之2|明義街.*2之2|燈不|發霉|星期四連絡|週四晚上19/.test(haystack)) return 'resident-maintenance-inspection';
+  if (/層架|烘衣機|工資|開單/.test(haystack)) return 'shelving-dryer-installation-billing';
+  if (/弱電|資訊維修|UOF|5\s*月|未先報價|費用/.test(haystack)) return 'weak-current-it-repair-cost-proof';
+  if (/垃圾清運|元冠環保|沿街垃圾|清運廠商|路線問題/.test(haystack)) return 'garbage-collection-vendor';
+  if (/紙本合約|用印|合約/.test(haystack)) return 'contract-stamp-and-signing';
+  if (/發票|收據|包租代管業/.test(haystack)) return 'invoice-receipt-record';
+  if (/官方\s*LINE|LINE 群組|管理員|manager\.line\.biz|HOGO|HOZO/.test(haystack)) return 'line-official-account-admin';
+  if (/房客優惠|櫻桃|旅客入住|檔案可以提供|品牌設計/.test(haystack)) return 'guest-discount-material';
+  if (/排程警告|Cannot access|HttpStatusError|webhook|Render|User UI|資料庫|Notion|Codex|報告/.test(haystack)) return 'automation-system-issue';
+  if (/看房|總部|討論|近期事項|準備什麼資訊|修繕處理|備品/.test(haystack)) return 'operations-schedule-and-prep';
+  return normalizeKey(inferTopic(message.text)).slice(0, 64) || 'conversation-event';
+}
+
+function inferEventLineTitle(candidate) {
+  const text = candidate.messages.map((message) => message.text).join('\n');
+  const conversation = candidate.conversationName;
+  if (/明義街46號2之2|燈不|發霉|星期四連絡|週四晚上19/.test(`${conversation}\n${text}`)) {
+    return '明義街46號2之2：浴室發霉與兩盞燈光不足到場查看';
+  }
+  if (/層架|烘衣機|工資|開單/.test(text)) return 'HOZO好住工務群組：層架與烘衣機安裝工資開單確認';
+  if (/弱電|資訊維修|UOF|未先報價|費用/.test(text)) return 'HOZO好住工務群組：弱電與資訊維修費用佐證確認';
+  if (/垃圾清運|元冠環保|沿街垃圾|清運廠商|路線問題/.test(text)) return 'HOZO好住公司設立協助：垃圾清運廠商尋找與替代方案';
+  if (/紙本合約|用印|合約/.test(text)) return 'HOZO好住公司設立協助：紙本合約用印安排';
+  if (/發票|收據|包租代管業/.test(text)) return 'HOZO 公司群：房客發票與收據開立紀錄需求確認';
+  if (/官方\s*LINE|LINE 群組|管理員|manager\.line\.biz|HOGO|HOZO/.test(text)) return 'HOZO 公司群：官方 LINE 管理員加入確認';
+  if (/房客優惠|櫻桃|旅客入住|檔案可以提供|品牌設計/.test(text)) return 'HOZO品牌設計：櫻桃房客優惠素材檔案取得';
+  if (/排程警告|Cannot access|HttpStatusError|webhook|Render|User UI|資料庫|Notion|Codex|報告/.test(text)) return '自動化：HOZO AM 報告與系統錯誤追蹤';
+  if (/看房|總部|討論|近期事項|準備什麼資訊|修繕處理|備品/.test(text)) return 'HOZO 公司群：總部討論與看房行程準備';
+  return `${candidate.project}：${inferTopic(text)}`;
+}
+
+function shouldSuppressCandidate(candidate) {
+  const text = candidate.evidence || '';
+  if (!text.trim()) return true;
+  if (/^\s*(?:\[[^\]]+\]\s*)?(?:\(非 message 事件\)|其他訊息)\s*$/i.test(text)) return true;
+  if (!/(請|麻煩|協助|確認|安排|追蹤|提供|處理|開單|用印|發票|收據|報價|費用|問題|異常|錯誤|修繕|發霉|燈|清運|管理員|檔案|看房|討論|準備)/.test(text)) return true;
+  return false;
 }
 
 function dedupeMedia(items) {
@@ -303,7 +522,7 @@ function normalizeControllerName(value) {
 function dedupeCandidates(candidates) {
   const seen = new Map();
   for (const candidate of candidates) {
-    const key = normalizeKey(`${candidate.project}:${candidate.conversationName}:${candidate.title}`);
+    const key = normalizeKey(candidate.title);
     const existing = seen.get(key);
     if (!existing || candidate.score > existing.score) {
       seen.set(key, candidate);
@@ -505,12 +724,35 @@ function inferTopic(text) {
 }
 
 function inferProject(text) {
-  if (/茲心園|工程|營造|設計圖|估價|建照|雜照/.test(text)) return '茲心園工程';
-  if (/財務|會計|薪資|請款|付款|發票|報稅|銀行|獎金/.test(text)) return '財務';
-  if (/人資|勞資|薪資|員工|請假|排班/.test(text)) return '人資';
-  if (/營運|旅|房|住客|櫃台|清潔|採購/.test(text)) return '營運';
-  if (/私人|家族|報稅|租金/.test(text)) return '私人事務';
+  const value = String(text || '');
+  if (/LINE|Notion|Codex|API|webhook|Render|User UI|自動化|機器人|系統|資料庫|權限|同步|測試|部署|token|OA|CRM/i.test(value)) return '自動化';
+  if (/品牌|官網|設計|素材|Logo|網站|行銷|照片|文案|Google|地圖|SEO|房客優惠|櫻桃/i.test(value)) return '品牌官網';
+  if (/公司設立|紙本合約|合約用印|用印|股東|章程|人事|員工|薪資|制度|法務|政府|申請|登記/.test(value)) return '公司治理';
+  if (/垃圾清運|清運廠商|沿街垃圾|元冠環保|清潔|房務|打掃|退房|入住整理|備品|床單|棉被|發霉|除霉|環保/.test(value)) return '房務管理';
+  if (/發票|收據|請款|付款|匯款|帳|財務|會計|報稅|稅|銀行|租金|費用|報價|估價|用印/.test(value)) return '財務與帳務管理';
+  if (/弱電|維修|修繕|漏水|水電|冷氣|網路|設備|施工|工程|開單|路線|修理|層架|烘衣機/.test(value)) return '工務維修管理';
+  if (/住客|旅客|客人|入住|退房|客服|投訴|客訴|回覆客人|明義街|會館|房客/.test(value)) return '住客服務與體驗管理';
+  if (/新據點|裝修|建置|驗收|消防|基礎建置|裝潢|場域|施工排程/.test(value)) return '工程建置管理';
+  if (/交接|SOP|營運|資料|文件|表單|名單|課程|討論|會議|準備|提供給/.test(value)) return '營運和資料交接';
   return '未分類';
+}
+
+function normalizeProjectName(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  const aliases = {
+    財務: '財務與帳務管理',
+    營運: '營運和資料交接',
+    工務: '工務維修管理',
+    維修: '工務維修管理',
+    房務: '房務管理',
+    品牌: '品牌官網',
+    官網: '品牌官網',
+    自動化: '自動化',
+    人資: '公司治理',
+    公司: '公司治理',
+  };
+  return aliases[text] || text;
 }
 
 function inferPriority(text, score) {
@@ -544,6 +786,10 @@ function isLowValueMessage(text) {
   if (value.length < 4) return true;
   if (/^(ok|OK|收到|好|好的|了解|謝謝|感謝|哈哈|哈|嗯|是|不是|對|可以|沒問題)[。！!]*$/i.test(value)) return true;
   if (/^(貼圖|圖片|影片|語音|檔案)$/i.test(value)) return true;
+  if (/^(test|t\s*e\s*s\s*t|測試|hello|hi|哈囉|再測試一次)$/i.test(value)) return true;
+  if (/^t\s*e\s*s\s*t\b/i.test(value)) return true;
+  if (/入站測試|AS Line群組名稱|服務已重新啟動|這是.*測試|測試訊息|User UI|查待辦|列出.*待辦/i.test(value)) return true;
+  if (/^(好呦|好的)?[～~，,\s]*我再確認[，,\s]*(謝謝|感謝)?[！!。]*$/.test(value)) return true;
   return false;
 }
 
@@ -669,6 +915,14 @@ function paragraphBlock(content) {
   };
 }
 
+function bulletedBlock(content) {
+  return {
+    object: 'block',
+    type: 'bulleted_list_item',
+    bulleted_list_item: { rich_text: [{ type: 'text', text: { content: String(content || '').slice(0, 2000) } }] },
+  };
+}
+
 function headingBlock(content, level = 2) {
   const type = level === 3 ? 'heading_3' : level === 1 ? 'heading_1' : 'heading_2';
   return {
@@ -733,6 +987,10 @@ function hashText(value) {
 
 function normalizeKey(value) {
   return cleanText(value).toLowerCase().replace(/\s+/g, '');
+}
+
+function uniqueValues(values) {
+  return [...new Set((values || []).filter(Boolean))];
 }
 
 function cleanText(value) {

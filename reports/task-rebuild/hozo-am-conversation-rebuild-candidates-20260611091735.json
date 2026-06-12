@@ -1,0 +1,1697 @@
+{
+  "ok": true,
+  "dryRun": true,
+  "archiveCurrent": true,
+  "createTasks": true,
+  "sourceDataSource": "HOZO_CONVERSATIONS_DATA_SOURCE_ID",
+  "forbiddenSourceDataSource": "HOZO_MESSAGES_DATA_SOURCE_ID",
+  "mode": "full-conversation-master-rebuild-candidates",
+  "judgmentPolicy": {
+    "name": "",
+    "version": "",
+    "mainControllerConversationLast": true,
+    "mainControllerConversations": []
+  },
+  "startedAt": "2026-06-11T01:17:35.792Z",
+  "finishedAt": "2026-06-11T01:17:47.345Z",
+  "snapshotPath": "D:\\Codex_project\\HOZO_AM\\line-oa-webhook\\reports\\task-rebuild\\hozo-am-task-archive-snapshot-20260611091735.json",
+  "candidateJsonPath": "D:\\Codex_project\\HOZO_AM\\line-oa-webhook\\reports\\task-rebuild\\hozo-am-conversation-rebuild-candidates-20260611091735.json",
+  "candidateHtmlPath": "D:\\Codex_project\\HOZO_AM\\line-oa-webhook\\reports\\task-rebuild\\hozo-am-conversation-rebuild-candidates-20260611091735.html",
+  "counts": {
+    "totalTasks": 51,
+    "activeTasksBeforeArchive": 51,
+    "archivedTasks": 51,
+    "conversations": 16,
+    "conversationMessages": 103,
+    "rawCandidates": 23,
+    "dedupedCandidates": 23,
+    "outputCandidates": 23,
+    "createdTasks": 23
+  },
+  "archiveResults": {
+    "requested": true,
+    "archived": 51,
+    "skipped": 0,
+    "results": [
+      {
+        "id": "37a51c68-6dac-81e6-8014-da53b15aff01",
+        "title": "弱電與資訊維修費用佐證確認（UOF 表單與 5 月急件）",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-810e-a238-d4c36229d145",
+        "title": "清運與維護：整併垃圾清運方案、信翰清潔配合、飲水機位置與公共區域維護。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-815c-945d-c79f8f5e7e3e",
+        "title": "營運交接：整併櫻花商務會館 6/1 交接、Debbie 對接、清潔與床單更換流程。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81f4-9605-c805c69c1e97",
+        "title": "通路與定價：整併 591、Airbnb、Booking.com 上架規範與四人房/大雙/小雙階梯定價模板。",
+        "previousStatus": "待確認完成",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8159-adff-ee8ab45ac372",
+        "title": "LINE OA 與 PMS：整併密碼鎖遠端發送、拍照點收、房客入住/退房清單與官網後台聯動。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81ba-9e96-ceb961f13797",
+        "title": "裝修與軟裝標準：整併石晶板、SPC、暖色系、床墊床架、洗沐備品、杯具、拖鞋、Dyson 等採購決策。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81b4-8abe-dc942449ee58",
+        "title": "品牌與官網：確認 HOZO/寓好命名、LOGO、官網首頁風格、案場標示與真人帶看影片。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8187-88ba-f2fdfd263d73",
+        "title": "租賃合約與公證：整併 12 份拆分租賃合約、公證時程、房東 5/25 前簽署安排。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8101-9ffa-f9d57f9f924c",
+        "title": "公司設立與帳戶：完成公司登記、統編取得、銀行對公帳戶/籌備戶流程。",
+        "previousStatus": "待確認完成",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8184-aca4-e25e2268b558",
+        "title": "工務與房務 SOP：整併信翰/哲文公務群組、施工進退場回報、清潔與床單配合流程。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8146-813e-e04ab37ae6bb",
+        "title": "交接素材整理：整併 Google 雲端硬碟、房型照片、591 刊登素材。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8191-a57f-d0f016e472c3",
+        "title": "自動化點交與電子合約：整併 LINE 回傳照片、證件/房況存檔、電子合約 PDF 與公司大小章。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8111-9ffd-cc1e4d6d8abf",
+        "title": "PMS 後台優化：整併房間租金顯示、租約版本、成租人個人備註/喜好欄位。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81db-9506-c06250f673a0",
+        "title": "官網與品牌內容：整併 hozo.com.tw、官方 Email、設備設施清單、FAQ、企業合作專區與品牌口號。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81e2-b309-f6a58be425fc",
+        "title": "牌照與考照：整併 Karen 牌照借用協議、每月費用、Maggie 代管人證照課程與候補追蹤。",
+        "previousStatus": "等待回覆",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-810f-9e23-df50f5c1bed8",
+        "title": "公司設立與會計師：Maggie 與 Anita 對接，處理特許行業審核、地址可登記性、資本額與股權文件。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8130-8a3a-d8dffad9b5af",
+        "title": "會議自動化：Seven 持續開發錄音轉會議記錄與待辦事項的流程。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81aa-a94c-f7bffab12ba2",
+        "title": "商務會館租約檢視：整併租賃合約檢查、法條確認與修改。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-818c-8dfb-cddacd5e68c2",
+        "title": "房務與管理溝通：Maggie 協調 Debby 與信翰溝通，並尋找其他承攬房務同仁。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8154-871a-ec5c33f822fc",
+        "title": "設備採購與安裝：整併洗烘衣機、烘被機、工區飲水機與哲文評估安裝。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-817e-be15-d5d687a9820a",
+        "title": "591 刊登與帳號綁定：確認商務會館帳號綁定、刊登內容與電話策略。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-814f-b2ff-d0842f917cda",
+        "title": "公證與租約追蹤：Seven 追蹤 2 月份財主約公證，預計 2026-07 中旬至 2026-07-31 前完成。",
+        "previousStatus": "待確認完成",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81e0-b02c-faa929848232",
+        "title": "公司設立文件：Maggie 提供負責人身分證、健保卡、公司名稱與會計師所需資料。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8111-b48e-cbd5e83a5d39",
+        "title": "Notion 權限與資料庫：開放 Maggie 相關頁面、負責人欄位與會議記錄權限。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8131-872e-ccfd11614a30",
+        "title": "磁扣與門鎖資料：向房東索取磁扣、房卡、感應機器原始設定資料與廠商資訊。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-818f-96c4-ca446b5667e5",
+        "title": "洗烘設備進場：確認洗衣機、烘衣機、投幣機配送與安裝。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8107-a23c-e9eb1c2bd5ef",
+        "title": "二樓電表與網路：追蹤阿豪、深哥的獨立電表與第四台網路線施工時間。",
+        "previousStatus": "等待回覆",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81e3-b058-dc776dfe2705",
+        "title": "實體合約用印流程：建立 Maggie、Seven、Bonnie 群組，處理好好簽以外的實體用印需求。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8108-b9a3-cd2d7ca24092",
+        "title": "零用金與報帳：Maggie 與 Amber 對接 10 萬元預支款，建立支出記錄並銜接後續 Notion/軟體記帳。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8171-a02e-cedd41bbcfa3",
+        "title": "特許行業證照規費：向會計師確認個人證照更換為公司證照的行政費用。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-812e-b4b5-c749743a4190",
+        "title": "包租代管：處理房客/客戶問題 - @John 🦁 哈囉John 我有看到櫻桃電梯內有這一張房客優惠",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8137-8922-d136c8a4820d",
+        "title": "原始待辦 6 項，保留為 6 個可追蹤工作包：",
+        "previousStatus": "等待回覆",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8162-bc11-c2adace067d7",
+        "title": "二樓電表與網路：Seven 找阿豪確認明義街二樓電表安裝方式，並延續第四台網路線施工追蹤。",
+        "previousStatus": "等待回覆",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8166-8b60-f3bcaa109995",
+        "title": "明義街設備與空間：購買二樓烘衣機固定鐵架，追蹤洗衣設備、飲水機、格柵門、磁扣門鎖等現場事項。",
+        "previousStatus": "等待回覆",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8184-8817-f0c84ba2015b",
+        "title": "LINE OA 與 AI 客服：設定官方 LINE 帳號 AI 自動回覆，整合入住日期、房型需求與詐騙/無效諮詢初篩。",
+        "previousStatus": "等待回覆",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81e9-9070-d7d44303fda2",
+        "title": "垃圾清運與清潔維護：6 月採 PT 巡檢過渡，7 月前接洽隔壁棟或清運商",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-819d-b5d5-cada068efa25",
+        "title": "租金折扣制度：維持月租原價、季租 95 折、年租 9 折，若出租不佳再評估季租 9 折或年租 85/8 折。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81f3-9255-f2920a471997",
+        "title": "未分類：確認決策 - 是不是真的打通了",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8169-a3fc-f68a453818b0",
+        "title": "租金押金移轉：Maggie 向 Amber 索取櫻桃案場 6 月剩餘租金與押金明細並完成移轉。",
+        "previousStatus": "待確認完成",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8178-b04c-fd420886fa2f",
+        "title": "合約資料數位化：將現有紙本合約錄入雲端 Excel/系統，包含起訖日、押金、租金、房號。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-818a-ac33-c4937d03fb08",
+        "title": "公司設立課程與證照：Maggie 參加 2026-06-08 稅務/設立課程，並延續代管證照與特許行業規費追蹤。",
+        "previousStatus": "等待回覆",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-81ef-ad2b-f6cb4ffffecb",
+        "title": "會計師確認 2 董 1 監文件。",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37a51c68-6dac-8192-a210-ff7b6f0df4fb",
+        "title": "公司開戶與驗資：Maggie 至國泰辦理公司設立開戶",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37851c68-6dac-8143-9aa8-d9e47cef828c",
+        "title": "公司設立、銀行開戶與法務合規收尾",
+        "previousStatus": "進行中",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37851c68-6dac-8151-8234-f2629471efbc",
+        "title": "LINE OA / Notion 自動化與點收功能",
+        "previousStatus": "進行中",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37851c68-6dac-815d-84e1-d6e5cc63b17c",
+        "title": "櫻桃商務會館交接、房務與維運",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37851c68-6dac-817b-a6c6-ea9b9e84b9dd",
+        "title": "場域工程、設備與基礎設施整備",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37851c68-6dac-8181-b797-ca85752518d2",
+        "title": "通路上架、月租規範與帶看內容",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37851c68-6dac-8182-8360-fdd62a418e19",
+        "title": "客房備品與設備採購",
+        "previousStatus": "未開始",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37851c68-6dac-81b1-8197-e95234c0694f",
+        "title": "品牌名稱、官網與官方數位資產建置",
+        "previousStatus": "進行中",
+        "action": "dry-run-archive"
+      },
+      {
+        "id": "37851c68-6dac-81e1-9aad-cf9e95ccbc84",
+        "title": "租賃合約、公證與簽約處理",
+        "previousStatus": "待確認",
+        "action": "dry-run-archive"
+      }
+    ]
+  },
+  "createResults": {
+    "requested": true,
+    "created": 23,
+    "skipped": 0,
+    "results": [
+      {
+        "id": "75ed4c910735",
+        "title": "營運：確認測試：服務已重新啟動",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "0dce5870de75",
+        "title": "財務：發票（收據）」開立記錄 不過本週課程提到關於包租代管業開立發票/收據",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "2c9af0212837",
+        "title": "財務：發票給客人 後天（週四）下課後預計到明義街202修繕處理 如果要這兩日的話可能週三到總",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "3a08d2692abf",
+        "title": "未分類：補登） HOZO 入站測試 2026-06-07 【2026/6/7 下午9:28】S",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "f2eb3da59427",
+        "title": "未分類：確認過路線問題",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "bde9d90cdccc",
+        "title": "未分類：需要我提供什麼",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "0b2f3425b3a1",
+        "title": "營運：請問明日的討論 除基本的近期事項彙報討論 我這邊目前需要準備什麼資訊嗎？",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "64446a665003",
+        "title": "未分類：提供給妳參考",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "534765d509c5",
+        "title": "未分類：請問明天早上可以過來嗎？",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "85b5a741d88d",
+        "title": "未分類：安排 您到時再跟我說時間方不方便喔！",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "9557b9d0e418",
+        "title": "未分類：協助找尋會館這邊垃圾清運廠商",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "df427436cef9",
+        "title": "未分類：1334 【2026/6/4 晚上10:54】好住管家（文字訊息） 測試",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "2bf3c1e92ba4",
+        "title": "未分類：需要用印",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "1f121c26080f",
+        "title": "未分類：麻煩開單謝謝",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "61d7c2d44c95",
+        "title": "未分類：確認 謝謝！",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "a7251b4a2bcb",
+        "title": "營運：提供嗎？ 新的旅客入住時我這邊可以一併推薦給旅客(emoji)",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "859096024708",
+        "title": "未分類：發霉的痕跡",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "c44eabb621f1",
+        "title": "未分類：我也有做測試",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "bf933315ae18",
+        "title": "未分類：這是套用新版 AS Line群組名稱 的測試",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "9259a48d6861",
+        "title": "未分類：我要去台北星期四下午回台中，正確時間還未定",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "0d7694f56f0f",
+        "title": "未分類：山田小姐 早安 這週我有課程 週三傍晚大約18:00過去看看可以嗎？",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "472d434e28b8",
+        "title": "未分類：t e s t 【2026/6/5 下午2:09】Seven陳聖文（文字訊息） hello",
+        "action": "dry-run-create"
+      },
+      {
+        "id": "f620780b1a68",
+        "title": "未分類：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果",
+        "action": "dry-run-create"
+      }
+    ]
+  },
+  "conversations": [
+    {
+      "id": "37851c68-6dac-81ed-a732-d10ddc9b39d1",
+      "name": "昱晴Maggie",
+      "project": "",
+      "type": "個人",
+      "url": "https://app.notion.com/p/U480627aaad7650bdd40117714fa69bc1-37851c686dac81eda732d10ddc9b39d1",
+      "isMainController": false,
+      "messageCount": 19,
+      "candidateCount": 0
+    },
+    {
+      "id": "37551c68-6dac-8111-a10d-fd4300f3bf83",
+      "name": "Seven陳聖文",
+      "project": "",
+      "type": "個人",
+      "url": "https://app.notion.com/p/Seven-37551c686dac8111a10dfd4300f3bf83",
+      "isMainController": false,
+      "messageCount": 21,
+      "candidateCount": 3
+    },
+    {
+      "id": "37551c68-6dac-81a1-8ab3-ef417201fdbf",
+      "name": "HOZO好住工務群組",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf",
+      "isMainController": false,
+      "messageCount": 12,
+      "candidateCount": 4
+    },
+    {
+      "id": "37b51c68-6dac-8127-a56d-f008e5c16a35",
+      "name": "群組 C7bd8b1b1985a58421d3f06058cd812ef",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C7bd8b1b1985a58421d3f06058cd812ef-37b51c686dac8127a56df008e5c16a35",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-8176-bb37-d7b4fcba41b9",
+      "name": "群組 C7bd8b1b1985a58421d3f06058cd812ef",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C7bd8b1b1985a58421d3f06058cd812ef-37b51c686dac8176bb37d7b4fcba41b9",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-81f5-bc72-ecf56b88041f",
+      "name": "群組 C7bd8b1b1985a58421d3f06058cd812ef",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C7bd8b1b1985a58421d3f06058cd812ef-37b51c686dac81f5bc72ecf56b88041f",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-81c1-a7c9-d32aa8321acc",
+      "name": "群組 C7bd8b1b1985a58421d3f06058cd812ef",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C7bd8b1b1985a58421d3f06058cd812ef-37b51c686dac81c1a7c9d32aa8321acc",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-8191-9f8f-d4b0d4df15ad",
+      "name": "群組 C3a3b94137b5a3a72033c35843159ebc7",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C3a3b94137b5a3a72033c35843159ebc7-37b51c686dac81919f8fd4b0d4df15ad",
+      "isMainController": false,
+      "messageCount": 6,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-81ee-9b1a-f0a5122f0941",
+      "name": "群組 C6ee57d34e78be91a93d35e8905128e48",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C6ee57d34e78be91a93d35e8905128e48-37b51c686dac81ee9b1af0a5122f0941",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37b51c68-6dac-812f-be15-eddaf412342c",
+      "name": "群組 C6ee57d34e78be91a93d35e8905128e48",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C6ee57d34e78be91a93d35e8905128e48-37b51c686dac812fbe15eddaf412342c",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "name": "HOZO 公司群",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "isMainController": false,
+      "messageCount": 9,
+      "candidateCount": 4
+    },
+    {
+      "id": "37b51c68-6dac-81b2-9498-fc8adb5f5d4b",
+      "name": "群組 C3a3b94137b5a3a72033c35843159ebc7",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/C3a3b94137b5a3a72033c35843159ebc7-37b51c686dac81b29498fc8adb5f5d4b",
+      "isMainController": false,
+      "messageCount": 1,
+      "candidateCount": 0
+    },
+    {
+      "id": "37651c68-6dac-8108-8997-f3762906d4de",
+      "name": "HOZO好住公司設立協助",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "isMainController": false,
+      "messageCount": 8,
+      "candidateCount": 6
+    },
+    {
+      "id": "37951c68-6dac-8192-ac30-c75468d45035",
+      "name": "HOZO好住寓好公司設立",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37951c686dac8192ac30c75468d45035",
+      "isMainController": false,
+      "messageCount": 2,
+      "candidateCount": 0
+    },
+    {
+      "id": "37551c68-6dac-81d9-ad94-fb1ba7c12cc1",
+      "name": "HOZO品牌設計",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/HOZO-37551c686dac81d9ad94fb1ba7c12cc1",
+      "isMainController": false,
+      "messageCount": 7,
+      "candidateCount": 1
+    },
+    {
+      "id": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "name": "明義街46號2之2",
+      "project": "",
+      "type": "群組",
+      "url": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "isMainController": false,
+      "messageCount": 12,
+      "candidateCount": 5
+    }
+  ],
+  "candidates": [
+    {
+      "id": "75ed4c910735",
+      "title": "營運：確認測試：服務已重新啟動",
+      "project": "營運",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "Seven陳聖文",
+      "conversationName": "Seven陳聖文",
+      "conversationId": "37551c68-6dac-8111-a10d-fd4300f3bf83",
+      "conversationUrl": "https://app.notion.com/p/Seven-37551c686dac8111a10dfd4300f3bf83",
+      "firstTime": "2026-06-05T06:08:00.000Z",
+      "latestTime": "2026-06-05T06:08:00.000Z",
+      "speakers": [
+        "Seven陳聖文"
+      ],
+      "score": 18,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "期限或時間",
+          "weight": 3
+        },
+        {
+          "label": "交付或承諾",
+          "weight": 4
+        },
+        {
+          "label": "決策需求",
+          "weight": 4
+        },
+        {
+          "label": "完成線索",
+          "weight": 2
+        }
+      ],
+      "nextStep": "由負責人確認判斷結果，決定是否轉成正式任務。",
+      "evidence": "【2026/06/05 14:08】Seven陳聖文：1780639688256-cce33e0a-ff3b-4f93-9528-1467ec2cc72f.jpg\n【2026/6/5 下午1:59】Seven陳聖文（檔案）\nsample.pdf\n【2026/6/5 下午1:55】好住管家（文字訊息）\n重啟確認測試：服務已重新啟動，這是一則傳給你自己的測試訊息。\n【2026/6/5 下午1:44】Seven陳聖文（檔案）\nsample.pdf\n【2026/6/5 下午1:28】Seven陳聖文（檔案）\nsample.pdf\n【2026/6/5 下午1:17】Seven陳聖文（檔案）\n【2026/6/5 中午12:15】Seven陳聖文（檔案）\n【2026/6/5 上午9:51】Seven陳聖文（檔案）\n【2026/6/5 上午9:12】好住管家（圖片）\n【2026/6/5 上午9:12】好住管家（文字訊息）\n測試（可下載 URL）: image + conversation link + attachment DB 觀察。\n【2026/6/5 上午9:11】好住管家（圖片）\n【2026/6/5 上午9:11】好住管家（文字訊息）\n這是純文字測試：我用「最早期」流程做一個對照，圖片/檔案主檔以連結+分流為主。\n【2026/6/5 上午9:11】好住管家（圖片）\n【2026/6/5 上午9:11】好住管家（文字訊息）\n這是純文字測試：我用「最早期」流程做一個對照，圖片/檔案主檔以連結+分流為主。\n【2026/6/5 上午9:11】好住管家（圖片）\n【2026/6/5 上午9:11】好住管家（文字訊息）\n這是純文字測試：我用「最早期」流程做一個對照，圖片/檔案主檔以連結+分流為主。\n【2026/6/5 上午8:57】Seven陳聖文（檔案）\n【2026/6/5 上午8:53】好住管家（圖片）\n【2026/6/5 上午8:53】好住管家（文字訊息）\n第二輪直接圖片測試：請確認這張圖有被以 block embed 呈現。\n【2026/6/5 上午8:53】好住管家（圖片）\n【2026/6/5 上午8:53】好住管家（文字訊息）\n這是第二波圖片同步測試：請確認 Notion 是否有新訊息與圖片。\n【2026/6/5 上午8:53】好住管家（圖片）\n【2026/6/5 上午8:53】好住管家（文字訊息）\n這是第二波圖片同步測試：請確認 Notion 是否有新訊息與圖片。\n【2026/6/5 上午8:52】好住管家（圖片）\n【2026/6/5 上午8:52】好住管家（文字訊息）\n這是圖片同步測試：請到 Notion 看看是否有圖片 embed。\n【2026/6/5 上午8:52】好住管家（圖片）\n【2026/6/5 上午8:52】好住管家（文字訊息）\n這是圖片同步測試：請到 Notion 看看是否有圖片 embed。\n【2026/6/5 上午8:51】好住管家（文字訊息）\n這是自動化測試：文字訊息：你可回到 Notion 對話主檔查看。\n【2026/6/5 上午8:50】好住管家（文字訊息）\n這是自動化測試：文字訊息：你可回到 Notion 對話主檔查看。\n【2026/6/5 上午8:31】好住管家（文字訊息）\n今天天氣陰陰的，但是溫度還蠻舒服的。\n【2026/6/5 上午8:16】好住管家（文字訊息）\n早安，你好\n【2026/6/5 上午8:05】Seven陳聖文（檔案）\n【2026/6/5 上午8:04】Seven陳聖文（檔案）\n【2026/6/5 清晨7:54】Seven陳聖文（檔案）\n財金109企業參訪_5109027101陳聖文.docx\n【2026/6/5 清晨7:49】Seven陳聖文（檔案）\n財金109企業參訪_5109027101陳聖文.docx\n【2026/6/5 清晨7:48】Seven陳聖文（圖片）\n【2026/6/5 清晨7:48】Seven陳聖文（文字訊息）\n直123\n【2026/6/5 清晨7:45】Seven陳聖文（圖片）\n1780616758276-fcbe3edb-5304-46ed-a8f0-94a72ea21618.jpg\n【2026/6/5 清晨7:45】Seven陳聖文（檔案）\n財金109企業參訪_5109027101陳聖文.docx\n【2026/6/5 凌晨1:31】Seven陳聖文（檔案）\n明義街-房型平面圖.pdf\n【2026/6/5 凌晨1:29】Seven陳聖文（文字訊息）\n有收到\n【2026/6/5 凌晨1:28】Seven陳聖文（圖片）\n1780594099721-19d2a700-70f0-4ca1-b186-3f75f79fd2e0.jpg\n【2026/6/5 凌晨1:28】Seven陳聖文（圖片）\n1780594097873-680dc151-2ccc-4ee4-a37d-6a37bccb7eab.jpg\n【2026/6/5 凌晨1:27】好住管家（文字訊息）\n這是最後一次本機測試：請回「有收到」給我（你現在看到這則就回覆一下）\n【2026/6/5 凌晨1:27】好住管家（文字訊息）\nserver復活測試\n【2025/10/9 晚上8:19】Seven陳聖文（文字訊息）\n從ngrok測試外部webhook 2026-06-05\n【2026/6/5 凌晨1:25】好住管家（文字訊息）\n這是重新測試：機器人確認收到，請回覆有無寫進 Notion 對話主檔\n【2026/6/5 凌晨1:16】好住管家（文字訊息）\n今天測試一則訊息，服務重啟後驗證\n【2026/6/5 凌晨1:12】好住管家（文字訊息）\n你剛剛的命令我已收到，現在直接回覆你：\n\n現在是幾點？\n【2026/6/5 凌晨1:11】Seven陳聖文（文字訊息）\nCodex 現在是幾點？\n【2026/6/5 凌晨1:08】好住管家（文字訊息）\n已收到 Codex 指令，已進入待處理佇列。\n\n已收指令：你可以做什麼？\n【2026/6/5 凌晨1:08】Seven陳聖文（文字訊息）\nCodex，你可以做什麼？\n【2026/6/5 凌晨1:07】好住管家（文字訊息）\n已收到 Codex 指令，已進入待處理佇列。\n\n已收指令：現在是幾點？\n【2026/6/5 凌晨1:07】Seven陳聖文（文字訊息）\nCodex 現在是幾點？\n【2026/6/5 凌晨1:06】Seven陳聖文（文字訊息）\nCodex，你看一下現在是幾點？\n【2026/6/5 凌晨1:03】好住管家（文字訊息）\n已收到 Codex 指令，已進入待處理佇列。\n\n已收指令：你現在有收到嗎\n【2026/6/5 凌晨1:03】Seven陳聖文（文字訊息）\nCodex 你現在有收到嗎\n【2026/6/5 凌晨1:03】Seven陳聖文（文字訊息）\nCodex，好的，你如果有收到的話，請回覆我喔。\n【2026/6/5 凌晨1:02】好住管家（文字訊息）\n已收到 Codex 指令，已進入待處理佇列。\n\n已收指令：你現在有收到嗎\n【2026/6/5 凌晨1:02】Seven陳聖文（文字訊息）\nCodex 你現在有收到嗎\n【2026/6/5 凌晨12:57】Seven陳聖文（文字訊息）\nCodex，如果你有收到我的命令，請告訴我「收到了」\n【2026/6/5 凌晨12:56】Seven陳聖文（文字訊息）\nCodex 測試回報 2026-06-04-...\n【2026/6/5 凌晨12:40】Seven陳聖文（文字訊息）\nC O D E X 內部測試\n【2026/6/5 凌晨12:30】Seven陳聖文（文字訊息）\nCodex 最終驗證\n【2026/6/5 凌晨12:09】Seven陳聖文（文字訊息）\nCodex 測試新資料夾啟動\n【2026/6/4 晚上11:59】Seven陳聖文（文字訊息）\nCodex 測試回報 2026-06-04-...\n【2026/6/4 晚上11:57】Seven陳聖文（文字訊息）\nCodex，你現在有收到嗎？有收到回覆我\n【2026/6/4 晚上11:56】Seven陳聖文（文字訊息）\nCodex 這是監控測試\n【2026/6/4 晚上11:51】Seven陳聖文（文字訊息）\nCodex，我現在做一次測試，如果你有收到我的訊息跟我講有。\n【2026/6/4 晚上11:51】Seven陳聖文（文字訊息）\n12345\n【2026/6/4 晚上11:49】Seven陳聖文（文字訊息）\n測試訊號 from local check\n【2026/6/4 晚上11:40】Seven陳聖文（文字訊息）\nCodex 這次確定測試\n【2026/6/4 晚上11:36】Seven陳聖文（文字訊息）\nCodex 再測一次 你收到嗎\n【2026/6/4 晚上11:33】Seven陳聖文（文字訊息）\nCodex 幫我回報你剛剛有收到這則指令了嗎\n【2026/6/4 晚上11:25】Seven陳聖文（文字訊息）\nCodex，那我現在想要再測試一次，你看看有沒有收到，如果有收到跟我回覆有。\n【2026/6/4 晚上11:23】Seven陳聖文（文字訊息）\n好的，那我再測試一次，你看看這樣可不可以？\n【2026/6/4 晚上11:21】Seven陳聖文（文字訊息）\n好，我想說我們先行溝通就好了。我現在先發這個訊息給你，你有收到再跟我講；如果沒有，你就說沒有。\n【2026/6/4 晚上11:20】Line OA（文字訊息）\n測試流程啟動：你現在可以在 Line 傳一則指令到我（例如「/status」或「列出目前目錄」）。我這邊收到後會執行，並透過 /webhook/line/send 回傳結果。\n【2026/6/4 晚上11:16】Line OA（文字訊息）\n[handoff 正式流程] 這則訊息請透過 /webhook/line/send 送出，同步到 CRM。\n【2026/6/4 晚上10:51】好住管家（文字訊息）\n補測：請用 send 路由發，確認會記錄 OA 名稱與橘色 metadata。\n【2026/6/4 晚上10:51】Line OA（文字訊息）\n這次改成 /webhook/line/send 測試。\n【2026/6/4 晚上10:31】Line OA（文字訊息）\n我測試從 Codex 直接發訊息給 Seven（OA ID 標籤檢查）\n【2026/6/4 晚上10:31】Line OA（文字訊息）\n我測試從 Codex 直接發訊息給 Seven（LINE OA 標註再驗）\n【2026/6/4 晚上10:30】Line OA（文字訊息）\n我測試從 Codex 直接發訊息給 Seven（來自 OA 發送紀錄檢測）\n【2026/6/4 晚上10:21】Seven陳聖文（檔案）\n11_27_歡慶戈們回娘家!_(回覆).xlsx\n【2026/6/4 晚上10:19】Seven陳聖文（文字訊息）\ny y y\n【2026/6/4 晚上10:06】Seven陳聖文（檔案）\n個案討論.rtf.txt\n【2026/6/4 晚上10:19】Seven陳聖文（文字訊息）\nuyyu\n【2026/6/4 晚上10:09】Seven陳聖文（檔案）\n【2026/6/4 晚上10:06】Seven陳聖文（檔案）\n【2026/6/4 晚上10:01】Seven陳聖文（檔案）\n【2026/6/4 晚上9:59】Seven陳聖文（檔案）\n【2026/6/4 晚上9:56】Seven陳聖文（檔案）\n【2026/6/4 晚上9:49】Seven陳聖文（檔案）\n【2026/6/4 晚上9:47】Seven陳聖文（檔案）\n【2026/6/4 晚上9:38】Seven陳聖文（檔案）\n【2026/6/4 晚上9:37】Seven陳聖文（檔案）\n【2026/6/4 晚上9:21】Seven陳聖文（檔案）\n【2026/6/4 晚上9:16】Seven陳聖文（檔案）\n【2026/6/4 晚上8:47】Seven陳聖文（檔案）\n【2026/6/4 晚上8:31】Seven陳聖文（檔案）\n【2026/6/4 晚上8:15】Seven陳聖文（檔案）\n【2026/6/4 晚上8:15】Seven陳聖文（文字訊息）\ngood job\n【2026/6/4 晚上8:00】Seven陳聖文（檔案）\n程果科技股東協議書_法人變更對照版_已更新.docx.docx\n【2026/6/4 晚上7:49】Seven陳聖文（檔案）\nBook1.xlsx.xlsx\n【2026/6/4 晚上7:26】Seven陳聖文（文字訊息）\n44455556\n【2026/6/4 晚上7:21】Seven陳聖文（檔案）\n程果科技股東協議書_法人變更對照版_已更新.docx\n【2026/6/4 下午6:59】Seven陳聖文（文字訊息）\n888888\n【2026/6/4 下午6:39】Seven陳聖文（檔案）\nBook1.xlsx\n【2026/6/4 下午6:29】Seven陳聖文（文字訊息）\nttttt\n【2026/6/4 下午6:28】Seven陳聖文（文字訊息）\nhttps://margin-yapping-rai\n【2026/6/4 下午6:19】Seven陳聖文（檔案）\n(租賃補充協議)_-最終版.docx\n【2026/6/4 下午6:09】Seven陳聖文（檔案）\n(經營權移轉)_-最終版.docx\n【2026/6/4 下午5:57】Seven陳聖文（檔案）\n(經營權移轉)_-雙方協議調整版2026.1.12.docx\n【2026/6/4 下午5:54】Seven陳聖文（文字訊息）\n55555\n【2026/6/4 下午5:50】Seven陳聖文（檔案）\n(經營權移轉)_-雙方協議調整版2026.1.12.docx\n【2026/6/4 下午5:50】Seven陳聖文（檔案）\n1.pdf\n【2026/6/4 下午5:49】Seven陳聖文（檔案）\n2026-04-27_人力資源部門組織改善計畫.txt\n【2026/6/4 下午5:49】Seven陳聖文（圖片）\n1780566543000-dade6ae2-da15-4101-ba63-a59e1ab3b4fb.jpg\n【2026/6/4 下午5:48】Seven陳聖文（文字訊息）\n66666\n【2026/6/4 下午5:21】Seven陳聖文（文字訊息）\nhttps://developers.line.biz/console/channel/2009385650/messaging-api?status=success\n【2026/6/4 下午5:20】Seven陳聖文（圖片）\n1780564853461-799e022b-7375-4f53-a697-687812862ed5.jpg\n【2026/6/4 下午5:20】Seven陳聖文（檔案）\n1.pdf\n【2026/6/4 下午5:19】Seven陳聖文（文字訊息）\n77777777\n【2026/6/4 下午4:23】Seven陳聖文（檔案）\n1.pdf\n【2026/6/4 下午4:22】Seven陳聖文（檔案）\n程果科技股東協議書_法人變更對照版_已更新.docx\n【2026/6/4 下午4:20】Seven陳聖文（圖片）\n1780561206928-fb8ef761-8e09-4201-af60-d4d256fba661.jpg\n【2026/6/4 下午4:18】Seven陳聖文（文字訊息）\nit looks work again\n【2026/6/4 下午4:17】Seven陳聖文（文字訊息）\ni don't know what is hapen\n【2026/6/4 下午4:14】Seven陳聖文（文字訊息）\n【2026/6/4 下午4:16】Seven陳聖文（文字訊息）\ntry it\nit is good now\n【2026/6/4 下午4:14】Seven陳聖文（文字訊息）\nlet do it\n我現在有一些事情要測試，讓我測試一下\n【2026/6/4 下午4:00】Seven陳聖文（文字訊息）\n1234\n【2026/6/4 下午4:01】Seven陳聖文（文字訊息）\n5678\n【2026/6/4 下午4:06】Seven陳聖文（文字訊息）\nseven\n【2026/6/4 下午4:07】Seven陳聖文（文字訊息）\n11\n【2026/6/4 下午4:15】Seven陳聖文（文字訊息）\nlet's try some thing new\n【2026/6/4 下午4:15】Seven陳聖文（文字訊息）\ncome back\nmanual test upload block\n媒體：260525.868017596.1.INV.pdf.pdf、成真咖啡個案討論_20210227.pdf.pdf、課程三.pdf.pdf、360.jpg.jpg.jpg、640px-Fronalpstock_big.jpg、640px-Fronalpstock_big.jpg、640px-Fronalpstock_big.jpg、課程三.pdf.pdf、360.jpg.jpg、800px-Google_2015_logo.svg.png、800px-Google_2015_logo.svg.png、800px-Google_2015_logo.svg.png、800px-Google_2015_logo.svg.png、課程三.pdf.pdf、個案討論.rtf.txt.txt、1780616925537-f98ece2d-920b-49ca-8f97-03b53312dcb6.jpg.jpg、20201211_幹部會議.rtf.txt.txt、個案討論.rtf.txt.txt、課程三.pdf.pdf、word_text.txt.txt、pdf_text.txt.txt、word_text.txt.txt、pdf_text.txt.txt、word_text.txt.txt、pdf_text.txt.txt、word_text.txt.txt、Book1.xlsx.xlsx.xlsx、程果科技股東協議書_法人變更對照版.docx.docx、程果科技股東協議書_法人變更對照版_已更新.docx.docx、程果科技股東協議書_法人變更對照版_已更新.docx.docx.docx、Book1.xlsx.xlsx.xlsx、程果科技股東協議書_法人變更對照版_已更新.docx.docx、Book1.xlsx.xlsx、(租賃補充協議)_-最終版.docx.docx、(經營權移轉)_-最終版.docx.docx、(經營權移轉)_-雙方協議調整版2026.1.12.docx.docx、(%E7%B6%93%E7%87%9F%E6%AC%8A%E7%A7%BB%E8%BD%89)_-%E9%9B%99%E6%96%B9%E5%8D%94%E8%AD%B0%E8%AA%BF%E6%95%B4%E7%89%882026.1.12.docx、1.pdf、2026-04-27_%E4%BA%BA%E5%8A%9B%E8%B3%87%E6%BA%90%E9%83%A8%E9%96%80%E7%B5%84%E7%B9%94%E6%94%B9%E5%96%84%E8%A8%88%E7%95%AB.txt、1780566543000-dade6ae2-da15-4101-ba63-a59e1ab3b4fb.jpg、1780564853461-799e022b-7375-4f53-a697-687812862ed5.jpg、1.pdf、1.pdf、%E7%A8%8B%E6%9E%9C%E7%A7%91%E6%8A%80%E8%82%A1%E6%9D%B1%E5%8D%94%E8%AD%B0%E6%9B%B8_%E6%B3%95%E4%BA%BA%E8%AE%8A%E6%9B%B4%E5%B0%8D%E7%85%A7%E7%89%88_%E5%B7%B2%E6%9B%B4%E6%96%B0.docx、1780561206928-fb8ef761-8e09-4201-af60-d4d256fba661.jpg、test_manual.txt",
+      "media": [
+        {
+          "type": "file",
+          "name": "260525.868017596.1.INV.pdf.pdf",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/50e7e4fb-4b27-4098-8f09-0412737ef7a6/260525.868017596.1.INV.pdf.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466ULLMOZLY%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011739Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQC%2FiQO%2F7rf%2BR%2Fa%2Bg0z%2BsTZ3q%2FDCFCo2cjM73Ts9R48xiQIhAPzZn0uHXmVLwYV%2BX5IGBiZl6MRXExy7n4rHJQBl%2BnW8KogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igx%2B3Ol%2BOHuVelGBIL4q3ANc1N4PqSWRIJntcTUqAkuqi%2FL4DKymMYtUSQNd6F4bTZqY2gFaSfNFg8zBh574p1FKSv0GXr7QM25Mz6njrTPRoekBj4quIXtV8Cg0an%2Bbpr%2BhjSDtEVbyOwPVGAxS9saCuceeY2tvM4GLEK0EbmEJ%2FExZdNMvRCQxWUFLQsIHu3uWXVVBFjvNpF1VFXLebbOQpUbO4EY12NTlQidhcuk4hA2IVzC3v6d0HMmQtQTG%2BduFNX6T7lSotGCQmJPBKfNKL7mmrQfgUyG7QzIsFuSxobAlfxyjxK4ZIRp3SnChoH0USyecz7G6sWrLw%2Bg1SL7klZQrXkYyJ0ggTtqTNpCoRnqYX5UfUcRvpigKSeaRiuHV0DkMA8lOgHvMWBOxJaSMtO7gQ2XHhoCBhHAYwOCZUvhNcVJzsWz4qmQAekN3Fy3pI19djAI6bnuyGBe%2BAx1ASdJr8gRgyc9D%2Fr3tkPuWm1KLljBBETMi80c70kyV%2BbPJqgu%2BOhh5Nf6OrDc1Dtjc2RXa8aee8H67di8oFhTEldueh1OpkYtYWjwVrft%2BGKK2AFD3DGs%2BjgDsNc%2FjhPvuK4JolEvYMHTbXp%2FcA2A3CXJFiACrGUswKch%2F2bszdnabaVR0Uat6UDGMKjCMiajRBjqkAYkPg5oQsLK0YZ%2FsAj4M0ns6QICl4Bm4wGqL7hQ2e5hCJJZLeXXE7Qz6%2F%2Bw%2FG%2BJFkPTCVfyD8zgiYl8DsznrfhhTHzeFW4754%2Fn66uKQEu68FSQopK7mD5QvoTiyRRKeMSNekgq02bn2XaWuPyeWcEgLQE4FJhQ3TkWknDyCNAsDJlFm0Bm5lGwwDRqSB7sdlOHoivbaNje5cTaUvXiJC9LVCRch&X-Amz-Signature=804cb90c29fc7f0c40454815e9487ea4b21fdb1efe99c9f47f117194a53e809b&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "成真咖啡個案討論_20210227.pdf.pdf",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/68091b07-bed8-4f3d-b065-e4d180c44424/%E6%88%90%E7%9C%9F%E5%92%96%E5%95%A1%E5%80%8B%E6%A1%88%E8%A8%8E%E8%AB%96_20210227.pdf.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466ULLMOZLY%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011739Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQC%2FiQO%2F7rf%2BR%2Fa%2Bg0z%2BsTZ3q%2FDCFCo2cjM73Ts9R48xiQIhAPzZn0uHXmVLwYV%2BX5IGBiZl6MRXExy7n4rHJQBl%2BnW8KogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igx%2B3Ol%2BOHuVelGBIL4q3ANc1N4PqSWRIJntcTUqAkuqi%2FL4DKymMYtUSQNd6F4bTZqY2gFaSfNFg8zBh574p1FKSv0GXr7QM25Mz6njrTPRoekBj4quIXtV8Cg0an%2Bbpr%2BhjSDtEVbyOwPVGAxS9saCuceeY2tvM4GLEK0EbmEJ%2FExZdNMvRCQxWUFLQsIHu3uWXVVBFjvNpF1VFXLebbOQpUbO4EY12NTlQidhcuk4hA2IVzC3v6d0HMmQtQTG%2BduFNX6T7lSotGCQmJPBKfNKL7mmrQfgUyG7QzIsFuSxobAlfxyjxK4ZIRp3SnChoH0USyecz7G6sWrLw%2Bg1SL7klZQrXkYyJ0ggTtqTNpCoRnqYX5UfUcRvpigKSeaRiuHV0DkMA8lOgHvMWBOxJaSMtO7gQ2XHhoCBhHAYwOCZUvhNcVJzsWz4qmQAekN3Fy3pI19djAI6bnuyGBe%2BAx1ASdJr8gRgyc9D%2Fr3tkPuWm1KLljBBETMi80c70kyV%2BbPJqgu%2BOhh5Nf6OrDc1Dtjc2RXa8aee8H67di8oFhTEldueh1OpkYtYWjwVrft%2BGKK2AFD3DGs%2BjgDsNc%2FjhPvuK4JolEvYMHTbXp%2FcA2A3CXJFiACrGUswKch%2F2bszdnabaVR0Uat6UDGMKjCMiajRBjqkAYkPg5oQsLK0YZ%2FsAj4M0ns6QICl4Bm4wGqL7hQ2e5hCJJZLeXXE7Qz6%2F%2Bw%2FG%2BJFkPTCVfyD8zgiYl8DsznrfhhTHzeFW4754%2Fn66uKQEu68FSQopK7mD5QvoTiyRRKeMSNekgq02bn2XaWuPyeWcEgLQE4FJhQ3TkWknDyCNAsDJlFm0Bm5lGwwDRqSB7sdlOHoivbaNje5cTaUvXiJC9LVCRch&X-Amz-Signature=124f8e441e0ca3878cc491144f3168040bacdd87a4db2c6925c1851dceb5cd7a&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "課程三.pdf.pdf",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/bdc5aedc-aa41-4e20-9221-e91ddaecba58/%E8%AA%B2%E7%A8%8B%E4%B8%89.pdf.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466ULLMOZLY%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011739Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQC%2FiQO%2F7rf%2BR%2Fa%2Bg0z%2BsTZ3q%2FDCFCo2cjM73Ts9R48xiQIhAPzZn0uHXmVLwYV%2BX5IGBiZl6MRXExy7n4rHJQBl%2BnW8KogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igx%2B3Ol%2BOHuVelGBIL4q3ANc1N4PqSWRIJntcTUqAkuqi%2FL4DKymMYtUSQNd6F4bTZqY2gFaSfNFg8zBh574p1FKSv0GXr7QM25Mz6njrTPRoekBj4quIXtV8Cg0an%2Bbpr%2BhjSDtEVbyOwPVGAxS9saCuceeY2tvM4GLEK0EbmEJ%2FExZdNMvRCQxWUFLQsIHu3uWXVVBFjvNpF1VFXLebbOQpUbO4EY12NTlQidhcuk4hA2IVzC3v6d0HMmQtQTG%2BduFNX6T7lSotGCQmJPBKfNKL7mmrQfgUyG7QzIsFuSxobAlfxyjxK4ZIRp3SnChoH0USyecz7G6sWrLw%2Bg1SL7klZQrXkYyJ0ggTtqTNpCoRnqYX5UfUcRvpigKSeaRiuHV0DkMA8lOgHvMWBOxJaSMtO7gQ2XHhoCBhHAYwOCZUvhNcVJzsWz4qmQAekN3Fy3pI19djAI6bnuyGBe%2BAx1ASdJr8gRgyc9D%2Fr3tkPuWm1KLljBBETMi80c70kyV%2BbPJqgu%2BOhh5Nf6OrDc1Dtjc2RXa8aee8H67di8oFhTEldueh1OpkYtYWjwVrft%2BGKK2AFD3DGs%2BjgDsNc%2FjhPvuK4JolEvYMHTbXp%2FcA2A3CXJFiACrGUswKch%2F2bszdnabaVR0Uat6UDGMKjCMiajRBjqkAYkPg5oQsLK0YZ%2FsAj4M0ns6QICl4Bm4wGqL7hQ2e5hCJJZLeXXE7Qz6%2F%2Bw%2FG%2BJFkPTCVfyD8zgiYl8DsznrfhhTHzeFW4754%2Fn66uKQEu68FSQopK7mD5QvoTiyRRKeMSNekgq02bn2XaWuPyeWcEgLQE4FJhQ3TkWknDyCNAsDJlFm0Bm5lGwwDRqSB7sdlOHoivbaNje5cTaUvXiJC9LVCRch&X-Amz-Signature=15380d74ca2af906bdab9beda6544d2b9eafd4d95802efe490ca0e85019e1e2c&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "360.jpg.jpg.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/98422068-3e8f-4a5a-a410-e5b1f6662a8a/360.jpg.jpg.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466ULLMOZLY%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011739Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQC%2FiQO%2F7rf%2BR%2Fa%2Bg0z%2BsTZ3q%2FDCFCo2cjM73Ts9R48xiQIhAPzZn0uHXmVLwYV%2BX5IGBiZl6MRXExy7n4rHJQBl%2BnW8KogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igx%2B3Ol%2BOHuVelGBIL4q3ANc1N4PqSWRIJntcTUqAkuqi%2FL4DKymMYtUSQNd6F4bTZqY2gFaSfNFg8zBh574p1FKSv0GXr7QM25Mz6njrTPRoekBj4quIXtV8Cg0an%2Bbpr%2BhjSDtEVbyOwPVGAxS9saCuceeY2tvM4GLEK0EbmEJ%2FExZdNMvRCQxWUFLQsIHu3uWXVVBFjvNpF1VFXLebbOQpUbO4EY12NTlQidhcuk4hA2IVzC3v6d0HMmQtQTG%2BduFNX6T7lSotGCQmJPBKfNKL7mmrQfgUyG7QzIsFuSxobAlfxyjxK4ZIRp3SnChoH0USyecz7G6sWrLw%2Bg1SL7klZQrXkYyJ0ggTtqTNpCoRnqYX5UfUcRvpigKSeaRiuHV0DkMA8lOgHvMWBOxJaSMtO7gQ2XHhoCBhHAYwOCZUvhNcVJzsWz4qmQAekN3Fy3pI19djAI6bnuyGBe%2BAx1ASdJr8gRgyc9D%2Fr3tkPuWm1KLljBBETMi80c70kyV%2BbPJqgu%2BOhh5Nf6OrDc1Dtjc2RXa8aee8H67di8oFhTEldueh1OpkYtYWjwVrft%2BGKK2AFD3DGs%2BjgDsNc%2FjhPvuK4JolEvYMHTbXp%2FcA2A3CXJFiACrGUswKch%2F2bszdnabaVR0Uat6UDGMKjCMiajRBjqkAYkPg5oQsLK0YZ%2FsAj4M0ns6QICl4Bm4wGqL7hQ2e5hCJJZLeXXE7Qz6%2F%2Bw%2FG%2BJFkPTCVfyD8zgiYl8DsznrfhhTHzeFW4754%2Fn66uKQEu68FSQopK7mD5QvoTiyRRKeMSNekgq02bn2XaWuPyeWcEgLQE4FJhQ3TkWknDyCNAsDJlFm0Bm5lGwwDRqSB7sdlOHoivbaNje5cTaUvXiJC9LVCRch&X-Amz-Signature=e368fe4098a3ba513876b4780d664fb6952e1416f568ce5b374e395fdd614ffd&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "640px-Fronalpstock_big.jpg",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Fronalpstock_big.jpg/640px-Fronalpstock_big.jpg",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "課程三.pdf.pdf",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/eec8a478-6b04-4cdc-ad53-23998ff38b46/%E8%AA%B2%E7%A8%8B%E4%B8%89.pdf.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466ULLMOZLY%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011739Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQC%2FiQO%2F7rf%2BR%2Fa%2Bg0z%2BsTZ3q%2FDCFCo2cjM73Ts9R48xiQIhAPzZn0uHXmVLwYV%2BX5IGBiZl6MRXExy7n4rHJQBl%2BnW8KogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igx%2B3Ol%2BOHuVelGBIL4q3ANc1N4PqSWRIJntcTUqAkuqi%2FL4DKymMYtUSQNd6F4bTZqY2gFaSfNFg8zBh574p1FKSv0GXr7QM25Mz6njrTPRoekBj4quIXtV8Cg0an%2Bbpr%2BhjSDtEVbyOwPVGAxS9saCuceeY2tvM4GLEK0EbmEJ%2FExZdNMvRCQxWUFLQsIHu3uWXVVBFjvNpF1VFXLebbOQpUbO4EY12NTlQidhcuk4hA2IVzC3v6d0HMmQtQTG%2BduFNX6T7lSotGCQmJPBKfNKL7mmrQfgUyG7QzIsFuSxobAlfxyjxK4ZIRp3SnChoH0USyecz7G6sWrLw%2Bg1SL7klZQrXkYyJ0ggTtqTNpCoRnqYX5UfUcRvpigKSeaRiuHV0DkMA8lOgHvMWBOxJaSMtO7gQ2XHhoCBhHAYwOCZUvhNcVJzsWz4qmQAekN3Fy3pI19djAI6bnuyGBe%2BAx1ASdJr8gRgyc9D%2Fr3tkPuWm1KLljBBETMi80c70kyV%2BbPJqgu%2BOhh5Nf6OrDc1Dtjc2RXa8aee8H67di8oFhTEldueh1OpkYtYWjwVrft%2BGKK2AFD3DGs%2BjgDsNc%2FjhPvuK4JolEvYMHTbXp%2FcA2A3CXJFiACrGUswKch%2F2bszdnabaVR0Uat6UDGMKjCMiajRBjqkAYkPg5oQsLK0YZ%2FsAj4M0ns6QICl4Bm4wGqL7hQ2e5hCJJZLeXXE7Qz6%2F%2Bw%2FG%2BJFkPTCVfyD8zgiYl8DsznrfhhTHzeFW4754%2Fn66uKQEu68FSQopK7mD5QvoTiyRRKeMSNekgq02bn2XaWuPyeWcEgLQE4FJhQ3TkWknDyCNAsDJlFm0Bm5lGwwDRqSB7sdlOHoivbaNje5cTaUvXiJC9LVCRch&X-Amz-Signature=0a0cc6c74ee6a01b1c41d39ac0b948c3d9a6bee34314f7db60da90245ea8da8d&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "360.jpg.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/31cffbc0-94f5-452e-911e-77243291a317/360.jpg.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466ULLMOZLY%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011739Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQC%2FiQO%2F7rf%2BR%2Fa%2Bg0z%2BsTZ3q%2FDCFCo2cjM73Ts9R48xiQIhAPzZn0uHXmVLwYV%2BX5IGBiZl6MRXExy7n4rHJQBl%2BnW8KogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igx%2B3Ol%2BOHuVelGBIL4q3ANc1N4PqSWRIJntcTUqAkuqi%2FL4DKymMYtUSQNd6F4bTZqY2gFaSfNFg8zBh574p1FKSv0GXr7QM25Mz6njrTPRoekBj4quIXtV8Cg0an%2Bbpr%2BhjSDtEVbyOwPVGAxS9saCuceeY2tvM4GLEK0EbmEJ%2FExZdNMvRCQxWUFLQsIHu3uWXVVBFjvNpF1VFXLebbOQpUbO4EY12NTlQidhcuk4hA2IVzC3v6d0HMmQtQTG%2BduFNX6T7lSotGCQmJPBKfNKL7mmrQfgUyG7QzIsFuSxobAlfxyjxK4ZIRp3SnChoH0USyecz7G6sWrLw%2Bg1SL7klZQrXkYyJ0ggTtqTNpCoRnqYX5UfUcRvpigKSeaRiuHV0DkMA8lOgHvMWBOxJaSMtO7gQ2XHhoCBhHAYwOCZUvhNcVJzsWz4qmQAekN3Fy3pI19djAI6bnuyGBe%2BAx1ASdJr8gRgyc9D%2Fr3tkPuWm1KLljBBETMi80c70kyV%2BbPJqgu%2BOhh5Nf6OrDc1Dtjc2RXa8aee8H67di8oFhTEldueh1OpkYtYWjwVrft%2BGKK2AFD3DGs%2BjgDsNc%2FjhPvuK4JolEvYMHTbXp%2FcA2A3CXJFiACrGUswKch%2F2bszdnabaVR0Uat6UDGMKjCMiajRBjqkAYkPg5oQsLK0YZ%2FsAj4M0ns6QICl4Bm4wGqL7hQ2e5hCJJZLeXXE7Qz6%2F%2Bw%2FG%2BJFkPTCVfyD8zgiYl8DsznrfhhTHzeFW4754%2Fn66uKQEu68FSQopK7mD5QvoTiyRRKeMSNekgq02bn2XaWuPyeWcEgLQE4FJhQ3TkWknDyCNAsDJlFm0Bm5lGwwDRqSB7sdlOHoivbaNje5cTaUvXiJC9LVCRch&X-Amz-Signature=95786ebfb0a17704e573c6e019dc86fa110286d92f5a0eb58392538327872b5a&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "800px-Google_2015_logo.svg.png",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Google_2015_logo.svg/800px-Google_2015_logo.svg.png",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "課程三.pdf.pdf",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/6ac5781c-3cca-4033-974a-f3c6a36648fc/%E8%AA%B2%E7%A8%8B%E4%B8%89.pdf.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466ULLMOZLY%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011739Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQC%2FiQO%2F7rf%2BR%2Fa%2Bg0z%2BsTZ3q%2FDCFCo2cjM73Ts9R48xiQIhAPzZn0uHXmVLwYV%2BX5IGBiZl6MRXExy7n4rHJQBl%2BnW8KogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igx%2B3Ol%2BOHuVelGBIL4q3ANc1N4PqSWRIJntcTUqAkuqi%2FL4DKymMYtUSQNd6F4bTZqY2gFaSfNFg8zBh574p1FKSv0GXr7QM25Mz6njrTPRoekBj4quIXtV8Cg0an%2Bbpr%2BhjSDtEVbyOwPVGAxS9saCuceeY2tvM4GLEK0EbmEJ%2FExZdNMvRCQxWUFLQsIHu3uWXVVBFjvNpF1VFXLebbOQpUbO4EY12NTlQidhcuk4hA2IVzC3v6d0HMmQtQTG%2BduFNX6T7lSotGCQmJPBKfNKL7mmrQfgUyG7QzIsFuSxobAlfxyjxK4ZIRp3SnChoH0USyecz7G6sWrLw%2Bg1SL7klZQrXkYyJ0ggTtqTNpCoRnqYX5UfUcRvpigKSeaRiuHV0DkMA8lOgHvMWBOxJaSMtO7gQ2XHhoCBhHAYwOCZUvhNcVJzsWz4qmQAekN3Fy3pI19djAI6bnuyGBe%2BAx1ASdJr8gRgyc9D%2Fr3tkPuWm1KLljBBETMi80c70kyV%2BbPJqgu%2BOhh5Nf6OrDc1Dtjc2RXa8aee8H67di8oFhTEldueh1OpkYtYWjwVrft%2BGKK2AFD3DGs%2BjgDsNc%2FjhPvuK4JolEvYMHTbXp%2FcA2A3CXJFiACrGUswKch%2F2bszdnabaVR0Uat6UDGMKjCMiajRBjqkAYkPg5oQsLK0YZ%2FsAj4M0ns6QICl4Bm4wGqL7hQ2e5hCJJZLeXXE7Qz6%2F%2Bw%2FG%2BJFkPTCVfyD8zgiYl8DsznrfhhTHzeFW4754%2Fn66uKQEu68FSQopK7mD5QvoTiyRRKeMSNekgq02bn2XaWuPyeWcEgLQE4FJhQ3TkWknDyCNAsDJlFm0Bm5lGwwDRqSB7sdlOHoivbaNje5cTaUvXiJC9LVCRch&X-Amz-Signature=9ccf15d83019684870ed57223f6a0a27753219fb9be28f513032bc714ee93fa4&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "個案討論.rtf.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/ace93004-3238-49aa-b0d4-3fd9bd8a5c7a/%E5%80%8B%E6%A1%88%E8%A8%8E%E8%AB%96.rtf.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466ULLMOZLY%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011739Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQC%2FiQO%2F7rf%2BR%2Fa%2Bg0z%2BsTZ3q%2FDCFCo2cjM73Ts9R48xiQIhAPzZn0uHXmVLwYV%2BX5IGBiZl6MRXExy7n4rHJQBl%2BnW8KogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igx%2B3Ol%2BOHuVelGBIL4q3ANc1N4PqSWRIJntcTUqAkuqi%2FL4DKymMYtUSQNd6F4bTZqY2gFaSfNFg8zBh574p1FKSv0GXr7QM25Mz6njrTPRoekBj4quIXtV8Cg0an%2Bbpr%2BhjSDtEVbyOwPVGAxS9saCuceeY2tvM4GLEK0EbmEJ%2FExZdNMvRCQxWUFLQsIHu3uWXVVBFjvNpF1VFXLebbOQpUbO4EY12NTlQidhcuk4hA2IVzC3v6d0HMmQtQTG%2BduFNX6T7lSotGCQmJPBKfNKL7mmrQfgUyG7QzIsFuSxobAlfxyjxK4ZIRp3SnChoH0USyecz7G6sWrLw%2Bg1SL7klZQrXkYyJ0ggTtqTNpCoRnqYX5UfUcRvpigKSeaRiuHV0DkMA8lOgHvMWBOxJaSMtO7gQ2XHhoCBhHAYwOCZUvhNcVJzsWz4qmQAekN3Fy3pI19djAI6bnuyGBe%2BAx1ASdJr8gRgyc9D%2Fr3tkPuWm1KLljBBETMi80c70kyV%2BbPJqgu%2BOhh5Nf6OrDc1Dtjc2RXa8aee8H67di8oFhTEldueh1OpkYtYWjwVrft%2BGKK2AFD3DGs%2BjgDsNc%2FjhPvuK4JolEvYMHTbXp%2FcA2A3CXJFiACrGUswKch%2F2bszdnabaVR0Uat6UDGMKjCMiajRBjqkAYkPg5oQsLK0YZ%2FsAj4M0ns6QICl4Bm4wGqL7hQ2e5hCJJZLeXXE7Qz6%2F%2Bw%2FG%2BJFkPTCVfyD8zgiYl8DsznrfhhTHzeFW4754%2Fn66uKQEu68FSQopK7mD5QvoTiyRRKeMSNekgq02bn2XaWuPyeWcEgLQE4FJhQ3TkWknDyCNAsDJlFm0Bm5lGwwDRqSB7sdlOHoivbaNje5cTaUvXiJC9LVCRch&X-Amz-Signature=24cdb0206599e524484332cc25b9b156ecc8a97cd115eb7aa6df06ff721c1df3&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "1780616925537-f98ece2d-920b-49ca-8f97-03b53312dcb6.jpg.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/6181ed17-9277-4080-9e9b-610794f8eb8b/1780616925537-f98ece2d-920b-49ca-8f97-03b53312dcb6.jpg.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466ULLMOZLY%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011739Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQC%2FiQO%2F7rf%2BR%2Fa%2Bg0z%2BsTZ3q%2FDCFCo2cjM73Ts9R48xiQIhAPzZn0uHXmVLwYV%2BX5IGBiZl6MRXExy7n4rHJQBl%2BnW8KogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igx%2B3Ol%2BOHuVelGBIL4q3ANc1N4PqSWRIJntcTUqAkuqi%2FL4DKymMYtUSQNd6F4bTZqY2gFaSfNFg8zBh574p1FKSv0GXr7QM25Mz6njrTPRoekBj4quIXtV8Cg0an%2Bbpr%2BhjSDtEVbyOwPVGAxS9saCuceeY2tvM4GLEK0EbmEJ%2FExZdNMvRCQxWUFLQsIHu3uWXVVBFjvNpF1VFXLebbOQpUbO4EY12NTlQidhcuk4hA2IVzC3v6d0HMmQtQTG%2BduFNX6T7lSotGCQmJPBKfNKL7mmrQfgUyG7QzIsFuSxobAlfxyjxK4ZIRp3SnChoH0USyecz7G6sWrLw%2Bg1SL7klZQrXkYyJ0ggTtqTNpCoRnqYX5UfUcRvpigKSeaRiuHV0DkMA8lOgHvMWBOxJaSMtO7gQ2XHhoCBhHAYwOCZUvhNcVJzsWz4qmQAekN3Fy3pI19djAI6bnuyGBe%2BAx1ASdJr8gRgyc9D%2Fr3tkPuWm1KLljBBETMi80c70kyV%2BbPJqgu%2BOhh5Nf6OrDc1Dtjc2RXa8aee8H67di8oFhTEldueh1OpkYtYWjwVrft%2BGKK2AFD3DGs%2BjgDsNc%2FjhPvuK4JolEvYMHTbXp%2FcA2A3CXJFiACrGUswKch%2F2bszdnabaVR0Uat6UDGMKjCMiajRBjqkAYkPg5oQsLK0YZ%2FsAj4M0ns6QICl4Bm4wGqL7hQ2e5hCJJZLeXXE7Qz6%2F%2Bw%2FG%2BJFkPTCVfyD8zgiYl8DsznrfhhTHzeFW4754%2Fn66uKQEu68FSQopK7mD5QvoTiyRRKeMSNekgq02bn2XaWuPyeWcEgLQE4FJhQ3TkWknDyCNAsDJlFm0Bm5lGwwDRqSB7sdlOHoivbaNje5cTaUvXiJC9LVCRch&X-Amz-Signature=e790ac37140ef358bd4cc110b2e5be470c7ecad9bd29a712e10d4b0aa8b0141d&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "20201211_幹部會議.rtf.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/3c6d53c9-4aef-4bc4-b0dc-348f9a3aa4c4/20201211_%E5%B9%B9%E9%83%A8%E6%9C%83%E8%AD%B0.rtf.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=cb9abd39c245509149ff787c23006855b6e1a1c0bbcbaaee6b7dfa0d0f67c782&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "個案討論.rtf.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/d32ea970-d577-4d32-adf0-1ed68f7d643f/%E5%80%8B%E6%A1%88%E8%A8%8E%E8%AB%96.rtf.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=71d02f1d0bf8374edca0bd67bb103456e31b8a3c8924ea8ccf7fd815aa4ad381&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "課程三.pdf.pdf",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/c0eabbe0-a305-4b66-93ac-8413f2934d1b/%E8%AA%B2%E7%A8%8B%E4%B8%89.pdf.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=57af266e6df193aadc4737ff4aac80d2f443fd4b7e23fbdabbfa54a59c8de507&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "word_text.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/2df21645-fed0-4191-b44b-848b20195c42/word_text.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=fd7e49b37b2edf403654f0550796d98b32047ea906b54ded461b1cd9a1d4cfc2&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "pdf_text.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/d6f57f93-d01c-486e-9301-50aa133ec3d8/pdf_text.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=acb7d5449ddcf8a1a158e87d08066e43ac835ca6a8d7d6085934af9f8e2d6dc6&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "word_text.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/2d7f17c6-d05d-4989-a330-2b6e513d5d34/word_text.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=79c4d188722f3eb459c685b0833a8a37c8421c139ac7d4d00fdb5052dc86955e&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "pdf_text.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/aa119653-98f5-45db-b302-63421d02a039/pdf_text.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=058caf2051e1e82a2c49cc2c44bedf8596aaa7ad7aa025434d732f4c329aaf04&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "word_text.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/10f525e7-d73d-4d7c-af0d-17e7228f797e/word_text.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=d65a73cdcd3589056d97711b9f1f118a5be3bc11027270915e894148dfe90325&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "pdf_text.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/e064cbba-1551-4403-8597-cab31ed4bf02/pdf_text.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=068cb67f38f656253ec3440e6ea92c49054010309a9f6f74d2078dad5b58a440&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "word_text.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/da68b871-8023-417e-ac2b-0d4e46faf1ca/word_text.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=6af3fb73d8542888d0b5e2b7415c24a9803c9ab472d67119b7b5b43dd6302c38&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "Book1.xlsx.xlsx.xlsx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/9b1b4362-d5cc-4999-a579-3c818ec0879c/Book1.xlsx.xlsx.xlsx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=ab53df389e6ce6ceb4663b665735a410b96309644201d7960172d19cfda49d2d&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "程果科技股東協議書_法人變更對照版.docx.docx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/8b47bfa2-f642-4879-b653-8de17d878c3d/%E7%A8%8B%E6%9E%9C%E7%A7%91%E6%8A%80%E8%82%A1%E6%9D%B1%E5%8D%94%E8%AD%B0%E6%9B%B8_%E6%B3%95%E4%BA%BA%E8%AE%8A%E6%9B%B4%E5%B0%8D%E7%85%A7%E7%89%88.docx.docx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=f5e461747fcb9a7e41d4bb7582f078a40440da46a85c997ac7f2211fc5642fba&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "程果科技股東協議書_法人變更對照版_已更新.docx.docx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/1731d1a9-5460-4f2a-87cb-014a4bb2aa9c/%E7%A8%8B%E6%9E%9C%E7%A7%91%E6%8A%80%E8%82%A1%E6%9D%B1%E5%8D%94%E8%AD%B0%E6%9B%B8_%E6%B3%95%E4%BA%BA%E8%AE%8A%E6%9B%B4%E5%B0%8D%E7%85%A7%E7%89%88_%E5%B7%B2%E6%9B%B4%E6%96%B0.docx.docx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466TJYS2CT4%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011740Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDPoh7tgaOaM%2FEinllC4hODJtyS%2BZ%2B7M4x8lZmpdeZZsQIhAMwP4XtsnSjI9vHAHsHFkzQQTLXLkPOCSSJo1OAGs%2BriKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1Igy40PbPbQpnNWGua1Yq3APCaaySR2z3yb%2BA9YtlyPuLZJ2dC6lxjPe0wF2WL6eSI0ZX%2BBd%2Fa%2FrB5svDbrkTSUTaVLgTauZRNqlNZ6vzn0OhpLQC0Q%2FHuLhi58dGw363ML0V7G52MDT%2FSp4D4isY8T3SSZa46KfFB251%2Fh8%2FE9M%2BPJ%2Fxy1E3g6tVcsa2dwnEGClEb7y8SZeGExdzXeO3wyoRNgoCLzxjhIglpQb7g%2BRbrRpMxRqrgVNNY0HD%2B78PzP5b%2B%2FUJrvu9SDPDUTMvCwaAjZTy4UomOmMIHjY7%2FsbP1qm2XEwlTAZwJzYD6MQdryplnyPkVLBEN2Fgu%2B2DwQo%2FoB2PfDJDlaPIdQ0x00uDnQT1xP%2BdD38gBVGb1MH49kSKqhy3izPVGv2H0HA8s9pDHen%2Fg4sqgnxU%2BEg%2B5CxDUi%2BH%2BeUoOAVfKofxtRSIKDcEltGXfJSObRFQIq7X8kcdonTQJhxNgdpNufXwZf1Z9T6KxVyn07aYraQ1hKMAPk1iqdhlagCYsKDpClr7MO7Uln%2BN1K2s2rrVf3Uf3NouYWcp3AdaOz5ePjvsYzOFZAZ7X1aKl39ttKwUZvd%2FuKb3Q1AWnNRX50POvoFPY347JmbuzAcNPnyJTthwQGFQRplyzoSIs7LctHH57jCNiKjRBjqkAa6Cb59rsbLuEDm%2FFcu7UFLQNH7HkrNJEXNRt2oyPcHsfDkPI3rjJX6IY%2FmH9b1wGJCcvnVo7kkydtXPY3VKcuR6Ahi2GitY4t%2FpWwHOXMAtZbdDcSucqJdTHYYhFbOPihXS%2F1x4f3AUzYGDo8A8NWlAQ%2BPXysee8BppMnG7UzarQpEzYQcy8TLetzpn6nHNMFFHyVCZ95YIRptzNoZGt%2BzM%2FIq4&X-Amz-Signature=e744da082f04195acf711063e54f52b0313e40d0e94755571c42236d548eb6bd&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "程果科技股東協議書_法人變更對照版_已更新.docx.docx.docx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/eb63fb6d-207c-404c-afef-a169e99adeaf/%E7%A8%8B%E6%9E%9C%E7%A7%91%E6%8A%80%E8%82%A1%E6%9D%B1%E5%8D%94%E8%AD%B0%E6%9B%B8_%E6%B3%95%E4%BA%BA%E8%AE%8A%E6%9B%B4%E5%B0%8D%E7%85%A7%E7%89%88_%E5%B7%B2%E6%9B%B4%E6%96%B0.docx.docx.docx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKHKQ27M%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011741Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDvFj4a6HOGr3Vhbeoo8hvYtqDqE9%2B7nfyUvaMHortgGAIhALwdf8DA6u0ndwHsbfIzEk7%2B7qAH3X12fW0djDc%2FhHaDKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1IgwLSOwtymJCjFlIIUwq3ANDdMmMzWQ0w5nCR2ZguJNKSKbZTvnd9XOAsbDiZCbzJ9IclJjdcWdSkByIYtOWdHpQs7vR1wU3nrcjtolZyJuTYC9nUO0qyKsIlWG%2BfbQzhWC1L0X3SZlVh1Jia5wv74d44r%2Fot3NU6yTTFnzNDivbANlCrLiK2ZNNzeeUgKNT0TKQY%2BKApxh8X0q1gO6DfVO0PTbXwU%2F%2FPVEr3HtHJgT93pfXR7MAkKaR2DYDwPE25HZDyUmYZCrtk6kkHFcfDK4FOnhwkTsCKUthUyQ7cbf%2FmGMs0Ekt6ONzpxG%2FZzZ91xKLtzGbSW19EQGWcDgjt0iiRZ5Jcn2TYeUq5D3%2Bf03Bn1BUhhugh8snbZ2KiZVMTPi%2FkffSg1NNi9a%2Ftm0dvak8UqBwVcc9oIfYOVvF3rneAGuG7CrAMaCPlSI9ozjLbKjo1ZLFJGbDKlU%2FgHWKFfp45b6cfi9U1s%2Bx17WTdXL%2F8YN8dpou2oY4EWg8JLiuc5SAmL1Ug4R3pebO8Po7f7pZ2mzzBGJNpBMmHNcoFAH4%2BEUDVLMdya8gNdL5KzcfQKnph4dhCPJxRH3Yfy33b%2BmbcvNoHX1NTSzg8%2B3iqhkznYxuC4aqkJEtfQRjaBZmoylLXhciIdIxL%2B7dNzCWh6jRBjqkAYWHqpEsaEKNNZoJY0iIdifCY9cwff7znVD%2BJeJl5sDqOPrYygAhWtx7jK3zSwM2be%2FDlZkAFWlQPEUI37Lixp4W0CkrCFtfpcaFCIsZnXuLzlXwDuK4QLcP4Lrq4QsC8hoHe41lv%2BKfyfXmssihM1aoujVlYrYr3HsMyg1ZavoGcFT4XxsYZV%2Ff2xczlYaCiNo9jFAJUE6F0JMEyYQ534S8LDNY&X-Amz-Signature=c17639f855d5a33126dba0ccc4129e19fbd9987e0bac6531fd6c8d2a6ebc40aa&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "Book1.xlsx.xlsx.xlsx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/1b94177b-5ef6-4079-822c-6b15fcedafdb/Book1.xlsx.xlsx.xlsx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKHKQ27M%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011741Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDvFj4a6HOGr3Vhbeoo8hvYtqDqE9%2B7nfyUvaMHortgGAIhALwdf8DA6u0ndwHsbfIzEk7%2B7qAH3X12fW0djDc%2FhHaDKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1IgwLSOwtymJCjFlIIUwq3ANDdMmMzWQ0w5nCR2ZguJNKSKbZTvnd9XOAsbDiZCbzJ9IclJjdcWdSkByIYtOWdHpQs7vR1wU3nrcjtolZyJuTYC9nUO0qyKsIlWG%2BfbQzhWC1L0X3SZlVh1Jia5wv74d44r%2Fot3NU6yTTFnzNDivbANlCrLiK2ZNNzeeUgKNT0TKQY%2BKApxh8X0q1gO6DfVO0PTbXwU%2F%2FPVEr3HtHJgT93pfXR7MAkKaR2DYDwPE25HZDyUmYZCrtk6kkHFcfDK4FOnhwkTsCKUthUyQ7cbf%2FmGMs0Ekt6ONzpxG%2FZzZ91xKLtzGbSW19EQGWcDgjt0iiRZ5Jcn2TYeUq5D3%2Bf03Bn1BUhhugh8snbZ2KiZVMTPi%2FkffSg1NNi9a%2Ftm0dvak8UqBwVcc9oIfYOVvF3rneAGuG7CrAMaCPlSI9ozjLbKjo1ZLFJGbDKlU%2FgHWKFfp45b6cfi9U1s%2Bx17WTdXL%2F8YN8dpou2oY4EWg8JLiuc5SAmL1Ug4R3pebO8Po7f7pZ2mzzBGJNpBMmHNcoFAH4%2BEUDVLMdya8gNdL5KzcfQKnph4dhCPJxRH3Yfy33b%2BmbcvNoHX1NTSzg8%2B3iqhkznYxuC4aqkJEtfQRjaBZmoylLXhciIdIxL%2B7dNzCWh6jRBjqkAYWHqpEsaEKNNZoJY0iIdifCY9cwff7znVD%2BJeJl5sDqOPrYygAhWtx7jK3zSwM2be%2FDlZkAFWlQPEUI37Lixp4W0CkrCFtfpcaFCIsZnXuLzlXwDuK4QLcP4Lrq4QsC8hoHe41lv%2BKfyfXmssihM1aoujVlYrYr3HsMyg1ZavoGcFT4XxsYZV%2Ff2xczlYaCiNo9jFAJUE6F0JMEyYQ534S8LDNY&X-Amz-Signature=59cfca4e10f26bed49e34f70033b510e2a621adacb85f2bb0051e95e0571ed43&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "程果科技股東協議書_法人變更對照版_已更新.docx.docx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/9fc1026b-95e5-4e21-88a4-8b6cce49318c/%E7%A8%8B%E6%9E%9C%E7%A7%91%E6%8A%80%E8%82%A1%E6%9D%B1%E5%8D%94%E8%AD%B0%E6%9B%B8_%E6%B3%95%E4%BA%BA%E8%AE%8A%E6%9B%B4%E5%B0%8D%E7%85%A7%E7%89%88_%E5%B7%B2%E6%9B%B4%E6%96%B0.docx.docx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKHKQ27M%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011741Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDvFj4a6HOGr3Vhbeoo8hvYtqDqE9%2B7nfyUvaMHortgGAIhALwdf8DA6u0ndwHsbfIzEk7%2B7qAH3X12fW0djDc%2FhHaDKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1IgwLSOwtymJCjFlIIUwq3ANDdMmMzWQ0w5nCR2ZguJNKSKbZTvnd9XOAsbDiZCbzJ9IclJjdcWdSkByIYtOWdHpQs7vR1wU3nrcjtolZyJuTYC9nUO0qyKsIlWG%2BfbQzhWC1L0X3SZlVh1Jia5wv74d44r%2Fot3NU6yTTFnzNDivbANlCrLiK2ZNNzeeUgKNT0TKQY%2BKApxh8X0q1gO6DfVO0PTbXwU%2F%2FPVEr3HtHJgT93pfXR7MAkKaR2DYDwPE25HZDyUmYZCrtk6kkHFcfDK4FOnhwkTsCKUthUyQ7cbf%2FmGMs0Ekt6ONzpxG%2FZzZ91xKLtzGbSW19EQGWcDgjt0iiRZ5Jcn2TYeUq5D3%2Bf03Bn1BUhhugh8snbZ2KiZVMTPi%2FkffSg1NNi9a%2Ftm0dvak8UqBwVcc9oIfYOVvF3rneAGuG7CrAMaCPlSI9ozjLbKjo1ZLFJGbDKlU%2FgHWKFfp45b6cfi9U1s%2Bx17WTdXL%2F8YN8dpou2oY4EWg8JLiuc5SAmL1Ug4R3pebO8Po7f7pZ2mzzBGJNpBMmHNcoFAH4%2BEUDVLMdya8gNdL5KzcfQKnph4dhCPJxRH3Yfy33b%2BmbcvNoHX1NTSzg8%2B3iqhkznYxuC4aqkJEtfQRjaBZmoylLXhciIdIxL%2B7dNzCWh6jRBjqkAYWHqpEsaEKNNZoJY0iIdifCY9cwff7znVD%2BJeJl5sDqOPrYygAhWtx7jK3zSwM2be%2FDlZkAFWlQPEUI37Lixp4W0CkrCFtfpcaFCIsZnXuLzlXwDuK4QLcP4Lrq4QsC8hoHe41lv%2BKfyfXmssihM1aoujVlYrYr3HsMyg1ZavoGcFT4XxsYZV%2Ff2xczlYaCiNo9jFAJUE6F0JMEyYQ534S8LDNY&X-Amz-Signature=22e3d3ea8cf1bdccf7c1c652bb08e538941bc67e5a6c83fc05b94206fbbe4617&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "Book1.xlsx.xlsx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/ba7874cc-a167-49d8-9314-2e056f774bcc/Book1.xlsx.xlsx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKHKQ27M%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011741Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDvFj4a6HOGr3Vhbeoo8hvYtqDqE9%2B7nfyUvaMHortgGAIhALwdf8DA6u0ndwHsbfIzEk7%2B7qAH3X12fW0djDc%2FhHaDKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1IgwLSOwtymJCjFlIIUwq3ANDdMmMzWQ0w5nCR2ZguJNKSKbZTvnd9XOAsbDiZCbzJ9IclJjdcWdSkByIYtOWdHpQs7vR1wU3nrcjtolZyJuTYC9nUO0qyKsIlWG%2BfbQzhWC1L0X3SZlVh1Jia5wv74d44r%2Fot3NU6yTTFnzNDivbANlCrLiK2ZNNzeeUgKNT0TKQY%2BKApxh8X0q1gO6DfVO0PTbXwU%2F%2FPVEr3HtHJgT93pfXR7MAkKaR2DYDwPE25HZDyUmYZCrtk6kkHFcfDK4FOnhwkTsCKUthUyQ7cbf%2FmGMs0Ekt6ONzpxG%2FZzZ91xKLtzGbSW19EQGWcDgjt0iiRZ5Jcn2TYeUq5D3%2Bf03Bn1BUhhugh8snbZ2KiZVMTPi%2FkffSg1NNi9a%2Ftm0dvak8UqBwVcc9oIfYOVvF3rneAGuG7CrAMaCPlSI9ozjLbKjo1ZLFJGbDKlU%2FgHWKFfp45b6cfi9U1s%2Bx17WTdXL%2F8YN8dpou2oY4EWg8JLiuc5SAmL1Ug4R3pebO8Po7f7pZ2mzzBGJNpBMmHNcoFAH4%2BEUDVLMdya8gNdL5KzcfQKnph4dhCPJxRH3Yfy33b%2BmbcvNoHX1NTSzg8%2B3iqhkznYxuC4aqkJEtfQRjaBZmoylLXhciIdIxL%2B7dNzCWh6jRBjqkAYWHqpEsaEKNNZoJY0iIdifCY9cwff7znVD%2BJeJl5sDqOPrYygAhWtx7jK3zSwM2be%2FDlZkAFWlQPEUI37Lixp4W0CkrCFtfpcaFCIsZnXuLzlXwDuK4QLcP4Lrq4QsC8hoHe41lv%2BKfyfXmssihM1aoujVlYrYr3HsMyg1ZavoGcFT4XxsYZV%2Ff2xczlYaCiNo9jFAJUE6F0JMEyYQ534S8LDNY&X-Amz-Signature=d68a5a65fc58c2be104fe38dfcbe0c2fe0b4f651b19b712bc2c91f1115cf45e6&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "(租賃補充協議)_-最終版.docx.docx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/1f5c6d5b-8e56-4993-b4ae-a0a94af65fe6/%28%E7%A7%9F%E8%B3%83%E8%A3%9C%E5%85%85%E5%8D%94%E8%AD%B0%29_-%E6%9C%80%E7%B5%82%E7%89%88.docx.docx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKHKQ27M%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011741Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDvFj4a6HOGr3Vhbeoo8hvYtqDqE9%2B7nfyUvaMHortgGAIhALwdf8DA6u0ndwHsbfIzEk7%2B7qAH3X12fW0djDc%2FhHaDKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1IgwLSOwtymJCjFlIIUwq3ANDdMmMzWQ0w5nCR2ZguJNKSKbZTvnd9XOAsbDiZCbzJ9IclJjdcWdSkByIYtOWdHpQs7vR1wU3nrcjtolZyJuTYC9nUO0qyKsIlWG%2BfbQzhWC1L0X3SZlVh1Jia5wv74d44r%2Fot3NU6yTTFnzNDivbANlCrLiK2ZNNzeeUgKNT0TKQY%2BKApxh8X0q1gO6DfVO0PTbXwU%2F%2FPVEr3HtHJgT93pfXR7MAkKaR2DYDwPE25HZDyUmYZCrtk6kkHFcfDK4FOnhwkTsCKUthUyQ7cbf%2FmGMs0Ekt6ONzpxG%2FZzZ91xKLtzGbSW19EQGWcDgjt0iiRZ5Jcn2TYeUq5D3%2Bf03Bn1BUhhugh8snbZ2KiZVMTPi%2FkffSg1NNi9a%2Ftm0dvak8UqBwVcc9oIfYOVvF3rneAGuG7CrAMaCPlSI9ozjLbKjo1ZLFJGbDKlU%2FgHWKFfp45b6cfi9U1s%2Bx17WTdXL%2F8YN8dpou2oY4EWg8JLiuc5SAmL1Ug4R3pebO8Po7f7pZ2mzzBGJNpBMmHNcoFAH4%2BEUDVLMdya8gNdL5KzcfQKnph4dhCPJxRH3Yfy33b%2BmbcvNoHX1NTSzg8%2B3iqhkznYxuC4aqkJEtfQRjaBZmoylLXhciIdIxL%2B7dNzCWh6jRBjqkAYWHqpEsaEKNNZoJY0iIdifCY9cwff7znVD%2BJeJl5sDqOPrYygAhWtx7jK3zSwM2be%2FDlZkAFWlQPEUI37Lixp4W0CkrCFtfpcaFCIsZnXuLzlXwDuK4QLcP4Lrq4QsC8hoHe41lv%2BKfyfXmssihM1aoujVlYrYr3HsMyg1ZavoGcFT4XxsYZV%2Ff2xczlYaCiNo9jFAJUE6F0JMEyYQ534S8LDNY&X-Amz-Signature=846d4fadfcca38be2c8d6f214fb456939b2f6c4e9e119be9f233a74edd090213&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "(經營權移轉)_-最終版.docx.docx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/1fcaa3de-b993-4deb-9b9a-109e00fff00b/%28%E7%B6%93%E7%87%9F%E6%AC%8A%E7%A7%BB%E8%BD%89%29_-%E6%9C%80%E7%B5%82%E7%89%88.docx.docx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKHKQ27M%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011741Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDvFj4a6HOGr3Vhbeoo8hvYtqDqE9%2B7nfyUvaMHortgGAIhALwdf8DA6u0ndwHsbfIzEk7%2B7qAH3X12fW0djDc%2FhHaDKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1IgwLSOwtymJCjFlIIUwq3ANDdMmMzWQ0w5nCR2ZguJNKSKbZTvnd9XOAsbDiZCbzJ9IclJjdcWdSkByIYtOWdHpQs7vR1wU3nrcjtolZyJuTYC9nUO0qyKsIlWG%2BfbQzhWC1L0X3SZlVh1Jia5wv74d44r%2Fot3NU6yTTFnzNDivbANlCrLiK2ZNNzeeUgKNT0TKQY%2BKApxh8X0q1gO6DfVO0PTbXwU%2F%2FPVEr3HtHJgT93pfXR7MAkKaR2DYDwPE25HZDyUmYZCrtk6kkHFcfDK4FOnhwkTsCKUthUyQ7cbf%2FmGMs0Ekt6ONzpxG%2FZzZ91xKLtzGbSW19EQGWcDgjt0iiRZ5Jcn2TYeUq5D3%2Bf03Bn1BUhhugh8snbZ2KiZVMTPi%2FkffSg1NNi9a%2Ftm0dvak8UqBwVcc9oIfYOVvF3rneAGuG7CrAMaCPlSI9ozjLbKjo1ZLFJGbDKlU%2FgHWKFfp45b6cfi9U1s%2Bx17WTdXL%2F8YN8dpou2oY4EWg8JLiuc5SAmL1Ug4R3pebO8Po7f7pZ2mzzBGJNpBMmHNcoFAH4%2BEUDVLMdya8gNdL5KzcfQKnph4dhCPJxRH3Yfy33b%2BmbcvNoHX1NTSzg8%2B3iqhkznYxuC4aqkJEtfQRjaBZmoylLXhciIdIxL%2B7dNzCWh6jRBjqkAYWHqpEsaEKNNZoJY0iIdifCY9cwff7znVD%2BJeJl5sDqOPrYygAhWtx7jK3zSwM2be%2FDlZkAFWlQPEUI37Lixp4W0CkrCFtfpcaFCIsZnXuLzlXwDuK4QLcP4Lrq4QsC8hoHe41lv%2BKfyfXmssihM1aoujVlYrYr3HsMyg1ZavoGcFT4XxsYZV%2Ff2xczlYaCiNo9jFAJUE6F0JMEyYQ534S8LDNY&X-Amz-Signature=1e1d91ee370e7a91745ddec5bc9e66c61ef97665eec7c3fad1b36d1783f480e1&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "(經營權移轉)_-雙方協議調整版2026.1.12.docx.docx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/2a0c1f5d-df76-4cbc-9730-a8fa879c0d7a/%28%E7%B6%93%E7%87%9F%E6%AC%8A%E7%A7%BB%E8%BD%89%29_-%E9%9B%99%E6%96%B9%E5%8D%94%E8%AD%B0%E8%AA%BF%E6%95%B4%E7%89%882026.1.12.docx.docx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKHKQ27M%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011741Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDvFj4a6HOGr3Vhbeoo8hvYtqDqE9%2B7nfyUvaMHortgGAIhALwdf8DA6u0ndwHsbfIzEk7%2B7qAH3X12fW0djDc%2FhHaDKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1IgwLSOwtymJCjFlIIUwq3ANDdMmMzWQ0w5nCR2ZguJNKSKbZTvnd9XOAsbDiZCbzJ9IclJjdcWdSkByIYtOWdHpQs7vR1wU3nrcjtolZyJuTYC9nUO0qyKsIlWG%2BfbQzhWC1L0X3SZlVh1Jia5wv74d44r%2Fot3NU6yTTFnzNDivbANlCrLiK2ZNNzeeUgKNT0TKQY%2BKApxh8X0q1gO6DfVO0PTbXwU%2F%2FPVEr3HtHJgT93pfXR7MAkKaR2DYDwPE25HZDyUmYZCrtk6kkHFcfDK4FOnhwkTsCKUthUyQ7cbf%2FmGMs0Ekt6ONzpxG%2FZzZ91xKLtzGbSW19EQGWcDgjt0iiRZ5Jcn2TYeUq5D3%2Bf03Bn1BUhhugh8snbZ2KiZVMTPi%2FkffSg1NNi9a%2Ftm0dvak8UqBwVcc9oIfYOVvF3rneAGuG7CrAMaCPlSI9ozjLbKjo1ZLFJGbDKlU%2FgHWKFfp45b6cfi9U1s%2Bx17WTdXL%2F8YN8dpou2oY4EWg8JLiuc5SAmL1Ug4R3pebO8Po7f7pZ2mzzBGJNpBMmHNcoFAH4%2BEUDVLMdya8gNdL5KzcfQKnph4dhCPJxRH3Yfy33b%2BmbcvNoHX1NTSzg8%2B3iqhkznYxuC4aqkJEtfQRjaBZmoylLXhciIdIxL%2B7dNzCWh6jRBjqkAYWHqpEsaEKNNZoJY0iIdifCY9cwff7znVD%2BJeJl5sDqOPrYygAhWtx7jK3zSwM2be%2FDlZkAFWlQPEUI37Lixp4W0CkrCFtfpcaFCIsZnXuLzlXwDuK4QLcP4Lrq4QsC8hoHe41lv%2BKfyfXmssihM1aoujVlYrYr3HsMyg1ZavoGcFT4XxsYZV%2Ff2xczlYaCiNo9jFAJUE6F0JMEyYQ534S8LDNY&X-Amz-Signature=e2cac9655b7fa59b1cdaf0ff1070d0a51c1f2a3fe8fae1f05536c975a244f2ea&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "(%E7%B6%93%E7%87%9F%E6%AC%8A%E7%A7%BB%E8%BD%89)_-%E9%9B%99%E6%96%B9%E5%8D%94%E8%AD%B0%E8%AA%BF%E6%95%B4%E7%89%882026.1.12.docx",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/(%E7%B6%93%E7%87%9F%E6%AC%8A%E7%A7%BB%E8%BD%89)_-%E9%9B%99%E6%96%B9%E5%8D%94%E8%AD%B0%E8%AA%BF%E6%95%B4%E7%89%882026.1.12.docx",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "1.pdf",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/1.pdf",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "2026-04-27_%E4%BA%BA%E5%8A%9B%E8%B3%87%E6%BA%90%E9%83%A8%E9%96%80%E7%B5%84%E7%B9%94%E6%94%B9%E5%96%84%E8%A8%88%E7%95%AB.txt",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/2026-04-27_%E4%BA%BA%E5%8A%9B%E8%B3%87%E6%BA%90%E9%83%A8%E9%96%80%E7%B5%84%E7%B9%94%E6%94%B9%E5%96%84%E8%A8%88%E7%95%AB.txt",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "1780566543000-dade6ae2-da15-4101-ba63-a59e1ab3b4fb.jpg",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/1780566543000-dade6ae2-da15-4101-ba63-a59e1ab3b4fb.jpg",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "1780564853461-799e022b-7375-4f53-a697-687812862ed5.jpg",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/1780564853461-799e022b-7375-4f53-a697-687812862ed5.jpg",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "%E7%A8%8B%E6%9E%9C%E7%A7%91%E6%8A%80%E8%82%A1%E6%9D%B1%E5%8D%94%E8%AD%B0%E6%9B%B8_%E6%B3%95%E4%BA%BA%E8%AE%8A%E6%9B%B4%E5%B0%8D%E7%85%A7%E7%89%88_%E5%B7%B2%E6%9B%B4%E6%96%B0.docx",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/%E7%A8%8B%E6%9E%9C%E7%A7%91%E6%8A%80%E8%82%A1%E6%9D%B1%E5%8D%94%E8%AD%B0%E6%9B%B8_%E6%B3%95%E4%BA%BA%E8%AE%8A%E6%9B%B4%E5%B0%8D%E7%85%A7%E7%89%88_%E5%B7%B2%E6%9B%B4%E6%96%B0.docx",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "1780561206928-fb8ef761-8e09-4201-af60-d4d256fba661.jpg",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/1780561206928-fb8ef761-8e09-4201-af60-d4d256fba661.jpg",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "test_manual.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/7faf5105-0478-4f96-a93a-58cf6475b1c8/test_manual.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKHKQ27M%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011741Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJIMEYCIQDvFj4a6HOGr3Vhbeoo8hvYtqDqE9%2B7nfyUvaMHortgGAIhALwdf8DA6u0ndwHsbfIzEk7%2B7qAH3X12fW0djDc%2FhHaDKogECPL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNjM3NDIzMTgzODA1IgwLSOwtymJCjFlIIUwq3ANDdMmMzWQ0w5nCR2ZguJNKSKbZTvnd9XOAsbDiZCbzJ9IclJjdcWdSkByIYtOWdHpQs7vR1wU3nrcjtolZyJuTYC9nUO0qyKsIlWG%2BfbQzhWC1L0X3SZlVh1Jia5wv74d44r%2Fot3NU6yTTFnzNDivbANlCrLiK2ZNNzeeUgKNT0TKQY%2BKApxh8X0q1gO6DfVO0PTbXwU%2F%2FPVEr3HtHJgT93pfXR7MAkKaR2DYDwPE25HZDyUmYZCrtk6kkHFcfDK4FOnhwkTsCKUthUyQ7cbf%2FmGMs0Ekt6ONzpxG%2FZzZ91xKLtzGbSW19EQGWcDgjt0iiRZ5Jcn2TYeUq5D3%2Bf03Bn1BUhhugh8snbZ2KiZVMTPi%2FkffSg1NNi9a%2Ftm0dvak8UqBwVcc9oIfYOVvF3rneAGuG7CrAMaCPlSI9ozjLbKjo1ZLFJGbDKlU%2FgHWKFfp45b6cfi9U1s%2Bx17WTdXL%2F8YN8dpou2oY4EWg8JLiuc5SAmL1Ug4R3pebO8Po7f7pZ2mzzBGJNpBMmHNcoFAH4%2BEUDVLMdya8gNdL5KzcfQKnph4dhCPJxRH3Yfy33b%2BmbcvNoHX1NTSzg8%2B3iqhkznYxuC4aqkJEtfQRjaBZmoylLXhciIdIxL%2B7dNzCWh6jRBjqkAYWHqpEsaEKNNZoJY0iIdifCY9cwff7znVD%2BJeJl5sDqOPrYygAhWtx7jK3zSwM2be%2FDlZkAFWlQPEUI37Lixp4W0CkrCFtfpcaFCIsZnXuLzlXwDuK4QLcP4Lrq4QsC8hoHe41lv%2BKfyfXmssihM1aoujVlYrYr3HsMyg1ZavoGcFT4XxsYZV%2Ff2xczlYaCiNo9jFAJUE6F0JMEyYQ534S8LDNY&X-Amz-Signature=eeb64a36269d637a5c9f385170f80bc7bd7baa181c9dcecdb8509112334577c8&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        }
+      ],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "0dce5870de75",
+      "title": "財務：發票（收據）」開立記錄 不過本週課程提到關於包租代管業開立發票/收據",
+      "project": "財務",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "昱晴 Maggie",
+      "conversationName": "HOZO 公司群",
+      "conversationId": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "firstTime": "2026-06-09T14:45:00.000Z",
+      "latestTime": "2026-06-09T14:45:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 12,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "期限或時間",
+          "weight": 3
+        },
+        {
+          "label": "交付或承諾",
+          "weight": 4
+        }
+      ],
+      "nextStep": "由負責人確認判斷結果，決定是否轉成正式任務。",
+      "evidence": "【2026/06/09 22:45】昱晴 Maggie：功能上，目前在經過這一週多實際處理後，希望新增房客端「發票（收據）」開立記錄\n\n不過本週課程提到關於包租代管業開立發票/收據，這部分可能還有需要探討，可以待公司設立後再確認實務做法",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "2c9af0212837",
+      "title": "財務：發票給客人 後天（週四）下課後預計到明義街202修繕處理 如果要這兩日的話可能週三到總",
+      "project": "財務",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "昱晴 Maggie",
+      "conversationName": "HOZO 公司群",
+      "conversationId": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "firstTime": "2026-06-09T07:21:00.000Z",
+      "latestTime": "2026-06-09T07:21:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 12,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "期限或時間",
+          "weight": 3
+        },
+        {
+          "label": "交付或承諾",
+          "weight": 4
+        }
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/09 15:21】昱晴 Maggie：哈囉seven哥\n課程是本週一到週四全天，週五考試喔！\n\n明後天的話，\n明天（週三）下課後約傍晚我會到總部用印合約、拿備品、開發票給客人\n後天（週四）下課後預計到明義街202修繕處理 \n\n如果要這兩日的話可能週三到總部後可以喔\n大約要17:30後，方便嗎？",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "3a08d2692abf",
+      "title": "未分類：補登） HOZO 入站測試 2026-06-07 【2026/6/7 下午9:28】S",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "Seven陳聖文",
+      "conversationName": "Seven陳聖文",
+      "conversationId": "37551c68-6dac-8111-a10d-fd4300f3bf83",
+      "conversationUrl": "https://app.notion.com/p/Seven-37551c686dac8111a10dfd4300f3bf83",
+      "firstTime": "2026-06-07T13:45:00.000Z",
+      "latestTime": "2026-06-07T13:45:00.000Z",
+      "speakers": [
+        "Seven陳聖文"
+      ],
+      "score": 12,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "期限或時間",
+          "weight": 3
+        },
+        {
+          "label": "交付或承諾",
+          "weight": 4
+        }
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/07 21:45】Seven陳聖文：我必須再測試看看你是不是真的打通了。\n【2026/6/7 下午9:29】Seven陳聖文（文字訊息｜人工補登）\nHOZO 入站測試 2026-06-07\n【2026/6/7 下午9:28】Seven陳聖文（文字訊息｜人工補登）\nHRO 入站測試 2026-06-07\n【2026/6/6 晚上8:15】Seven陳聖文（文字訊息）\n好的，那我覺得這樣應該也可以\n【2026/6/6 晚上8:11】好住管家（文字訊息）\n這是一則由程式主動送出的 LINE OA 測試訊息\n【2026/6/6 晚上8:08】好住管家（文字訊息）\n我透過 LINE OA 發訊息給自己（經由 Bridge 同步 CRM）\n【2026/6/6 下午5:25】Seven陳聖文（檔案）\n【2026/6/6 下午5:25】Seven陳聖文（圖片）\n【2026/6/6 下午5:25】Seven陳聖文（文字訊息）\n好，我這次會測試訊息、圖片跟檔案三個格式\n【2026/6/6 下午5:23】Seven陳聖文（文字訊息）\n再測試一次\n【2026/6/5 晚上7:59】Seven陳聖文（檔案）\n【2026/6/5 晚上7:59】Seven陳聖文（檔案）\n【2026/6/5 晚上7:53】Seven陳聖文（檔案）\nsample.pdf\n【2026/6/5 晚上7:44】Seven陳聖文（檔案）\nsample.pdf\n【2026/6/5 晚上7:36】Seven陳聖文（圖片）\n【2026/6/5 晚上7:28】Seven陳聖文（圖片）\n【2026/6/5 晚上7:28】Seven陳聖文（圖片）\n【2026/6/5 晚上7:29】Seven陳聖文（圖片）\n【2026/6/5 晚上7:19】Seven陳聖文（檔案）\nsample.pdf\n【2026/6/5 晚上7:19】Seven陳聖文（圖片）\n1780658361086-9be6d6ac-5765-465c-896b-fb20a4ada58c.jpg\n【2026/6/5 晚上7:19】Seven陳聖文（文字訊息）\n再做一次\n【2026/6/5 晚上7:18】Seven陳聖文（文字訊息）\n測試看看\n【2026/6/5 晚上7:09】Seven陳聖文（檔案）\nsample.pdf\n【2026/6/5 下午6:05】Seven陳聖文（文字訊息）\nh h h h\n【2026/6/5 下午3:23】Seven陳聖文（文字訊息）\n我的 User ID 還是沒有幫我改回來\n【2026/6/5 下午3:21】Seven陳聖文（文字訊息）\n幫我測試看看\n【2026/6/5 下午3:09】Seven陳聖文（文字訊息）\n我是 Seven，幫我改回來\n媒體：sample.pdf.pdf、1780737942682、茶覺旅2026年3月亨利零用金請款13032.xlsx.xlsx、browserconfig.xml.txt.txt、1780659409138、1780659065430、1780658941542",
+      "media": [
+        {
+          "type": "file",
+          "name": "sample.pdf.pdf",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/e8762b84-469c-4fd6-972b-5dcfe8d97748/sample.pdf.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466UMX7EHZK%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011737Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJGMEQCICo8bVVD9cTnPR27LT7LBfBPEslP3m%2BAGeUn%2BCGxisdfAiAP9%2BdSwYOr4Lt%2B%2BG7EBlIk6GqxOy2vZIb8gMs8MNj1ECqIBAjy%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAAaDDYzNzQyMzE4MzgwNSIMDMYoCZGgak%2BLOdC5KtwDoBBQ23vCVMeZ25xGN0SHpbHrI1qpr9eAdI7YZp7h1fgPiG2ZFp0CEWRSq0apsdnQ%2B1fcBUc3e%2FD4WAVSNqe9JlWtf0qTqH6FkAeans2JRDpmOk6G%2FyigsTr8QERG%2FcFTHgLJvPqbf49pH3r1QcFkr6qQmXH2cO7rn1Q1CBD4npObuGCGVNCDGT8FYS38ObgLacmTfc6ELSsCZVln%2FK%2BNxu0WoCAbDF1AxrgiK8Xx%2Fl%2F1g4jP46mPvGbKK4zZ1rxvRC75%2BmlT0SgaHTWz1dqan8A4kpMmxweEIbCNnyZY6ln9ABOyjWxmcTY15lOcmN%2FXFIfA%2Bww6MSGWXourI7nCq4nChJrBZx9FXdOk%2BdIxUhZv%2Fip2dE%2BNIbzMpmPlWiWgxu5NB8zhM1o%2FNz4fngqm2mXCP74ztu4FtEUiH9j7JjG9IP3%2F4ZFyPljhNYsfIfZ73rNqczHbw82TMERq%2FaKLndv%2Bc4pAt%2BNZcdKcj%2FqKcJ1QRz436QkNqp5h%2FHvXgEn%2Bf43habeCueUVHtmzIUA8l8oTkBBwQEBN0puSPVevoNRcGf%2FagvqvDFy1eL2l6abISxTYAS72RFcYxJYigehHAkkmPgevcTntRjWeyM%2B8kdxezbiIdd%2FxJE3YsuEwwImo0QY6pgFwxo1dqQc6SyNlr9UqRb8KvVhpnx9msMtTiHAJqf5cGebzypLEEyFSODuE9WCYdYu4oZJcg%2Fcp2aNIe9H9rkABWD%2B5o%2FGtFM0viK4cNlTF7EfBZcTrxpdUthde95JS78G57by2z62wKY6PoZFfstQtO9y%2Fz%2BdeoQKSqHn942A31OZ2MyK1R2HXUvtHx%2BqNep2PadndrEZsCAJ%2B4TnKIi3hZvkASCaw&X-Amz-Signature=929206ceeff5f3ea915713d47a2f89c53eb77fef7a4e50d01c83f8ed9c074299&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "1780737942682-b3f005b4-d373-4460-b885-9a46137fa195.jpg",
+          "url": "https://rental-management-blueprint.onrender.com/media/1780737942682-b3f005b4-d373-4460-b885-9a46137fa195.jpg",
+          "caption": "1780737942682-b3f005b4-d373-4460-b885-9a46137fa195.jpg",
+          "lineMessageId": "1780737942682"
+        },
+        {
+          "type": "file",
+          "name": "茶覺旅2026年3月亨利零用金請款13032.xlsx.xlsx",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/1ff52f2f-4097-4abe-a30d-a99663ac965d/%E8%8C%B6%E8%A6%BA%E6%97%852026%E5%B9%B43%E6%9C%88%E4%BA%A8%E5%88%A9%E9%9B%B6%E7%94%A8%E9%87%91%E8%AB%8B%E6%AC%BE13032.xlsx.xlsx?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466UMX7EHZK%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011738Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJGMEQCICo8bVVD9cTnPR27LT7LBfBPEslP3m%2BAGeUn%2BCGxisdfAiAP9%2BdSwYOr4Lt%2B%2BG7EBlIk6GqxOy2vZIb8gMs8MNj1ECqIBAjy%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAAaDDYzNzQyMzE4MzgwNSIMDMYoCZGgak%2BLOdC5KtwDoBBQ23vCVMeZ25xGN0SHpbHrI1qpr9eAdI7YZp7h1fgPiG2ZFp0CEWRSq0apsdnQ%2B1fcBUc3e%2FD4WAVSNqe9JlWtf0qTqH6FkAeans2JRDpmOk6G%2FyigsTr8QERG%2FcFTHgLJvPqbf49pH3r1QcFkr6qQmXH2cO7rn1Q1CBD4npObuGCGVNCDGT8FYS38ObgLacmTfc6ELSsCZVln%2FK%2BNxu0WoCAbDF1AxrgiK8Xx%2Fl%2F1g4jP46mPvGbKK4zZ1rxvRC75%2BmlT0SgaHTWz1dqan8A4kpMmxweEIbCNnyZY6ln9ABOyjWxmcTY15lOcmN%2FXFIfA%2Bww6MSGWXourI7nCq4nChJrBZx9FXdOk%2BdIxUhZv%2Fip2dE%2BNIbzMpmPlWiWgxu5NB8zhM1o%2FNz4fngqm2mXCP74ztu4FtEUiH9j7JjG9IP3%2F4ZFyPljhNYsfIfZ73rNqczHbw82TMERq%2FaKLndv%2Bc4pAt%2BNZcdKcj%2FqKcJ1QRz436QkNqp5h%2FHvXgEn%2Bf43habeCueUVHtmzIUA8l8oTkBBwQEBN0puSPVevoNRcGf%2FagvqvDFy1eL2l6abISxTYAS72RFcYxJYigehHAkkmPgevcTntRjWeyM%2B8kdxezbiIdd%2FxJE3YsuEwwImo0QY6pgFwxo1dqQc6SyNlr9UqRb8KvVhpnx9msMtTiHAJqf5cGebzypLEEyFSODuE9WCYdYu4oZJcg%2Fcp2aNIe9H9rkABWD%2B5o%2FGtFM0viK4cNlTF7EfBZcTrxpdUthde95JS78G57by2z62wKY6PoZFfstQtO9y%2Fz%2BdeoQKSqHn942A31OZ2MyK1R2HXUvtHx%2BqNep2PadndrEZsCAJ%2B4TnKIi3hZvkASCaw&X-Amz-Signature=f675a582e68dc6c2100effec549ba9fbd1801027f813068f52ba20b3455bace3&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "file",
+          "name": "browserconfig.xml.txt.txt",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/644c1a65-1fa1-46d3-a784-7d9de4b5af24/0f88a62e-b661-4009-acd6-2c928c8d3de6/browserconfig.xml.txt.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466UMX7EHZK%2F20260611%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260611T011737Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECkaCXVzLXdlc3QtMiJGMEQCICo8bVVD9cTnPR27LT7LBfBPEslP3m%2BAGeUn%2BCGxisdfAiAP9%2BdSwYOr4Lt%2B%2BG7EBlIk6GqxOy2vZIb8gMs8MNj1ECqIBAjy%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAAaDDYzNzQyMzE4MzgwNSIMDMYoCZGgak%2BLOdC5KtwDoBBQ23vCVMeZ25xGN0SHpbHrI1qpr9eAdI7YZp7h1fgPiG2ZFp0CEWRSq0apsdnQ%2B1fcBUc3e%2FD4WAVSNqe9JlWtf0qTqH6FkAeans2JRDpmOk6G%2FyigsTr8QERG%2FcFTHgLJvPqbf49pH3r1QcFkr6qQmXH2cO7rn1Q1CBD4npObuGCGVNCDGT8FYS38ObgLacmTfc6ELSsCZVln%2FK%2BNxu0WoCAbDF1AxrgiK8Xx%2Fl%2F1g4jP46mPvGbKK4zZ1rxvRC75%2BmlT0SgaHTWz1dqan8A4kpMmxweEIbCNnyZY6ln9ABOyjWxmcTY15lOcmN%2FXFIfA%2Bww6MSGWXourI7nCq4nChJrBZx9FXdOk%2BdIxUhZv%2Fip2dE%2BNIbzMpmPlWiWgxu5NB8zhM1o%2FNz4fngqm2mXCP74ztu4FtEUiH9j7JjG9IP3%2F4ZFyPljhNYsfIfZ73rNqczHbw82TMERq%2FaKLndv%2Bc4pAt%2BNZcdKcj%2FqKcJ1QRz436QkNqp5h%2FHvXgEn%2Bf43habeCueUVHtmzIUA8l8oTkBBwQEBN0puSPVevoNRcGf%2FagvqvDFy1eL2l6abISxTYAS72RFcYxJYigehHAkkmPgevcTntRjWeyM%2B8kdxezbiIdd%2FxJE3YsuEwwImo0QY6pgFwxo1dqQc6SyNlr9UqRb8KvVhpnx9msMtTiHAJqf5cGebzypLEEyFSODuE9WCYdYu4oZJcg%2Fcp2aNIe9H9rkABWD%2B5o%2FGtFM0viK4cNlTF7EfBZcTrxpdUthde95JS78G57by2z62wKY6PoZFfstQtO9y%2Fz%2BdeoQKSqHn942A31OZ2MyK1R2HXUvtHx%2BqNep2PadndrEZsCAJ%2B4TnKIi3hZvkASCaw&X-Amz-Signature=c5da4bd330226fed72f6754673ca29978a8a9e8c7e203c062092b1248de0654e&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+          "caption": "",
+          "lineMessageId": ""
+        },
+        {
+          "type": "image",
+          "name": "1780659409138-6bf9770b-5cfd-4a7a-9973-1166a4937d06.jpg",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/1780659409138-6bf9770b-5cfd-4a7a-9973-1166a4937d06.jpg",
+          "caption": "1780659409138-6bf9770b-5cfd-4a7a-9973-1166a4937d06.jpg",
+          "lineMessageId": "1780659409138"
+        },
+        {
+          "type": "image",
+          "name": "1780659065430-68d4c3fa-fcc2-4ac5-b150-77b0a80a0ae5.jpg",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/1780659065430-68d4c3fa-fcc2-4ac5-b150-77b0a80a0ae5.jpg",
+          "caption": "1780659065430-68d4c3fa-fcc2-4ac5-b150-77b0a80a0ae5.jpg",
+          "lineMessageId": "1780659065430"
+        },
+        {
+          "type": "image",
+          "name": "1780658941542-a6d2ed3c-38a5-4a2a-a800-505501042f82.jpg",
+          "url": "https://margin-yapping-railway.ngrok-free.dev/media/1780658941542-a6d2ed3c-38a5-4a2a-a800-505501042f82.jpg",
+          "caption": "1780658941542-a6d2ed3c-38a5-4a2a-a800-505501042f82.jpg",
+          "lineMessageId": "1780658941542"
+        }
+      ],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "f2eb3da59427",
+      "title": "未分類：確認過路線問題",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "昱晴",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-10T01:54:00.000Z",
+      "latestTime": "2026-06-10T01:54:00.000Z",
+      "speakers": [
+        "Bonnie～蔡雅婷🌷"
+      ],
+      "score": 9,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "等待或卡點",
+          "weight": 4
+        }
+      ],
+      "nextStep": "由負責人確認判斷結果，決定是否轉成正式任務。",
+      "evidence": "【2026/06/10 09:54】Bonnie～蔡雅婷🌷：@昱晴 Maggie 壞消息，元冠環保已答覆，他們確認過路線問題，無法承接！",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "bde9d90cdccc",
+      "title": "未分類：需要我提供什麼",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "OrangeHsu_哲",
+      "conversationName": "HOZO好住工務群組",
+      "conversationId": "37551c68-6dac-81a1-8ab3-ef417201fdbf",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf",
+      "firstTime": "2026-06-08T04:52:00.000Z",
+      "latestTime": "2026-06-08T04:52:00.000Z",
+      "speakers": [
+        "OrangeHsu_哲"
+      ],
+      "score": 9,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "交付或承諾",
+          "weight": 4
+        }
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/08 12:52】OrangeHsu_哲：使用 UOF 可以在這裡查到表單資訊  若資訊不足 看還需要我提供什麼，再跟我說。\n5月份主要是有二單，較急迫，未先報價就施作了。",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "0b2f3425b3a1",
+      "title": "營運：請問明日的討論 除基本的近期事項彙報討論 我這邊目前需要準備什麼資訊嗎？",
+      "project": "營運",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "昱晴 Maggie",
+      "conversationName": "HOZO 公司群",
+      "conversationId": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "firstTime": "2026-06-09T14:05:00.000Z",
+      "latestTime": "2026-06-09T14:05:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 8,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "期限或時間",
+          "weight": 3
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/09 22:05】昱晴 Maggie：好的\n明天17:30-19:00\n我可能會再加一組櫻桃看房\n我盡量早點結束所有事項\n\n請問明日的討論\n除基本的近期事項彙報討論\n我這邊目前需要準備什麼資訊嗎？",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "64446a665003",
+      "title": "未分類：提供給妳參考",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "昱晴",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-08T06:53:00.000Z",
+      "latestTime": "2026-06-08T06:53:00.000Z",
+      "speakers": [
+        "Bonnie～蔡雅婷🌷"
+      ],
+      "score": 8,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "期限或時間",
+          "weight": 3
+        }
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/08 14:53】Bonnie～蔡雅婷🌷：@昱晴 Maggie 台中市政府沿街垃圾清運，我們也有查詢了喔！提供給妳參考，如下...\n每週一二四五六14:30停-西屯路二段268之7號。",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "534765d509c5",
+      "title": "未分類：請問明天早上可以過來嗎？",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "昱晴",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T03:06:00.000+00:00",
+      "latestTime": "2026-06-07T03:06:00.000+00:00",
+      "speakers": [
+        "山田智里"
+      ],
+      "score": 8,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "期限或時間",
+          "weight": 3
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/07 11:06】山田智里：@昱晴 Maggie 請問明天早上可以過來嗎？",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "85b5a741d88d",
+      "title": "未分類：安排 您到時再跟我說時間方不方便喔！",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "昱晴 Maggie",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T02:52:00.000Z",
+      "latestTime": "2026-06-07T02:52:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 8,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "期限或時間",
+          "weight": 3
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/07 10:52】昱晴 Maggie：好呦～\n我週四晚上19:00後可以安排\n您到時再跟我說時間方不方便喔！",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "9557b9d0e418",
+      "title": "未分類：協助找尋會館這邊垃圾清運廠商",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "昱晴",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-05T05:43:00.000Z",
+      "latestTime": "2026-06-05T05:43:00.000Z",
+      "speakers": [
+        "Bonnie～蔡雅婷🌷"
+      ],
+      "score": 8,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        },
+        {
+          "label": "期限或時間",
+          "weight": 3
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/05 13:43】Bonnie～蔡雅婷🌷：@昱晴 Maggie 上次Seven有交代協助找尋會館這邊垃圾清運廠商，目前問了幾家狀況供妳參考！",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "df427436cef9",
+      "title": "未分類：1334 【2026/6/4 晚上10:54】好住管家（文字訊息） 測試",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "中",
+      "owner": "Seven陳聖文",
+      "conversationName": "HOZO 公司群",
+      "conversationId": "37451c68-6dac-8143-aff7-e96b195d518b",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37451c686dac8143aff7e96b195d518b",
+      "firstTime": "2026-06-10T03:56:00.000+00:00",
+      "latestTime": "2026-06-10T03:56:00.000+00:00",
+      "speakers": [
+        "Seven陳聖文"
+      ],
+      "score": 7,
+      "reasons": [
+        {
+          "label": "期限或時間",
+          "weight": 3
+        },
+        {
+          "label": "交付或承諾",
+          "weight": 4
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/10 11:56】Seven陳聖文：1334\n【2026/6/4 晚上10:54】好住管家（文字訊息）\n測試中",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "2bf3c1e92ba4",
+      "title": "未分類：需要用印",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "高",
+      "owner": "Bonnie～蔡雅婷🌷",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-09T07:35:00.000Z",
+      "latestTime": "2026-06-09T07:35:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 7,
+      "reasons": [
+        {
+          "label": "期限或時間",
+          "weight": 3
+        },
+        {
+          "label": "交付或承諾",
+          "weight": 4
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/09 15:35】昱晴 Maggie：@Bonnie～蔡雅婷🌷 \n哈囉Bonnie \n我這邊有一份紙本合約需要用印，預計明天17:30左右過去用印喔感謝",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "1f121c26080f",
+      "title": "未分類：麻煩開單謝謝",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "昱晴",
+      "conversationName": "HOZO好住工務群組",
+      "conversationId": "37551c68-6dac-81a1-8ab3-ef417201fdbf",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf",
+      "firstTime": "2026-06-10T07:55:00.000Z",
+      "latestTime": "2026-06-10T07:55:00.000Z",
+      "speakers": [
+        "Roger 王士豪"
+      ],
+      "score": 5,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/10 15:55】Roger 王士豪：@昱晴 Maggie 安裝層架的部分工資是兩個人3000，再麻煩開單謝謝",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "61d7c2d44c95",
+      "title": "未分類：確認 謝謝！",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "昱晴 Maggie",
+      "conversationName": "HOZO好住工務群組",
+      "conversationId": "37551c68-6dac-81a1-8ab3-ef417201fdbf",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf",
+      "firstTime": "2026-06-08T04:53:00.000Z",
+      "latestTime": "2026-06-08T04:53:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 5,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        }
+      ],
+      "nextStep": "由負責人確認判斷結果，決定是否轉成正式任務。",
+      "evidence": "【2026/06/08 12:53】昱晴 Maggie：好呦～我再確認\n謝謝！",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "a7251b4a2bcb",
+      "title": "營運：提供嗎？ 新的旅客入住時我這邊可以一併推薦給旅客(emoji)",
+      "project": "營運",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "John",
+      "conversationName": "HOZO品牌設計",
+      "conversationId": "37551c68-6dac-81d9-ad94-fb1ba7c12cc1",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37551c686dac81d9ad94fb1ba7c12cc1",
+      "firstTime": "2026-06-08T02:32:00.000Z",
+      "latestTime": "2026-06-08T02:32:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 5,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        }
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/08 10:32】昱晴 Maggie：@John 🦁 哈囉John \n我有看到櫻桃電梯內有這一張房客優惠 詢問櫻桃同仁後他們沒有檔案\n\n您這邊有檔案可以提供嗎？\n新的旅客入住時我這邊可以一併推薦給旅客(emoji)",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "859096024708",
+      "title": "未分類：發霉的痕跡",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "山田智里",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T03:06:00.000+00:00",
+      "latestTime": "2026-06-07T03:06:00.000+00:00",
+      "speakers": [
+        "山田智里"
+      ],
+      "score": 5,
+      "reasons": [
+        {
+          "label": "明確交辦",
+          "weight": 5
+        }
+      ],
+      "nextStep": "確認需要補齊或交付的資料，指定負責人與期限。",
+      "evidence": "【2026/06/07 11:06】山田智里：浴室的牆壁有許多發霉的痕跡",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "c44eabb621f1",
+      "title": "未分類：我也有做測試",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "OrangeHsu_哲",
+      "conversationName": "HOZO好住工務群組",
+      "conversationId": "37551c68-6dac-81a1-8ab3-ef417201fdbf",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37551c686dac81a18ab3ef417201fdbf",
+      "firstTime": "2026-06-08T04:55:00.000Z",
+      "latestTime": "2026-06-08T04:55:00.000Z",
+      "speakers": [
+        "OrangeHsu_哲"
+      ],
+      "score": 4,
+      "reasons": [
+        {
+          "label": "交付或承諾",
+          "weight": 4
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/08 12:55】OrangeHsu_哲：我也有做測試單 但已作廢",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "bf933315ae18",
+      "title": "未分類：這是套用新版 AS Line群組名稱 的測試",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "Seven陳聖文",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-05T07:28:00.000Z",
+      "latestTime": "2026-06-05T07:28:00.000Z",
+      "speakers": [
+        "Seven陳聖文"
+      ],
+      "score": 4,
+      "reasons": [
+        {
+          "label": "交付或承諾",
+          "weight": 4
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/05 15:28】Seven陳聖文：這是套用新版 AS Line群組名稱 的測試訊息",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "9259a48d6861",
+      "title": "未分類：我要去台北星期四下午回台中，正確時間還未定",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "山田智里",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T02:20:00.000Z",
+      "latestTime": "2026-06-07T02:20:00.000Z",
+      "speakers": [
+        "山田智里"
+      ],
+      "score": 3,
+      "reasons": [
+        {
+          "label": "期限或時間",
+          "weight": 3
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/07 10:20】山田智里：我要去台北星期四下午回台中，正確時間還未定",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "0d7694f56f0f",
+      "title": "未分類：山田小姐 早安 這週我有課程 週三傍晚大約18:00過去看看可以嗎？",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "昱晴 Maggie",
+      "conversationName": "明義街46號2之2",
+      "conversationId": "37651c68-6dac-8162-89ab-cf5215e907b1",
+      "conversationUrl": "https://app.notion.com/p/46-2-2-37651c686dac816289abcf5215e907b1",
+      "firstTime": "2026-06-07T01:44:00.000Z",
+      "latestTime": "2026-06-07T01:44:00.000Z",
+      "speakers": [
+        "昱晴 Maggie"
+      ],
+      "score": 3,
+      "reasons": [
+        {
+          "label": "期限或時間",
+          "weight": 3
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/07 09:44】昱晴 Maggie：山田小姐 早安\n這週我有課程\n週三傍晚大約18:00過去看看可以嗎？",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "472d434e28b8",
+      "title": "未分類：t e s t 【2026/6/5 下午2:09】Seven陳聖文（文字訊息） hello",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "Seven陳聖文",
+      "conversationName": "Seven陳聖文",
+      "conversationId": "37551c68-6dac-8111-a10d-fd4300f3bf83",
+      "conversationUrl": "https://app.notion.com/p/Seven-37551c686dac8111a10dfd4300f3bf83",
+      "firstTime": "2026-06-05T07:08:00.000Z",
+      "latestTime": "2026-06-05T07:08:00.000Z",
+      "speakers": [
+        "Seven陳聖文"
+      ],
+      "score": 3,
+      "reasons": [
+        {
+          "label": "期限或時間",
+          "weight": 3
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/05 15:08】Seven陳聖文：t e s t\n【2026/6/5 下午2:09】Seven陳聖文（文字訊息）\nhello",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    },
+    {
+      "id": "f620780b1a68",
+      "title": "未分類：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果",
+      "project": "未分類",
+      "status": "重建候選",
+      "confirmation": "待人工確認",
+      "priority": "低",
+      "owner": "Bonnie～蔡雅婷🌷",
+      "conversationName": "HOZO好住公司設立協助",
+      "conversationId": "37651c68-6dac-8108-8997-f3762906d4de",
+      "conversationUrl": "https://app.notion.com/p/HOZO-37651c686dac81088997f3762906d4de",
+      "firstTime": "2026-06-05T05:47:00.000Z",
+      "latestTime": "2026-06-05T05:47:00.000Z",
+      "speakers": [
+        "Bonnie～蔡雅婷🌷"
+      ],
+      "score": 3,
+      "reasons": [
+        {
+          "label": "期限或時間",
+          "weight": 3
+        }
+      ],
+      "nextStep": "請人工確認此候選是否仍有效，若有效再補負責人、期限與完成條件。",
+      "evidence": "【2026/06/05 13:47】Bonnie～蔡雅婷🌷：很多都被拒了，目前剩一家-元冠環保，還在評估中，我們下週再追結果",
+      "media": [],
+      "sourcePolicy": "從 LINE 對話主檔全量讀取；未讀取 LINE 訊息紀錄。",
+      "promptPolicyVersion": ""
+    }
+  ]
+}
