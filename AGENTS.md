@@ -63,19 +63,23 @@ All features below are identical to SevenAM's implementation; see the SevenAM AG
 
 Taipei 07:00–23:00 work, 23:00–07:00 rest. The 15-minute crons (triage, attachments, scheduled actions) are restricted to UTC `0-14,23`; the local worker (if installed) uses `HOZO_WORKER_ACTIVE_HOUR_START`/`HOZO_WORKER_ACTIVE_HOUR_END` (default 7/23). Overnight-due scheduled actions fire on the first morning scan.
 
-## Scheduled Jobs (Render Cron, UTC; Taipei = UTC+8)
+## Scheduled Jobs — ALL on the local worker (no Render crons)
 
-Codex-only mode: extraction, triage, scheduled actions, proposals, and feedback sync run on the local worker, NOT on Render. Render keeps only the non-LLM jobs below.
+**Render hosts only the web service** (`hozo-am-line-oa-webhook`: webhook intake, report pages, dashboard, control API). Every scheduled job runs inside the local worker (Taipei times, active hours 07:00-23:00):
 
-| Job | Taipei Time | UTC Cron |
+| Job | Schedule | Notes |
 | --- | --- | --- |
-| `hozo-am-meeting-action-sync` | 08:00-22:00 hourly | `0 0-14 * * *` |
-| `hozo-am-responsibility-candidate-sync` | 08:15-22:15 hourly | `15 0-14 * * *` |
-| `hozo-am-morning-brief` | 08:30 | `30 0 * * *` |
-| `hozo-am-followup-morning` | 10:00 | `0 2 * * *` |
-| `hozo-am-followup-midday` | 13:00 | `0 5 * * *` |
-| `hozo-am-followup-afternoon` | 17:00 | `0 9 * * *` |
-| `hozo-am-daily-report` | 20:30 | `30 12 * * *` |
+| Task extraction + command triage | every ~90s cycle | OpenAI Codex backend |
+| Next Action scheduled actions | every 15 min | no LLM |
+| Meeting action sync | hourly | no LLM |
+| Responsibility candidate sync | hourly | no LLM |
+| Morning brief | 08:30 (+30 min grace) | calls `POST /control/reports/send` on Render |
+| Follow-up reports | 10:00 / 13:00 / 17:00 (+30 min grace) | same |
+| Daily control report | 20:30 (+30 min grace) | same |
+| Project proposals | nightly ≥22:20 | Codex backend |
+| Extraction feedback sync | nightly ≥22:45 | collection only without API key |
+
+Reports missed beyond their 30-minute grace window (worker down) are skipped, not back-filled. The Postgres event queue is also omitted in test mode (workspace resource cap); the webhook writes Notion synchronously.
 
 ## HOZO Notion Data Sources
 

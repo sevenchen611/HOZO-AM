@@ -5,8 +5,11 @@
 //
 // 每輪（預設 90 秒）：任務萃取＋指令分流（即時回覆）
 // 每 15 分鐘：Next Action 排程掃描（無 LLM）
+// 每小時：會議任務同步、權責候選同步（無 LLM；原 Render cron）
+// 定時報告：08:30 早報、10:00/13:00/17:00 追蹤、20:30 晚報（呼叫 webhook 發報 API）
 // 每晚 22:20：專案提案；22:45：回饋收割（規則建議需 API key，無 key 時只收資料）
 // 工作時段：台北 07:00–23:00；時段外全部暫停。
+// Render 上只剩 web service（webhook 收訊＋報告頁＋Dashboard＋control API）。
 // 心跳仍照送（部署新版 Render 後 /worker/status 可看到 worker 健康狀態）。
 
 import { spawn } from 'node:child_process';
@@ -31,8 +34,22 @@ let consecutiveFailures = 0;
 let cycles = 0;
 let stopping = false;
 let lastScheduledActionsAt = 0;
+let lastMeetingSyncAt = 0;
+let lastResponsibilitySyncAt = 0;
 let proposalsRanOn = '';
 let feedbackRanOn = '';
+const reportRanOn = {};
+
+// 定時報告（Render cron 已全數移除，由 worker 按表呼叫 webhook 的發報 API）。
+// 只在 [時間, 時間+30分) 的窗口內發；worker 停機錯過窗口就跳過，不補發過期報告。
+const REPORT_TIMETABLE = [
+  { name: 'morning', minutes: 8 * 60 + 30 },
+  { name: 'followup-morning', minutes: 10 * 60 },
+  { name: 'followup-midday', minutes: 13 * 60 },
+  { name: 'followup-afternoon', minutes: 17 * 60 },
+  { name: 'daily', minutes: 20 * 60 + 30 },
+];
+const REPORT_GRACE_MINUTES = 30;
 
 process.on('SIGINT', () => { stopping = true; log('SIGINT received; finishing current cycle then exiting.'); });
 process.on('SIGTERM', () => { stopping = true; });
@@ -85,8 +102,28 @@ while (!stopping) {
     if (actions.ok) lastScheduledActionsAt = Date.now();
   }
 
-  // 夜間批次（Codex-only 模式下由 worker 接手 Render 的每日排程）。
+  // 每小時 Notion 同步（原 Render cron：會議任務、權責候選；皆無 LLM）。
+  if (Date.now() - lastMeetingSyncAt >= 60 * 60 * 1000) {
+    const meeting = await runChild('meeting-action-sync', ['scripts/sync-meeting-actions.js', '--limit', '50']);
+    if (meeting.ok) lastMeetingSyncAt = Date.now();
+  }
+  if (Date.now() - lastResponsibilitySyncAt >= 60 * 60 * 1000) {
+    const responsibility = await runChild('responsibility-sync', ['scripts/sync-responsibility-candidates.js']);
+    if (responsibility.ok) lastResponsibilitySyncAt = Date.now();
+  }
+
   const { date: taipeiDate, minutes: taipeiMinutes } = taipeiNow();
+
+  // 定時報告（原 Render cron）。
+  for (const report of REPORT_TIMETABLE) {
+    if (reportRanOn[report.name] === taipeiDate) continue;
+    if (taipeiMinutes >= report.minutes && taipeiMinutes < report.minutes + REPORT_GRACE_MINUTES) {
+      reportRanOn[report.name] = taipeiDate;
+      await runChild(`report-${report.name}`, ['scripts/render-cron-report.js', report.name]);
+    }
+  }
+
+  // 夜間批次（Codex-only 模式下由 worker 接手 Render 的每日排程）。
   if (taipeiMinutes >= 22 * 60 + 20 && proposalsRanOn !== taipeiDate) {
     proposalsRanOn = taipeiDate;
     await runChild('project-proposals', ['scripts/propose-projects.js']);
