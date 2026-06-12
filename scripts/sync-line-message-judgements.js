@@ -61,7 +61,6 @@ try {
     reprocess,
     since: sinceIso || `${sinceHours}h`,
     sourceDataSource: 'HOZO_CONVERSATIONS_DATA_SOURCE_ID',
-    forbiddenSourceDataSource: 'HOZO_MESSAGES_DATA_SOURCE_ID',
     judgmentPolicyVersion: masterPromptPolicy.version || '',
     hierarchyPromptVersion: hierarchyPrompt.version || '',
     hierarchyContractVersion: hierarchyContract.version || '',
@@ -127,6 +126,20 @@ async function conversationToJudgementMessages(conversation) {
     conversationProject: conversation.project,
     conversationDisplayName: conversation.name,
   }));
+}
+
+async function getConversationProject(pageId) {
+  if (!pageId) return { project: '', name: '' };
+  if (conversationProjectCache.has(pageId)) return conversationProjectCache.get(pageId);
+
+  const page = await notionRequest(`/v1/pages/${pageId}`, { method: 'GET' });
+  const name = textProperty(page.properties?.['LINE 對話名稱']) || textProperty(page.properties?.['自定義名稱']);
+  const preview = textProperty(page.properties?.['最新訊息預覽']);
+  const project = selectName(page.properties?.['總控專案'])
+    || inferConversationProject(`${name}\n${preview}`);
+  const value = { project, name };
+  conversationProjectCache.set(pageId, value);
+  return value;
 }
 
 async function loadLatestConversationMessages(conversation) {
@@ -248,20 +261,6 @@ function needsConversationJudgement(conversation) {
   return new Date(conversation.lastMessageTime) > new Date(conversation.lastJudgementMessageTime);
 }
 
-async function getConversationProject(pageId) {
-  if (!pageId) return { project: '', name: '' };
-  if (conversationProjectCache.has(pageId)) return conversationProjectCache.get(pageId);
-
-  const page = await notionRequest(`/v1/pages/${pageId}`, { method: 'GET' });
-  const name = textProperty(page.properties?.['LINE 對話名稱']) || textProperty(page.properties?.['自定義名稱']);
-  const preview = textProperty(page.properties?.['最新訊息預覽']);
-  const project = selectName(page.properties?.['總控專案'])
-    || inferConversationProject(`${name}\n${preview}`);
-  const value = { project, name };
-  conversationProjectCache.set(pageId, value);
-  return value;
-}
-
 function groupMessagesByConversation(messages) {
   const groups = new Map();
   for (const message of messages) {
@@ -304,11 +303,12 @@ function getMainControllerAliases() {
   return [...new Set([
     ...aliases,
     'HOZO Junior',
+    '7Junior',
     'HOZO Jr.',
-    '好住 Junior',
-    '好住 Jr.',
-    'Seven Junior',
-    'Seven Jr.',
+    'HOZO Jr.',
+    '7 Jr.',
+    'HOZO Junior',
+    'HOZO Jr.',
   ])];
 }
 
@@ -399,7 +399,7 @@ async function processMessage(message, runConversationMessages = []) {
   }
 
   if (!dryRun && (!message.judged || reprocess)) {
-    await markConversationJudged(message);
+    await markMessageJudged(message);
     result.markedJudged = true;
   }
 
@@ -420,12 +420,12 @@ function analyzeMessage(message) {
     return emptyAnalysis('non-text-or-empty');
   }
 
-  if (isCommandTriggerMessage(text)) {
-    return emptyAnalysis('command-trigger-message');
-  }
-
   if (isOperationalInstructionMessage(text, message)) {
     return emptyAnalysis('operational-instruction-message');
+  }
+
+  if (isCommandTriggerMessage(text)) {
+    return emptyAnalysis('command-trigger-message');
   }
 
   if (isPureKnowledgeExplanation(text)) {
@@ -567,7 +567,7 @@ function detectConcern(text, message, importance) {
   const project = inferProject(text, message, category);
   const priority = inferPriority(text, category, importance.score);
   const summary = summarizeText(text);
-  const owner = inferOwner(text) || (category === 'delegation' || /你處理|你要|交給你|提醒你/.test(text) ? 'Seven 陳聖文' : message.actor || '');
+  const owner = inferOwner(text) || (category === 'delegation' || /你處理|你要|交給你|提醒你/.test(text) ? '陸昱晴' : message.actor || '');
   const dueDate = inferDueDate(text);
 
   if (category === 'note') return null;
@@ -586,6 +586,59 @@ function detectConcern(text, message, importance) {
   };
 }
 
+function detectContextualConcern(text, message) {
+  const project = inferProject(text, message, inferCategory(text));
+  const contextText = [
+    message.conversationDisplayName,
+    message.conversationName,
+    ...(message.sameConversationContext || []).map((item) => item.text || ''),
+    text,
+  ].join('\n');
+
+  if (project === '茲心園工程' && isEngineeringVendorEstimateThread(contextText)) {
+    const missingDocs = extractEngineeringMissingDocs(text);
+    if (missingDocs.length) {
+      return {
+        category: 'task',
+        project,
+        priority: '中',
+        summary: `綦盛工程詢問估價所需資料：${missingDocs.join('、')}`,
+        owner: '陸昱晴',
+        dueDate: null,
+        sourceText: text,
+        nextStep: `補提供綦盛工程估價所需資料：${missingDocs.join('、')}；提供後請對方確認是否還缺估價資料。`,
+        createsProgress: true,
+        reasons: ['engineering-vendor-estimate-thread', 'missing-estimate-documents'],
+        importanceScore: 8,
+        nameOverride: '茲心園工程：補提供綦盛工程估價所需資料',
+      };
+    }
+
+    if (isEngineeringDesignDelivery(text)) {
+      return {
+        category: 'progress',
+        project,
+        priority: '中',
+        summary: '已將茲心園 D 區與 J 棟工程設計圖資料提供給綦盛工程查看。',
+        owner: '陸昱晴',
+        dueDate: null,
+        sourceText: text,
+        nextStep: '綦盛工程已收到 D 區與 J 棟資料連結；等待對方確認是否可估價，或是否需要補基地位置圖、建照、雜照等文件。',
+        createsProgress: true,
+        reasons: ['engineering-vendor-estimate-thread', 'design-material-delivered'],
+        importanceScore: 6,
+        nameOverride: '茲心園工程：再發設計圖給 2-3 家營造廠估價',
+      };
+    }
+
+    if (isVendorContactSetup(text)) {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 function dedupeConcerns(concerns) {
   const seen = new Set();
   return concerns.filter((concern) => {
@@ -597,12 +650,10 @@ function dedupeConcerns(concerns) {
 }
 
 function buildCandidate(concern, message, importance) {
-  const project = normalizeHozoProject(concern.project);
   const syncId = buildSyncId(message.id, concern.sourceText);
-  const normalizedConcern = { ...concern, project };
-  const name = buildTaskName(normalizedConcern, message);
+  const name = buildTaskName(concern, message);
   const sourceText = [
-    `LINE 訊息：${message.url}`,
+    `${message.sourceKind === 'conversation' ? 'LINE 對話主檔' : 'LINE 訊息'}：${message.url}`,
     message.conversationName ? `對話：${message.conversationName}` : '',
     message.actor ? `發話者：${message.actor}` : '',
     `同步識別碼：${syncId}`,
@@ -619,20 +670,20 @@ function buildCandidate(concern, message, importance) {
   ].join('\n');
   const taskBody = buildInitialTaskBody({
     name,
-    project,
+    project: concern.project,
     status: '待確認',
     owner: concern.owner,
     nextStep: concern.nextStep,
     sourceType: 'LINE',
     sourceText,
     judgementSummary,
-    confidence: project === '未分類' ? '中' : '高',
+    confidence: concern.project === '未分類' ? '中' : '高',
     message,
   });
 
   const taskProperties = compactProperties({
     任務名稱: titleProperty(name),
-    專案: selectProperty(project),
+    專案: selectProperty(concern.project),
     狀態: selectProperty('待確認'),
     確認狀態: selectProperty('未確認'),
     優先級: selectProperty(concern.priority),
@@ -641,16 +692,16 @@ function buildCandidate(concern, message, importance) {
     來源: selectProperty('LINE'),
     來源原文: richTextProperty(sourceOriginalCompatibilityText(message), 1900),
     'Codex 判斷摘要': richTextProperty(judgementSummary, 1900),
-    信心等級: selectProperty(project === '未分類' ? '中' : '高'),
+    信心等級: selectProperty(concern.project === '未分類' ? '中' : '高'),
     下一步: richTextProperty(concern.nextStep, 900),
     '關聯 Notion 頁面': urlProperty(message.url),
     最後更新: dateProperty(new Date()),
   });
 
-  const progressName = concern.createsProgress ? buildProgressName(normalizedConcern, message) : '';
+  const progressName = concern.createsProgress ? buildProgressName(concern, message) : '';
   const progressProperties = concern.createsProgress ? compactProperties({
     報表名稱: titleProperty(progressName),
-    專案: selectProperty(project),
+    專案: selectProperty(concern.project),
     報表週期: dateProperty(message.time ? new Date(message.time) : new Date()),
     目前狀態: selectProperty(concern.priority === '高' ? '需注意' : '更新'),
     負責人: richTextProperty(concern.owner),
@@ -663,7 +714,6 @@ function buildCandidate(concern, message, importance) {
 
   return {
     ...concern,
-    project,
     name,
     syncId,
     taskProperties,
@@ -671,21 +721,6 @@ function buildCandidate(concern, message, importance) {
     progressName,
     progressProperties,
   };
-}
-
-function normalizeHozoProject(project) {
-  const value = String(project || '').trim();
-  const aliases = new Map([
-    ['HOZO 後臺', '自動化'],
-    ['HOZO 後台', '自動化'],
-    ['SmartFront / AI Brain', '自動化'],
-    ['包租代管', '住客服務與體驗管理'],
-    ['茲心園工程', '未分類'],
-    ['財務', '財務與帳務管理'],
-    ['營運', '營運和資料交接'],
-    ['私人事務', '未分類'],
-  ]);
-  return aliases.get(value) || value || '未分類';
 }
 
 function messageTypeFromLabel(label) {
@@ -753,6 +788,7 @@ function inferProject(text, message, category) {
   if (message.conversationProject) return message.conversationProject;
 
   const rules = [
+    ['茲心園工程', /茲心園|改建|營造|工程|工地/],
     ['HOZO 後臺', /HOZO\s*後|HOZO後|後臺|後台|登入頁|CRM/],
     ['包租代管', /包租代管|包租|代管|房客|租客|租屋|出租|招租|好住寓好|HOZO|發黴|浴室|燈光/],
     ['SmartFront / AI Brain', /SmartFront|AI Brain|AI腦|智能前台/],
@@ -780,14 +816,12 @@ function inferProject(text, message, category) {
 function inferConversationProject(value) {
   const text = String(value || '');
   const rules = [
-    ['自動化', /系統|自動化|Notion|LINE|Codex|Render|Webhook|API|報告|HOZO\s*後|HOZO後|後臺|後台|CRM|SmartFront|AI Brain|智能前台/],
-    ['住客服務與體驗管理', /住客|房客|租客|客訴|客服|體驗|入住|退房|包租|代管|好住寓好|發黴|漏水|浴室|燈光/],
-    ['工程建置管理', /工務|場域|採購|組裝|家具|設備|資產|裝修|工程|點交|硬體|維修|修繕/],
-    ['品牌官網', /品牌|官網|網站|內容|文案|SEO|照片|視覺|社群/],
-    ['房務管理', /房務|清潔|管家|打掃|床包|備品/],
-    ['公司治理', /法規|合規|公司治理|公司設立|設立|合約|股東|登記/],
-    ['財務與帳務管理', /財務|帳務|付款|匯款|發票|報稅|稅|銀行|保險|火險|保單|房貸/],
-    ['營運和資料交接', /營運|月會|例會|流程|SOP|會議|資料交接|進度/],
+    ['茲心園工程', /綦盛|恰恰小紅帽|茲心園|D\s*區|J\s*棟|建照|雜照|基地位置圖|營造|工程|工地|估價|設計圖/],
+    ['溪頭 / 南投鹿谷旅館投資評估案', /溪頭|鹿谷|夏緹|南投.*旅館|旅館.*投資|Andy/],
+    ['包租代管', /包租代管|房客|租客|好住寓好|HOZO|浴室|燈光|發黴/],
+    ['人資', /人資|薪資|Bonnie|離職|退保|同仁|104/],
+    ['財務', /財務|付款|匯款|發票|股權移轉|報稅|銀行|網銀|火險|保險/],
+    ['私人事務', /溪州|媽媽|媽，|天才家族|讀書會/],
   ];
 
   for (const [project, pattern] of rules) {
@@ -820,7 +854,7 @@ function inferDueDate(text) {
 function inferOwner(text) {
   const mention = text.match(/@([^\s，,。]+)/);
   if (mention) return mention[1];
-  if (/我.*(確認|處理|聯絡|回覆)|禮拜一.*我/.test(text)) return 'Seven 陳聖文';
+  if (/我.*(確認|處理|聯絡|回覆)|禮拜一.*我/.test(text)) return '陸昱晴';
   const named = text.match(/(Seven|Bonnie|逸凡|宜穎|嘉娜|Maggie|昱晴|聖文)/i);
   return named ? named[1] : '';
 }
@@ -866,59 +900,54 @@ function isPureKnowledgeExplanation(text) {
   return !/(請|麻煩|幫我|需要|確認|追蹤|安排|回覆|聯絡|處理|提醒|決定|要不要|是否)/.test(value);
 }
 
-function isOperationalInstructionMessage(text, message = {}) {
-  const value = String(text || '').replace(/\s+/g, '');
-  const context = `${message.actor || ''}\n${message.conversationDisplayName || ''}\n${message.conversationName || ''}`;
-  const addressedToAssistant = /HOZO(Junior|Jr|助理)|Seven(Junior|Jr)|AM|Codex/i.test(`${text}\n${context}`);
-  if (!addressedToAssistant && !/(查待辦|列出.*待辦|打開第?\d+個任務|任務校準|看一下.*任務)/.test(value)) return false;
-  return /(查待辦|列出.*待辦|打開第?\d+個任務|看一下.*任務|任務校準|同步|重新整理|開啟|打開)/.test(value)
-    && !/(付款|匯款|修繕|回覆客人|聯絡房客|安排清潔|採購|合約|報稅|發票)/.test(value);
-}
-
 function isConversationSetupMessage(text, message = {}) {
   const value = String(text || '').replace(/\s+/g, ' ').trim();
-  if (!value) return false;
-  if (/^(ok|OK|好|收到|了解|謝謝|感謝|辛苦了)[。！!]*$/.test(value)) return true;
-  if (/謝謝加入群組|在這個群組裡面進行|就在這個群組裡面討論|群組裡面討論/.test(value)) {
-    return !/(請|麻煩|需要|確認|提供|補|回覆|安排|處理).*(資料|文件|時間|期限|回報|修繕|清潔|發票|合約)/.test(value);
-  }
-  if (/^[^\s@]+@[^@\s]+\.[^@\s]+$/.test(value)) return true;
-  if (/^(名片|聯絡方式|電話|手機|Email|Gmail|信箱)[:：\s]/i.test(value) && value.length < 80) return true;
-  return false;
-}
-
-function detectContextualConcern(text, message) {
-  const value = String(text || '').trim();
   const contextText = [
     message.conversationDisplayName,
     message.conversationName,
     ...(message.sameConversationContext || []).map((item) => item.text || ''),
     value,
   ].join('\n');
-  const category = inferCategory(value);
-  const project = normalizeHozoProject(inferProject(value, message, category));
 
-  if (isHozoServiceOrRepairThread(contextText) && /(已處理|已完成|處理完|修好了|已修|已安排|已回覆|已通知|已聯絡)/.test(value)) {
-    return {
-      category: 'done',
-      project,
-      priority: '中',
-      summary: summarizeText(value),
-      owner: inferOwner(value) || message.actor || '',
-      dueDate: null,
-      sourceText: value,
-      nextStep: '將此訊息作為既有住客/修繕/服務任務的狀態更新證據，確認是否可改為完成或待確認完成。',
-      createsProgress: project !== '未分類',
-      reasons: ['hozo-service-thread', 'status-update-evidence'],
-      importanceScore: 7,
-    };
+  if (isEngineeringDesignDelivery(value) || extractEngineeringMissingDocs(value).length) {
+    return false;
   }
 
-  return null;
+  if (isEngineeringVendorEstimateThread(contextText) && isVendorContactSetup(value)) {
+    return true;
+  }
+
+  return /謝謝加入群組|在這個群組裡面進行|就在這個群組裡面討論|群組裡面討論/.test(value)
+    && !/(請|麻煩|需要|確認|提供|補|回覆|安排|處理).*(資料|文件|時間|期限|回報|估價)/.test(value);
 }
 
-function isHozoServiceOrRepairThread(value) {
-  return /住客|房客|租客|客訴|客服|入住|退房|修繕|維修|漏水|發黴|燈光|浴室|清潔|房務|管家/.test(String(value || ''));
+function isEngineeringVendorEstimateThread(value) {
+  return /綦盛|恰恰小紅帽|茲心園|D\s*區|J\s*棟|設計圖|營造|估價|建照|雜照|基地位置圖/i.test(String(value || ''));
+}
+
+function extractEngineeringMissingDocs(text) {
+  const value = String(text || '');
+  const docs = [
+    ['基地位置圖', /基地位置圖|基地.*位置|位置圖/],
+    ['建照', /建照|建造執照/],
+    ['雜照', /雜照|雜項執照/],
+    ['平面圖', /平面圖/],
+    ['圖面檔', /CAD|dwg|圖面檔|設計圖檔/],
+  ];
+  return docs.filter(([, pattern]) => pattern.test(value)).map(([label]) => label);
+}
+
+function isEngineeringDesignDelivery(text) {
+  const value = String(text || '');
+  return /(drive\.google|設計圖|D\s*區|J\s*棟|連結|資料)/i.test(value)
+    && /(已經發給|已發給|發給您|提供給|請.*看一下|再看一下|給您)/.test(value);
+}
+
+function isVendorContactSetup(text) {
+  const value = String(text || '').trim();
+  return /^[^\s@]+@[^@\s]+\.[^@\s]+$/.test(value)
+    || /提供.*Gmail|Gmail\s*信箱|名片|謝謝加入群組|群組裡面.*討論|麻煩你[.。…]*$/.test(value)
+    || /^(ok|OK|好|收到|了解|麻煩你[.。…]*)$/.test(value);
 }
 
 function isTextMessageType(value) {
@@ -928,6 +957,25 @@ function isTextMessageType(value) {
 
 function isCommandTriggerMessage(text) {
   return /\b(Seven|Eleven|Elven)\s+(Junior|Jr\.?)\b|\b(7|11)\s*(Junior|Jr\.?)\b/i.test(text);
+}
+
+function isOperationalInstructionMessage(text, message = {}) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  const actor = String(message.actor || '').trim();
+  if (/^Seven\s+Jr\.?$/i.test(actor)) return true;
+
+  const mentionsAssistant = isCommandTriggerMessage(value)
+    || /\b(Junior|Jr\.?)\b/i.test(value)
+    || /^(助理|AI\s*助理)[,，:：\s]/i.test(value)
+    || /ثابت\s*Junior/i.test(value);
+  const taskQuery = /(查|查詢|列出|列表|清單|看一下|給我看|幫我看|有哪些|目前|現在|今天|未完成|pending|list|show)/i.test(value)
+    && /(待辦|任務|工作|事項|task|todo)/i.test(value);
+  const taskOpen = /(打開|開啟|展開|查看|詳細|詳情)/.test(value)
+    && /(第\s*[0-9一二三四五六七八九十]+\s*個|[0-9一二三四五六七八九十]+\s*號)/.test(value)
+    && /(任務|待辦|工作)?/.test(value);
+  const taskListReply = /^Seven\s+Jr\.?\s+幫你查到/.test(value);
+
+  return taskListReply || (mentionsAssistant && (taskQuery || taskOpen));
 }
 
 function summarizeText(text) {
@@ -942,6 +990,7 @@ function inferBlockerText(text) {
 
 function buildTaskName(concern, message) {
   if (concern.nameOverride) return concern.nameOverride;
+
   const subject = shortSubject(concern.summary);
   if (concern.category === 'health') return `${concern.project}：關心與追蹤健康狀況 - ${subject}`;
   if (concern.category === 'insurance') return `${concern.project}：確認保險/火險續保處理 - ${subject}`;
@@ -1114,14 +1163,24 @@ function scoreContextualTaskMatch(task, candidate, message, contextText) {
   const candidateText = `${candidate.name}\n${candidate.summary}\n${candidate.sourceText}`.toLowerCase();
   const conversationText = `${message.conversationDisplayName || ''}\n${message.conversationName || ''}\n${contextText || ''}`.toLowerCase();
 
-  if (normalizeKey(task.name) === normalizeKey(candidate.name)) return 100;
-
-  if (isHozoServiceOrRepairThread(`${candidateText}\n${conversationText}`)) {
-    if (candidate.category === 'done' && /(完成|已處理|處理完|修好|已修|已回覆|已聯絡)/.test(candidate.sourceText)) {
-      if (isHozoServiceOrRepairThread(taskText)) return 78;
+  if (candidate.project === '茲心園工程' && isEngineeringVendorEstimateThread(`${candidateText}\n${conversationText}`)) {
+    if (/補提供綦盛工程估價所需資料/.test(candidate.name)
+      && /補提供綦盛工程估價所需資料/.test(task.name)) {
+      return 100;
     }
-    if (candidate.project && task.project && candidate.project === task.project && isHozoServiceOrRepairThread(taskText)) {
-      return 42;
+
+    if (/再發設計圖給 2-3 家營造廠估價/.test(candidate.name)
+      && /再發設計圖給 2-3 家營造廠估價/.test(task.name)) {
+      return 100;
+    }
+
+    if (/設計圖|drive\.google|d\s*區|j\s*棟/i.test(candidateText)
+      && /設計圖|營造廠|估價/.test(taskText)) {
+      return 72;
+    }
+
+    if (/基地位置圖|建照|雜照|估價所需資料/.test(candidateText)) {
+      return /補提供綦盛工程估價所需資料/.test(task.name) ? 90 : 0;
     }
   }
 
@@ -1139,7 +1198,10 @@ function scoreTaskMatch(task, candidate, message, sameConversationContext) {
   const contextText = sameConversationContext.map((item) => item.text || '').join('\n').toLowerCase();
   const conversationLabel = cleanHumanLabel(message.conversationDisplayName || message.conversationName).toLowerCase();
 
+  const requiresContextualMatch = candidate.project === '茲心園工程'
+    && isEngineeringVendorEstimateThread(`${candidateText}\n${conversationLabel}\n${contextText}`);
   const contextualScore = scoreContextualTaskMatch(task, candidate, message, contextText);
+  if (requiresContextualMatch) return contextualScore;
   if (contextualScore) return contextualScore;
 
   const candidateKeywords = topKeywords(candidateText).slice(0, 8);
@@ -1163,7 +1225,9 @@ function scoreTaskMatch(task, candidate, message, sameConversationContext) {
 }
 
 async function updateTaskWithEvidence(task, candidate, message, sameConversationContext) {
-  if (message.url && task.sourceText.includes(message.url)) {
+  const statusUpdate = inferStatusUpdateFromCandidate(candidate, task);
+  const evidenceAlreadyRecorded = Boolean(message.url && task.sourceText.includes(message.url));
+  if (evidenceAlreadyRecorded && (!statusUpdate || task.status === statusUpdate)) {
     return;
   }
 
@@ -1172,6 +1236,7 @@ async function updateTaskWithEvidence(task, candidate, message, sameConversation
     task.judgementSummary,
     '',
     `任務更新判斷：新 LINE 訊息被判定為既有任務的延伸，不另建新任務。`,
+    statusUpdate ? `狀態更新：${task.status || '未設定'} -> ${statusUpdate}` : '',
     `更新原因：${candidate.reasons.join('、') || '同對話前後文與活躍任務比對'}`,
   ].filter(Boolean).join('\n');
   const record = buildUpdateEvidenceRecord({
@@ -1180,13 +1245,14 @@ async function updateTaskWithEvidence(task, candidate, message, sameConversation
     message,
     evidence,
     judgement,
-    statusUpdate: '',
+    statusUpdate,
   });
 
   await notionRequest(`/v1/pages/${task.id}`, {
     method: 'PATCH',
     body: {
       properties: compactProperties({
+        狀態: statusUpdate ? selectProperty(statusUpdate) : undefined,
         來源原文: richTextProperty(sourceOriginalCompatibilityText(message), 1900),
         'Codex 判斷摘要': richTextProperty(appendEvidence('', judgement), 1900),
         下一步: richTextProperty(candidate.nextStep, 900),
@@ -1194,7 +1260,25 @@ async function updateTaskWithEvidence(task, candidate, message, sameConversation
       }),
     },
   });
-  await appendTaskEvidenceRecord(task.id, record);
+  if (!evidenceAlreadyRecorded || statusUpdate) {
+    await appendTaskEvidenceRecord(task.id, record);
+  }
+}
+
+function inferStatusUpdateFromCandidate(candidate, task) {
+  const current = String(task.status || '');
+  if (/封存|已完成|完成/.test(current)) return '';
+
+  if (candidate.category === 'done') return '待確認完成';
+  if (candidate.category === 'blocked') return '等待回覆';
+  if (candidate.category === 'followup') return '等待回覆';
+  if (candidate.category === 'progress') return '進行中';
+  if (candidate.category === 'decision') return '待確認';
+  if (candidate.category === 'task' && /進行|處理|安排|協助|準備|提供/.test(candidate.sourceText || '')) {
+    return current === '待確認' ? '待確認' : '進行中';
+  }
+
+  return '';
 }
 
 function buildTaskUpdateEvidence(candidate, message, sameConversationContext) {
@@ -1206,7 +1290,7 @@ function buildTaskUpdateEvidence(candidate, message, sameConversationContext) {
 
   return [
     `LINE 任務更新證據：${new Date().toISOString()}`,
-    message.url ? `訊息：${message.url}` : '',
+    message.url ? `${message.sourceKind === 'conversation' ? '對話主檔' : '訊息'}：${message.url}` : '',
     message.conversationName ? `對話：${message.conversationName}` : '',
     message.actor ? `發話者：${message.actor}` : '',
     `判斷：更新既有任務，不建立新任務。`,
@@ -1505,6 +1589,10 @@ async function createProgressReport(candidate) {
   });
 }
 
+async function markMessageJudged(message) {
+  await markConversationJudged(message);
+}
+
 async function markConversationJudged(message) {
   if (!message.conversationId) return;
 
@@ -1575,20 +1663,6 @@ function dateValue(property) {
   return property?.type === 'date' ? property.date?.start || '' : '';
 }
 
-function checkboxValue(property) {
-  return property?.type === 'checkbox' ? Boolean(property.checkbox) : false;
-}
-
-function relationMentionName(property) {
-  if (property?.type !== 'relation') return '';
-  return (property.relation || []).map((item) => item.name || item.id || '').filter(Boolean).join('、');
-}
-
-function relationId(property) {
-  if (property?.type !== 'relation') return '';
-  return property.relation?.[0]?.id || '';
-}
-
 function titleProperty(value) {
   return { title: [{ type: 'text', text: { content: String(value || '').slice(0, 2000) } }] };
 }
@@ -1609,10 +1683,6 @@ function dateProperty(value) {
 
 function urlProperty(value) {
   return value ? { url: String(value) } : undefined;
-}
-
-function checkboxProperty(value) {
-  return { checkbox: Boolean(value) };
 }
 
 function compactProperties(properties) {

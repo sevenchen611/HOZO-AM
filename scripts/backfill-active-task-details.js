@@ -5,7 +5,7 @@ loadEnv(path.resolve('.env'));
 
 const notionToken = process.env.NOTION_TOKEN;
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
-const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
+const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '9c9e34ff-45af-4543-a3ae-11c5cd432b36';
 const dryRun = !process.argv.includes('--write');
 const anchor = '【總控任務資料補齊】';
 

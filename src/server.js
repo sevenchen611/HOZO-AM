@@ -1,6 +1,7 @@
 import { createHash, createHmac } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import http from 'node:http';
+import { createEventQueue } from './event-queue.js';
 
 loadDotenv();
 
@@ -12,27 +13,37 @@ const conversationsDataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID;
 const messagesDataSourceId = process.env.HOZO_MESSAGES_DATA_SOURCE_ID;
 const lineGroupMemberIndexDataSourceId = process.env.HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID || '';
 const attachmentsDataSourceId = process.env.HOZO_ATTACHMENTS_DATA_SOURCE_ID;
-const codexCommandsDataSourceId = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
-const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
+const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '9c9e34ff-45af-4543-a3ae-11c5cd432b36';
+const codexCommandsDataSourceId = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '6a500d4c-43ae-4523-bd76-c19a80697bb3';
 const judgmentCalibrationCasesDataSourceId = process.env.HOZO_JUDGMENT_CALIBRATION_CASES_DATA_SOURCE_ID || '';
 const judgmentRulesDataSourceId = process.env.HOZO_JUDGMENT_RULES_DATA_SOURCE_ID || '';
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
-const publicBaseUrl = (process.env.HOZO_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
-const reportUrl = process.env.DAILY_REPORT_URL || (publicBaseUrl ? `${publicBaseUrl}/reports/daily-control-report` : '');
-const morningBriefUrl = process.env.MORNING_BRIEF_URL || (publicBaseUrl ? `${publicBaseUrl}/reports/morning-brief` : '');
+const reportUrl = process.env.DAILY_REPORT_URL || 'https://hozo-am-line-oa-webhook.onrender.com/reports/daily-control-report';
+const morningBriefUrl = process.env.MORNING_BRIEF_URL || 'https://hozo-am-line-oa-webhook.onrender.com/reports/morning-brief';
 const outgoingActorName = process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
-const codexCommandTriggers = buildCodexCommandTriggers(process.env.HOZO_CODEX_COMMAND_TRIGGERS || 'HOZO Junior,HOZ Jr.,HOZO Jr.');
-const hozoDataSourceParentBlockId = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID || '35f51c68-6dac-805f-88b4-e1cf5a86bbc1');
-const hozoDataSourceParentPageId = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_PAGE_ID || '35d51c68-6dac-802c-81e6-c71b560c0498');
-const verifiedHozoDataSources = new Map();
+const sevenDataSourceParentBlockId = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID || '');
+const verifiedSevenDataSources = new Map();
 const recentTaskListsByConversation = new Map();
 
 const notionConfigured = Boolean(notionToken && conversationsDataSourceId && messagesDataSourceId);
+const eventQueue = createEventQueue({
+  databaseUrl: process.env.DATABASE_URL || '',
+  processEvent: (event, rawBody) => handleEvent(event, rawBody),
+  onDeadEvent: notifyDeadQueueEvent,
+});
 const conversationAnchorText = '【HOZO LINE】對話記錄（最新在最上方）';
-const conversationAnchorPattern = /對話記錄（最新在最上方）/;
 const reportCommands = new Set(['#報告', '報告', '#每日報告', '每日報告']);
 const morningBriefCommands = new Set(['#早報', '早報', '#今日早報', '今日早報', '#行程', '行程']);
+const dashboardCommands = new Set(['#儀表板', '儀表板', '#總控', '總控', 'dashboard', 'Dashboard', '#dashboard']);
+const dashboardUrl = process.env.HOZO_DASHBOARD_URL || 'https://hozo-am-line-oa-webhook.onrender.com/dashboard';
 const judgmentCalibrationSessionReviewId = 'HOZO-JC-SESSION';
+// 敏感指令（校準、查待辦、報告連結）只回應 controller 本人的一對一私訊，
+// 防止群組成員觸發後把任務內容洩漏到群組。
+const controllerUserId = process.env.HOZO_CONTROLLER_USER_ID || process.env.HOZO_REPORT_TARGET_ID || '';
+
+function isControllerPersonalChat(event) {
+  return event?.source?.type === 'user' && event?.source?.userId === controllerUserId;
+}
 
 if (!channelAccessToken || !channelSecret) {
   console.warn('Missing LINE_CHANNEL_ACCESS_TOKEN or LINE_CHANNEL_SECRET.');
@@ -49,18 +60,19 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, {
       ok: true,
       notionConfigured,
+      eventQueue: await eventQueue.stats(),
       attachmentsConfigured: Boolean(attachmentsDataSourceId),
       lineGroupMemberIndexConfigured: Boolean(lineGroupMemberIndexDataSourceId),
       codexCommandQueueConfigured: Boolean(codexCommandsDataSourceId),
-      taskQueryReplyEnabled: Boolean(notionToken && tasksDataSourceId),
-      codexCommandTriggers: codexCommandTriggers.map((trigger) => trigger.label),
-      immediateCommandEnabled: true,
-      immediateCommandPrefixes: codexCommandTriggers.map((trigger) => trigger.label),
-      judgmentCalibrationCommandEnabled: Boolean(notionToken && tasksDataSourceId && judgmentCalibrationCasesDataSourceId && judgmentRulesDataSourceId),
-      judgmentCalibrationCommands: ['開始做任務校準', '我們來做任務校準', '任務校準暫停', '任務校準狀態'],
+      codexCommandTriggers: ['HOZO Junior', 'HOZO Jr.', 'HOZ Jr.', 'HOZ Junior'],
       autoReplyEnabled: false,
       reportCommandEnabled: true,
       morningBriefCommandEnabled: true,
+      taskQueryReplyEnabled: Boolean(notionToken && tasksDataSourceId),
+      immediateCommandEnabled: true,
+      immediateCommandPrefixes: ['HOZO Junior', 'HOZOJunior', 'HOZO Jr.'],
+      judgmentCalibrationCommandEnabled: Boolean(notionToken && tasksDataSourceId && judgmentCalibrationCasesDataSourceId && judgmentRulesDataSourceId),
+      judgmentCalibrationCommands: ['開始做任務校準', '开始做任务校准', '開始任務核對', '任務校準暫停', '任務校準狀態'],
       reportUrl,
       morningBriefUrl,
       conversationPageBlocksEnabled: true,
@@ -69,6 +81,39 @@ const server = http.createServer(async (req, res) => {
       attachmentLinksEnabled: true,
       storageMode: 'hozo-crm-style',
     });
+  }
+
+  if (req.method === 'GET' && pathname === '/worker/status') {
+    if (!eventQueue.enabled) {
+      return sendJson(res, 200, { workerActive: false, reason: 'queue-disabled' });
+    }
+    try {
+      const heartbeat = await eventQueue.getLatestWorkerHeartbeat();
+      const maxAgeSeconds = Number(process.env.HOZO_WORKER_HEARTBEAT_MAX_AGE_SECONDS || 600);
+      const workerActive = Boolean(heartbeat && heartbeat.ageSeconds <= maxAgeSeconds);
+      return sendJson(res, 200, { workerActive, heartbeat, maxAgeSeconds });
+    } catch (error) {
+      return sendJson(res, 200, { workerActive: false, error: error.message });
+    }
+  }
+
+  if (req.method === 'POST' && pathname === '/worker/heartbeat') {
+    const controlKey = process.env.HOZO_CONTROL_API_KEY || '';
+    const providedKey = req.headers['x-hozo-control-key'] || '';
+    if (!controlKey || providedKey !== controlKey) {
+      return sendJson(res, 401, { error: 'Unauthorized' });
+    }
+    if (!eventQueue.enabled) {
+      return sendJson(res, 503, { error: 'Queue is disabled; heartbeat storage unavailable.' });
+    }
+    try {
+      const body = JSON.parse(await readBody(req) || '{}');
+      const workerId = String(body.workerId || 'local-worker').slice(0, 100);
+      await eventQueue.setWorkerHeartbeat(workerId, body.meta || {});
+      return sendJson(res, 200, { ok: true, workerId });
+    } catch (error) {
+      return sendJson(res, 500, { error: error.message });
+    }
   }
 
   if (req.method !== 'POST' || pathname !== '/webhook/line') {
@@ -82,19 +127,25 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 401, { error: 'Invalid signature' });
   }
 
-  let body;
   try {
-    body = JSON.parse(rawBody);
+    const body = JSON.parse(rawBody);
+    const events = body.events || [];
+
+    if (eventQueue.enabled) {
+      try {
+        await eventQueue.enqueue(events, rawBody);
+        return sendText(res, 200, 'OK');
+      } catch (error) {
+        console.error('Event queue enqueue failed; falling back to direct processing.', error);
+      }
+    }
+
+    await Promise.all(events.map((event) => handleEvent(event, rawBody)));
+    return sendText(res, 200, 'OK');
   } catch (error) {
-    console.error('Unable to parse LINE webhook body:', error);
-    return sendJson(res, 400, { error: 'Invalid JSON' });
+    console.error(error);
+    return sendJson(res, 500, { error: 'Internal server error' });
   }
-
-  sendText(res, 200, 'OK');
-
-  Promise.all((body.events || []).map((event) => handleEvent(event, rawBody))).catch((error) => {
-    console.error('Unable to process LINE webhook event:', error);
-  });
 });
 
 async function handleEvent(event, rawBody) {
@@ -103,20 +154,63 @@ async function handleEvent(event, rawBody) {
   }
 
   const commandReply = await buildCommandReply(event);
-
   if (commandReply && event.replyToken) {
-    await replyLineMessage(event.replyToken, commandReply);
+    try {
+      await replyLineMessage(event.replyToken, commandReply);
+    } catch (error) {
+      // Reply tokens are one-time and short-lived; a failed reply must not
+      // requeue the event after the raw message was already stored.
+      console.error(`LINE reply failed for event ${event.webhookEventId || ''}: ${error instanceof Error ? error.message : error}`);
+      return;
+    }
     if (notionConfigured) {
       await storeOutgoingReplyInNotion(event, commandReply);
     }
   }
 }
 
+async function notifyDeadQueueEvent({ eventKey, attempts, lastError }) {
+  const target = process.env.HOZO_ALERT_TARGET_ID || '';
+  if (!target) {
+    return;
+  }
+  await pushLineMessage(target, {
+    type: 'text',
+    text: [
+      `${outgoingActorName} 訊息佇列警告`,
+      `事件 ${eventKey} 重試 ${attempts} 次後仍寫入失敗，已移入待人工處理區。`,
+      `錯誤：${clampText(String(lastError || ''), 600)}`,
+      '原始訊息仍保存在佇列資料庫，修復後可重新處理。',
+    ].join('\n'),
+  });
+}
+
+async function pushLineMessage(to, message) {
+  if (!channelAccessToken) {
+    throw new Error('LINE_CHANNEL_ACCESS_TOKEN is not set.');
+  }
+
+  const response = await fetch('https://api.line.me/v2/bot/message/push', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${channelAccessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ to, messages: [message] }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`LINE push failed: ${response.status} ${await response.text()}`);
+  }
+}
+
 async function buildCommandReply(event) {
   const text = event.type === 'message' && event.message?.type === 'text' ? String(event.message.text || '').trim() : '';
   const immediateCommand = parseImmediateCommand(text);
+  const fromController = isControllerPersonalChat(event);
 
   if (morningBriefCommands.has(text)) {
+    if (!fromController) return null;
     return {
       type: 'text',
       text: `早上 8 點半行程與待辦報告：\n${morningBriefUrl}\n\n目前這是試跑版，可以在手機上檢視今日行程、昨日未完成事項與今日優先處理清單。`,
@@ -124,29 +218,45 @@ async function buildCommandReply(event) {
   }
 
   if (reportCommands.has(text)) {
+    if (!fromController) return null;
     return {
       type: 'text',
       text: `每日總控報告網頁版：\n${reportUrl}\n\n目前這是試跑版，可以在手機上檢視附件解析與任務狀態確認畫面。`,
     };
   }
 
+  if (dashboardCommands.has(text) || (parseImmediateCommand(text) && dashboardCommands.has(parseImmediateCommand(text).commandText))) {
+    if (!fromController) return null;
+    return {
+      type: 'text',
+      text: `📊 HOZO AM 總控 Dashboard：\n${dashboardUrl}\n\n三層下鑽：全局統計 → 專案目標與任務 → 任務詳情（含來源對話內容）。\n第一次開啟需輸入 User UI 帳密，瀏覽器會記住。`,
+    };
+  }
+
   if (immediateCommand && isJudgmentCalibrationCommandText(immediateCommand.commandText)) {
+    if (!fromController) return null;
     return handleJudgmentCalibrationCommand(event, immediateCommand.commandText);
   }
 
-  if (!immediateCommand && await shouldHandleJudgmentCalibrationReply(text)) {
+  // 校準回覆攔截只能吃 controller 私訊；缺了這個檢查曾把群組聊天當成校準
+  // 回覆、並把校準任務內容回到群組（2026-06-12 會計顧問群事故）。
+  if (!immediateCommand && fromController && await shouldHandleJudgmentCalibrationReply(text)) {
     return handleJudgmentCalibrationControllerReply(text);
   }
 
   if (immediateCommand && isOpenTaskDetailCommandText(immediateCommand.commandText)) {
+    if (!fromController) return null;
     return buildOpenTaskDetailReply(event, immediateCommand.commandText);
   }
 
   if (isTaskListCommandText(immediateCommand?.commandText || text)) {
+    if (!fromController) return null;
     return buildTaskListReply(event, text);
   }
 
   if (immediateCommand) {
+    // 非 controller 的指令仍會入佇列留紀錄，但不回執、不觸發即時回答。
+    if (!fromController) return null;
     return buildImmediateCommandAcknowledgement(immediateCommand.commandText);
   }
 
@@ -155,13 +265,13 @@ async function buildCommandReply(event) {
 
 function parseImmediateCommand(text) {
   const value = String(text || '').trim();
-  const trigger = findCodexCommandTrigger(value);
-  if (!trigger) {
+  const match = value.match(/^(hozo\s+junior|7\s*junior)\b[\s,，:：。-]*/i);
+  if (!match) {
     return null;
   }
   return {
-    trigger: trigger.label,
-    commandText: extractCodexCommand(value),
+    trigger: match[1],
+    commandText: value.slice(match[0].length).trim(),
   };
 }
 
@@ -171,16 +281,16 @@ function isJudgmentCalibrationCommandText(text) {
 
 function resolveJudgmentCalibrationCommand(text) {
   const value = String(text || '').trim();
-  if (!/任務校準|校準任務|判斷校準/.test(value)) {
+  if (!/任務校準|校準任務|判斷校準|任务校准|校准任务|判断校准|任務核對|核對任務|任务核对|核对任务/.test(value)) {
     return null;
   }
-  if (/開始|啟動|start|繼續|resume|來做|做一下|進行|run/i.test(value)) {
+  if (/開始|开始|啟動|启动|start|繼續|继续|resume|來做|来做|做一下|進行|进行|run/i.test(value)) {
     return 'start';
   }
-  if (/暫停|停止|先停|pause|stop/i.test(value)) {
+  if (/暫停|暂停|停止|先停|pause|stop/i.test(value)) {
     return 'pause';
   }
-  if (/狀態|進度|還有多少|status|progress/i.test(value)) {
+  if (/狀態|状态|進度|进度|還有多少|还有多少|status|progress/i.test(value)) {
     return 'status';
   }
   return null;
@@ -188,7 +298,7 @@ function resolveJudgmentCalibrationCommand(text) {
 
 async function handleJudgmentCalibrationCommand(event, commandText) {
   if (!isJudgmentCalibrationConfigured()) {
-    return { type: 'text', text: 'HOZO Jr. 還沒有完成任務校準資料庫設定，所以暫時不能啟動任務校準。' };
+    return { type: 'text', text: buildJudgmentCalibrationNotConfiguredText() };
   }
 
   const command = resolveJudgmentCalibrationCommand(commandText);
@@ -273,73 +383,65 @@ async function handleJudgmentCalibrationControllerReply(text) {
 }
 
 function isTaskListCommandText(text) {
-  const commandText = isCodexCommandText(text) ? extractCodexCommand(text) : String(text || '').trim();
-  return /待辦|任務|工作|todo|task/i.test(commandText) && /有哪些|清單|列表|列出|提供|查詢|看一下|是什麼|目前|現在|pending|list|show/i.test(commandText);
+  const value = String(text || '').trim();
+  if (!value) {
+    return false;
+  }
+  const hasTaskTerm = /(待辦|任務|工作|todo|task)/i.test(value);
+  const hasQueryTerm = /(有哪些|清單|列表|列出|查詢|看一下|是什麼|目前|現在|pending|list|show)/i.test(value);
+  return hasTaskTerm && hasQueryTerm;
 }
 
 async function buildTaskListReply(event, text) {
   if (!notionToken || !tasksDataSourceId) {
-    return {
-      type: 'text',
-      text: `${outgoingActorName} 已收到你的待辦查詢，但 HOZO 總控任務庫尚未設定完成，請先設定 HOZO_TASKS_DATA_SOURCE_ID。`,
-    };
+    return { type: 'text', text: 'HOZO Jr. 目前還沒有連上總控任務庫，所以暫時無法查詢待辦。' };
   }
 
-  const source = event.source || {};
-  const context = resolveConversationContext(source);
-  const display = await resolveDisplayNames(source, context);
-  let tasks;
-  let matchedActor;
   try {
-    ({ tasks, matchedActor } = await findOpenTasksForActor(display.actorName));
+    const actorName = normalizeTaskAssigneeName(text) || await resolveTaskQueryActorName(event);
+    const tasks = await findOpenTasksForActor(actorName);
+    if (!tasks.length) {
+      return {
+        type: 'text',
+        text: actorName
+          ? `目前沒有找到「${actorName}」名下的未完成待辦。`
+          : '目前沒有找到未完成待辦。',
+      };
+    }
+
+    rememberRecentTaskList(event, tasks);
+    const scope = actorName ? `「${actorName}」` : '目前';
+    const lines = [`HOZO Jr. 幫你查到 ${scope}的未完成待辦：`];
+    tasks.slice(0, 8).forEach((task, index) => {
+      const meta = [task.project, task.owner, task.dueDate ? `期限 ${formatTaipeiDate(task.dueDate)}` : '', task.status]
+        .filter(Boolean)
+        .join(' / ');
+      lines.push(`${index + 1}. ${task.name}${meta ? `\n   ${meta}` : ''}`);
+    });
+    if (tasks.length > 8) {
+      lines.push(`另外還有 ${tasks.length - 8} 項，請到 HOZO AM 總控任務庫查看完整清單。`);
+    }
+    return { type: 'text', text: clampText(lines.join('\n'), 4900) };
   } catch (error) {
     console.warn(`Unable to build task list reply: ${error.message}`);
-    return {
-      type: 'text',
-      text: `${outgoingActorName} 已收到你的待辦查詢，但目前查詢 HOZO 總控任務庫失敗，請稍後再試。`,
-    };
+    return { type: 'text', text: 'HOZO Jr. 有收到你的待辦查詢，但目前讀取總控任務庫失敗，我會保留原始訊息供後續追蹤。' };
   }
-  const actorLabel = display.actorName && display.actorName !== 'unknown' ? display.actorName : '你';
-
-  if (!tasks.length) {
-    return {
-      type: 'text',
-      text: `${outgoingActorName} 查過 HOZO 總控任務庫，目前沒有找到 ${actorLabel} 的開放待辦。\n\n如果任務還沒指定負責人，我可以先幫你列全部開放待辦；請輸入「HOZO Junior，列出全部待辦」。`,
-    };
-  }
-
-  const lines = [
-    matchedActor
-      ? `${outgoingActorName} 幫你整理 ${actorLabel} 目前的 HOZO 待辦：`
-      : `${outgoingActorName} 目前沒有找到負責人明確標成 ${actorLabel} 的任務，先列出 HOZO 開放待辦：`,
-    '',
-    ...tasks.slice(0, 10).map((task, index) => `${index + 1}. ${task.name}\n   專案：${task.project || '未分類'}｜狀態：${task.status || '未設定'}｜優先：${task.priority || '未設定'}${task.next ? `\n   下一步：${task.next}` : ''}`),
-  ];
-
-  if (tasks.length > 10) {
-    lines.push('', `還有 ${tasks.length - 10} 筆未列出，請到 HOZO 總控任務庫查看完整清單。`);
-  }
-
-  rememberRecentTaskList(event, tasks);
-  return { type: 'text', text: clampText(lines.join('\n'), 4900) };
 }
 
 function isOpenTaskDetailCommandText(text) {
   const value = String(text || '').trim();
-  return /(打開|開啟|展開|給我看|看一下|查看|詳細|詳情)/.test(value)
-    && /(第\s*[0-9一二三四五六七八九十]+\s*個|[0-9一二三四五六七八九十]+\s*號)/.test(value)
-    && /(任務|待辦|工作)?/.test(value);
+  return /(打開|開啟|展開|給我看|看一下|查看|詳細|詳情)/.test(value) && /(第\s*[0-9一二三四五六七八九十]+\s*個|[0-9一二三四五六七八九十]+\s*號)/.test(value) && /(任務|待辦|工作)?/.test(value);
 }
 
 async function buildOpenTaskDetailReply(event, text) {
   const index = parseTaskOrdinal(text);
   if (!index) {
-    return { type: 'text', text: `我收到你要打開任務，但還沒判斷出是哪一個。你可以說：「${codexCommandTriggers[0]?.label || outgoingActorName}，打開第 2 個任務」。` };
+    return { type: 'text', text: '我收到你要打開任務，但還沒判斷出是哪一個。你可以說：「HOZO Junior，打開第 2 個任務」。' };
   }
 
   const list = getRecentTaskList(event);
   if (!list?.tasks?.length) {
-    return { type: 'text', text: `我現在沒有上一份待辦清單可以對照。請先說：「${codexCommandTriggers[0]?.label || outgoingActorName}，目前有哪些待辦？」我列出來後，你再說要打開第幾個。` };
+    return { type: 'text', text: '我現在沒有上一份待辦清單可以對照。請先說：「HOZO Junior，目前有哪些待辦？」我列出來後，你再說要打開第幾個。' };
   }
 
   const task = list.tasks[index - 1];
@@ -354,14 +456,12 @@ async function buildOpenTaskDetailReply(event, text) {
     detail.owner ? `負責人：${detail.owner}` : '',
     detail.dueDate ? `期限：${formatTaipeiDate(detail.dueDate)}` : '',
     detail.project ? `專案：${detail.project}` : '',
-    detail.priority ? `優先：${detail.priority}` : '',
-    detail.next ? `下一步：${detail.next}` : '',
     detail.summary ? `摘要：${detail.summary}` : '',
     detail.url ? `Notion：${detail.url}` : '',
     '',
     '你可以接著說：',
-    `${codexCommandTriggers[0]?.label || outgoingActorName}，把第 ${index} 個任務狀態改成進行中`,
-    `${codexCommandTriggers[0]?.label || outgoingActorName}，幫第 ${index} 個任務加備註：今天先確認窗口`,
+    `HOZO Junior，把第 ${index} 個任務狀態改成進行中`,
+    `HOZO Junior，幫第 ${index} 個任務加備註：今天先確認窗口`,
   ].filter((line) => line !== '');
 
   return { type: 'text', text: clampText(lines.join('\n'), 4900) };
@@ -386,7 +486,7 @@ function rememberRecentTaskList(event, tasks) {
   const context = resolveConversationContext(event.source || {});
   recentTaskListsByConversation.set(context.key, {
     savedAt: Date.now(),
-    tasks: tasks.slice(0, 10),
+    tasks: tasks.slice(0, 8),
   });
 }
 
@@ -413,59 +513,101 @@ function parseTaskOrdinal(text) {
   if (/^\d+$/.test(raw)) {
     return Number(raw);
   }
-  const numerals = {
-    一: 1,
-    二: 2,
-    三: 3,
-    四: 4,
-    五: 5,
-    六: 6,
-    七: 7,
-    八: 8,
-    九: 9,
-    十: 10,
-  };
-  if (raw === '十') return 10;
-  if (raw.startsWith('十')) return 10 + (numerals[raw.slice(1)] || 0);
-  if (raw.endsWith('十')) return (numerals[raw[0]] || 1) * 10;
-  if (raw.includes('十')) {
-    const [tens, ones] = raw.split('十');
-    return (numerals[tens] || 1) * 10 + (numerals[ones] || 0);
+  const digits = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+  if (raw === '十') {
+    return 10;
   }
-  return numerals[raw] || null;
+  if (raw.startsWith('十')) {
+    return 10 + (digits[raw.slice(1)] || 0);
+  }
+  if (raw.endsWith('十')) {
+    return (digits[raw[0]] || 1) * 10;
+  }
+  return digits[raw] || null;
+}
+
+async function resolveTaskQueryActorName(event) {
+  const source = event.source || {};
+  const context = resolveConversationContext(source);
+  const display = await resolveDisplayNames(source, context);
+  return display.actorName || display.conversationName || '';
+}
+
+function normalizeTaskAssigneeName(text) {
+  const value = String(text || '').trim();
+  const match = value.match(/(?:誰|哪個人|負責人|owner|assignee)[:：\s]+(.+)$/i)
+    || value.match(/(?:查詢|列出|看一下)\s*(.+?)\s*(?:的)?(?:待辦|任務|工作)/i);
+  return match ? match[1].trim().replace(/[，。,.;；]$/, '') : '';
 }
 
 async function findOpenTasksForActor(actorName) {
-  const openTasks = await queryOpenTasks(100);
-  const normalizedActor = normalizeTaskAssigneeName(actorName);
-  const personalTasks = normalizedActor
-    ? openTasks.filter((task) => {
-      const owner = normalizeTaskAssigneeName(task.owner);
-      return owner && (owner.includes(normalizedActor) || normalizedActor.includes(owner));
-    })
-    : [];
+  const tasks = await queryOpenTasks();
+  const normalizedActor = normalizeLooseText(actorName);
+  if (!normalizedActor) {
+    return tasks;
+  }
 
-  return { tasks: personalTasks.length ? personalTasks : openTasks, matchedActor: Boolean(personalTasks.length) };
+  const matched = tasks.filter((task) => {
+    const owner = normalizeLooseText(task.owner);
+    const name = normalizeLooseText(task.name);
+    return owner.includes(normalizedActor) || normalizedActor.includes(owner) || name.includes(normalizedActor);
+  });
+  return matched.length ? matched : tasks;
+}
+
+async function queryOpenTasks() {
+  const result = await notionRequest(`/v1/data_sources/${tasksDataSourceId}/query`, {
+    method: 'POST',
+    body: {
+      page_size: 25,
+    },
+  });
+
+  return (result.results || [])
+    .map((page) => ({
+      id: page.id,
+      name: pageText(page, '任務名稱') || pageText(page, 'Name') || pageText(page, '名稱') || '(未命名任務)',
+      project: pageRelationTitleFallback(page, '總控專案') || pageText(page, '專案'),
+      owner: pageText(page, '負責人') || pageText(page, 'Owner'),
+      status: pageStatus(page, '狀態') || pageSelect(page, '狀態'),
+      dueDate: pageDate(page, '截止日') || pageDate(page, '期限') || pageDate(page, 'Due Date'),
+      summary: pageText(page, 'Codex 判斷摘要') || pageText(page, '下一步') || pageText(page, '來源原文'),
+      url: page.url || '',
+    }))
+    .filter((task) => !['已完成', '封存', '完成'].includes(task.status));
 }
 
 async function findTaskDetailById(pageId) {
   const page = await notionRequest(`/v1/pages/${pageId}`, { method: 'GET' });
   return {
     id: page.id,
-    url: page.url,
-    name: pageText(page, '任務名稱'),
-    project: pageSelect(page, '專案'),
-    status: pageSelect(page, '狀態'),
-    priority: pageSelect(page, '優先級'),
-    owner: pageText(page, '負責人'),
-    next: pageText(page, '下一步給負責人') || pageText(page, '下一步'),
-    summary: pageText(page, 'Codex 判斷摘要') || pageText(page, '完成目標定義') || pageText(page, '來源原文'),
-    dueDate: pageDate(page, '期限'),
+    name: pageText(page, '任務名稱') || pageText(page, 'Name') || pageText(page, '名稱') || '(未命名任務)',
+    project: pageRelationTitleFallback(page, '總控專案') || pageText(page, '專案'),
+    owner: pageText(page, '負責人') || pageText(page, 'Owner'),
+    status: pageStatus(page, '狀態') || pageSelect(page, '狀態'),
+    dueDate: pageDate(page, '截止日') || pageDate(page, '期限') || pageDate(page, 'Due Date'),
+    summary: pageText(page, 'Codex 判斷摘要') || pageText(page, '下一步') || pageText(page, '來源原文'),
+    url: page.url || '',
   };
 }
 
 function isJudgmentCalibrationConfigured() {
   return Boolean(notionToken && tasksDataSourceId && judgmentCalibrationCasesDataSourceId && judgmentRulesDataSourceId);
+}
+
+function buildJudgmentCalibrationNotConfiguredText() {
+  const missing = [
+    !notionToken ? 'NOTION_TOKEN' : '',
+    !tasksDataSourceId ? 'HOZO_TASKS_DATA_SOURCE_ID' : '',
+    !judgmentCalibrationCasesDataSourceId ? 'HOZO_JUDGMENT_CALIBRATION_CASES_DATA_SOURCE_ID' : '',
+    !judgmentRulesDataSourceId ? 'HOZO_JUDGMENT_RULES_DATA_SOURCE_ID' : '',
+  ].filter(Boolean);
+
+  return [
+    'HOZO Jr. 有認出你要開始任務校準，但線上服務還沒有完成任務校準資料庫設定，所以暫時不能啟動。',
+    missing.length ? `缺少設定：${missing.join('、')}` : '',
+    '請先在 Render 的 line-oa-webhook 服務補上任務校準案例庫與判斷規則庫環境參數，重新部署後再說：「HOZO Junior，開始做任務校準」。',
+  ].filter(Boolean).join('\n');
 }
 
 async function getJudgmentCalibrationSession() {
@@ -621,7 +763,7 @@ function isClosedTaskStatus(status) {
 }
 
 async function createJudgmentCalibrationCase(task, progress) {
-  const reviewId = `HOZO-JC-${formatDateKey(new Date())}`;
+  const reviewId = `SEVEN-JC-${formatDateKey(new Date())}`;
   return notionRequest('/v1/pages', {
     method: 'POST',
     body: {
@@ -882,95 +1024,6 @@ async function queryAllDataSourcePages(dataSourceId, body = {}) {
   return results;
 }
 
-async function queryOpenTasks(limit = 100) {
-  const result = await notionRequest(`/v1/data_sources/${tasksDataSourceId}/query`, {
-    method: 'POST',
-    body: {
-      page_size: Math.min(Math.max(limit, 1), 100),
-      filter: {
-        and: [
-          { property: '狀態', select: { does_not_equal: '已完成' } },
-          { property: '狀態', select: { does_not_equal: '封存' } },
-        ],
-      },
-      sorts: [
-        { property: '優先級', direction: 'ascending' },
-        { property: '最後更新', direction: 'descending' },
-      ],
-    },
-  });
-
-  return (result.results || []).map((page) => ({
-    id: page.id,
-    url: page.url,
-    name: pageText(page, '任務名稱'),
-    project: pageSelect(page, '專案'),
-    status: pageSelect(page, '狀態'),
-    priority: pageSelect(page, '優先級'),
-    owner: pageText(page, '負責人'),
-    next: pageText(page, '下一步給負責人') || pageText(page, '下一步'),
-    dueDate: pageDate(page, '期限'),
-  })).filter((task) => task.name);
-}
-
-function pageText(page, propertyName) {
-  const property = page?.properties?.[propertyName];
-  if (!property) {
-    return '';
-  }
-  if (property.type === 'title') {
-    return richTextPlain(property.title);
-  }
-  if (property.type === 'rich_text') {
-    return richTextPlain(property.rich_text);
-  }
-  return '';
-}
-
-function pageTitle(page, propertyName) {
-  return pageText(page, propertyName);
-}
-
-function pageSelect(page, propertyName) {
-  return page?.properties?.[propertyName]?.select?.name || '';
-}
-
-function pageDate(page, propertyName) {
-  return page?.properties?.[propertyName]?.date?.start || '';
-}
-
-function pageStatus(page, propertyName) {
-  return page?.properties?.[propertyName]?.status?.name || '';
-}
-
-function pageRelationTitleFallback(page, propertyName) {
-  const property = page?.properties?.[propertyName];
-  return property?.type === 'relation' && property.relation?.length ? '' : '';
-}
-
-function pageRelationIds(page, propertyName) {
-  const property = page?.properties?.[propertyName];
-  return property?.type === 'relation' ? (property.relation || []).map((item) => item.id).filter(Boolean) : [];
-}
-
-function pageCheckbox(page, propertyName) {
-  const property = page?.properties?.[propertyName];
-  return property?.type === 'checkbox' ? Boolean(property.checkbox) : false;
-}
-
-function richTextPlain(items) {
-  return (items || []).map((item) => item.plain_text || item.text?.content || '').join('');
-}
-
-function normalizeTaskAssigneeName(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/昱晴maggie/g, 'maggie')
-    .replace(/seven陳聖文/g, 'seven')
-    .trim();
-}
-
 async function replyLineMessage(replyToken, message) {
   if (!channelAccessToken) {
     throw new Error('LINE_CHANNEL_ACCESS_TOKEN is not set.');
@@ -1102,7 +1155,22 @@ async function storeLineEventInNotion(event, rawBody) {
   const messagePage = await createMessagePage({ conversationId: conversation.id, event, rawBody, messageId, messageType, text, eventTime, display, context });
 
   let attachmentPage;
-  if (messageType === 'file' && attachmentsDataSourceId) {
+  if (['file', 'image'].includes(messageType) && attachmentsDataSourceId && uploadedContent?.fileUploadId) {
+    // 私人對話的照片不自動解析，進待確認；其餘附件由解析排程處理。
+    const conversationProject = conversation.properties?.['總控專案']?.select?.name || '';
+    const privateImage = messageType === 'image' && (!conversationProject || conversationProject === '私人事務');
+    attachmentPage = await createAttachmentPage({
+      conversationId: conversation.id,
+      messagePageId: messagePage.id,
+      event,
+      message,
+      messageId,
+      messageType,
+      eventTime,
+      uploadedContent,
+      initialConversionStatus: privateImage ? '待確認' : '待轉檔',
+    });
+  } else if (messageType === 'file' && attachmentsDataSourceId) {
     attachmentPage = await createAttachmentPage({ conversationId: conversation.id, messagePageId: messagePage.id, event, message, messageId, messageType, eventTime, uploadedContent });
   }
 
@@ -1141,22 +1209,15 @@ function isCodexCommandText(text) {
 
 function findCodexCommandTrigger(text) {
   const value = String(text || '');
-  return codexCommandTriggers.find((trigger) => trigger.pattern.test(value)) || null;
-}
-
-function buildCodexCommandTriggers(value) {
-  return String(value || '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((label) => ({
-      label,
-      pattern: new RegExp(escapeRegex(label).replace(/\\\s+/g, '\\s+'), 'i'),
-    }));
-}
-
-function escapeRegex(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const triggers = [
+    { label: 'Eleven Junior', pattern: /eleven\s+junior/i },
+    { label: 'Eleven Jr.', pattern: /eleven\s+jr\.?/i },
+    { label: 'Elven Jr.', pattern: /elven\s+jr\.?/i },
+    { label: 'HOZO Junior', pattern: /hozo\s+junior/i },
+    { label: 'HOZO Jr.', pattern: /\b7\s*junior\b/i },
+    { label: '11 Jr.', pattern: /\b11\s*jr\.?\b/i },
+  ];
+  return triggers.find((trigger) => trigger.pattern.test(value)) || null;
 }
 
 function extractCodexCommand(text) {
@@ -1435,7 +1496,7 @@ async function createMessagePage({ conversationId, event, rawBody, messageId, me
         '原始 payload': richText(JSON.stringify(event), 1900),
         '發話者 ID': richText(source.userId || ''),
         '發話者名稱': richText(display.actorName || ''),
-        '發話者類型': select('customer'),
+        '發話者類型': select('user'),
         '群組標記': checkbox(Boolean(source.groupId || source.roomId)),
         '排序時間': date(eventTime),
       },
@@ -1452,7 +1513,7 @@ async function appendConversationContentFirst({ conversationId, conversationName
 
 async function findOrCreateConversationAnchor(conversationId) {
   const children = await getBlockChildren(conversationId);
-  const anchor = children.find((block) => isConversationAnchorBlock(block));
+  const anchor = children.find((block) => plainBlockText(block).includes(conversationAnchorText));
   if (anchor) {
     return anchor;
   }
@@ -1528,7 +1589,7 @@ async function updateConversationAfterMessage(conversation, display, eventTime, 
   });
 }
 
-async function createAttachmentPage({ conversationId, messagePageId, event, message, messageId, messageType, eventTime, uploadedContent }) {
+async function createAttachmentPage({ conversationId, messagePageId, event, message, messageId, messageType, eventTime, uploadedContent, initialConversionStatus }) {
   const filename = uploadedContent?.filename || message.fileName || `${messageType}-${messageId}`;
   const properties = {
     '附件項目': title(filename),
@@ -1542,7 +1603,7 @@ async function createAttachmentPage({ conversationId, messagePageId, event, mess
     'Content-Type': richText(uploadedContent?.contentType || message.contentProvider?.type || ''),
     '來源': select('line'),
     '建立時間': date(eventTime),
-    '轉檔狀態': select(uploadedContent?.fileUploadId ? '待轉檔' : '失敗'),
+    '轉檔狀態': select(uploadedContent?.fileUploadId ? (initialConversionStatus || '待轉檔') : '失敗'),
   };
 
   if (uploadedContent?.fileUploadId) {
@@ -1626,8 +1687,7 @@ async function notionRequest(pathname, { method, body }) {
   if (!notionToken) {
     throw new Error('NOTION_TOKEN is not set.');
   }
-
-  await assertHozoNotionTarget(pathname, body);
+  await assertSevenNotionTarget(pathname, body);
 
   const response = await fetch(`https://api.notion.com${pathname}`, {
     method,
@@ -1641,11 +1701,11 @@ async function notionRequest(pathname, { method, body }) {
   return responseText ? JSON.parse(responseText) : {};
 }
 
-async function assertHozoNotionTarget(pathname, body) {
+async function assertSevenNotionTarget(pathname, body) {
   const dataSourceIds = new Set();
-  const dataSourceMatch = String(pathname || '').match(/^\/v1\/data_sources\/([^/]+)\/query(?:\?|$)/);
-  if (dataSourceMatch?.[1]) {
-    dataSourceIds.add(dataSourceMatch[1]);
+  const pathMatch = String(pathname || '').match(/\/v1\/data_sources\/([^/?]+)/);
+  if (pathMatch) {
+    dataSourceIds.add(pathMatch[1]);
   }
 
   const parent = body?.parent;
@@ -1654,50 +1714,45 @@ async function assertHozoNotionTarget(pathname, body) {
   }
 
   for (const dataSourceId of dataSourceIds) {
-    await assertHozoDataSource(dataSourceId);
+    await assertSevenDataSource(dataSourceId);
   }
 }
 
-async function assertHozoDataSource(dataSourceId) {
+async function assertSevenDataSource(dataSourceId) {
   const normalizedId = normalizeId(dataSourceId);
   if (!normalizedId) {
-    throw new Error('Missing HOZO Notion data source ID.');
-  }
-  if (verifiedHozoDataSources.has(normalizedId)) {
-    return verifiedHozoDataSources.get(normalizedId);
+    throw new Error('Notion data source id is missing.');
   }
 
-  const dataSource = await notionFetchJson(`/v1/data_sources/${encodeURIComponent(dataSourceId)}`);
-  const dataSourceTitle = notionTitleText(dataSource.title);
-  const databaseId = dataSource.parent?.database_id;
-  if (!databaseId) {
-    throw new Error(`Notion data source ${dataSourceTitle || dataSourceId} is not attached to a database.`);
+  const cached = verifiedSevenDataSources.get(normalizedId);
+  if (cached) {
+    return cached;
   }
 
-  const database = await notionFetchJson(`/v1/databases/${encodeURIComponent(databaseId)}`);
-  const databaseTitle = notionTitleText(database.title);
-  const parentId = normalizeId(database.parent?.block_id || database.parent?.page_id || '');
+  const dataSource = await notionFetchJson(`/v1/data_sources/${normalizedId}`);
+  const titleText = notionTitleText(dataSource.title);
+  const parentBlockId = normalizeId(dataSource.parent?.block_id || dataSource.parent?.page_id || dataSource.parent?.database_id || '');
 
-  if (dataSource.archived || dataSource.in_trash || database.archived || database.in_trash) {
-    throw new Error(`Refusing to write to archived or trashed Notion data source: ${dataSourceTitle || dataSourceId}.`);
-  }
-  if (!/^HOZO(?:\b|-| | LINE| AM|CRM|好住|總控|Automation)/i.test(dataSourceTitle)) {
-    throw new Error(`Refusing to write to non-HOZO Notion data source: ${dataSourceTitle || dataSourceId}.`);
-  }
-  const allowedParentIds = new Set([hozoDataSourceParentBlockId, hozoDataSourceParentPageId].filter(Boolean));
-  if (allowedParentIds.size && !allowedParentIds.has(parentId)) {
-    throw new Error(`Refusing to write outside the HOZO Notion database area: ${databaseTitle || databaseId}.`);
+  if (dataSource.archived || dataSource.in_trash) {
+    throw new Error(`Blocked Notion access: data source "${titleText || normalizedId}" is archived or trashed.`);
   }
 
-  const result = { dataSourceTitle, databaseTitle, databaseId };
-  verifiedHozoDataSources.set(normalizedId, result);
-  return result;
+  if (!isAllowedSevenDataSourceTitle(titleText)) {
+    throw new Error(`Blocked Notion access: data source "${titleText || normalizedId}" does not look like a HOZO AM data source.`);
+  }
+
+  if (sevenDataSourceParentBlockId && parentBlockId && parentBlockId !== sevenDataSourceParentBlockId) {
+    throw new Error(`Blocked Notion access: data source "${titleText || normalizedId}" is outside the configured HOZO AM parent scope.`);
+  }
+
+  verifiedSevenDataSources.set(normalizedId, true);
+  return true;
 }
 
 async function notionFetchJson(pathname) {
   const response = await fetch(`https://api.notion.com${pathname}`, {
     method: 'GET',
-    headers: { Authorization: `Bearer ${notionToken}`, 'Content-Type': 'application/json', 'Notion-Version': notionVersion },
+    headers: { Authorization: `Bearer ${notionToken}`, 'Notion-Version': notionVersion },
   });
   const responseText = await response.text();
   if (!response.ok) {
@@ -1706,12 +1761,16 @@ async function notionFetchJson(pathname) {
   return responseText ? JSON.parse(responseText) : {};
 }
 
-function notionTitleText(titleItems) {
-  return (titleItems || []).map((item) => item.plain_text || item.text?.content || '').join('');
+function notionTitleText(items) {
+  return (items || []).map((item) => item.plain_text || item.text?.content || '').join('').trim();
 }
 
-function normalizeId(value) {
-  return String(value || '').replace(/-/g, '').toLowerCase();
+function isAllowedSevenDataSourceTitle(titleText) {
+  const value = String(titleText || '').trim();
+  if (!value) {
+    return true;
+  }
+  return /(HOZO|HOZO AM|HOZOAM|Codex|總控|任務|專案|會議|每日|LINE|Automation|風險|決策|責任|權責)/i.test(value);
 }
 
 function buildNonTextMessagePreview(message) {
@@ -1784,23 +1843,9 @@ function formatTaipeiTime(value) {
   return new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(value));
 }
 
-function formatTaipeiDate(value) {
-  return new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'numeric', day: 'numeric' }).format(new Date(value));
-}
-
-function formatDateKey(date) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-    .format(date)
-    .replace(/[^0-9]/g, '');
-}
-
 function plainBlockText(block) {
   const richText = block?.[block.type]?.rich_text || [];
   return richText.map((item) => item.plain_text || item.text?.content || '').join('');
-}
-
-function isConversationAnchorBlock(block) {
-  return conversationAnchorPattern.test(plainBlockText(block));
 }
 
 function title(content) {
@@ -1875,6 +1920,79 @@ function paragraph(content) {
   return { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: clampText(content, 1900) } }] } };
 }
 
+function pageText(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  if (!property) {
+    return '';
+  }
+  if (property.type === 'title') {
+    return richTextItemsPlain(property.title);
+  }
+  if (property.type === 'rich_text') {
+    return richTextItemsPlain(property.rich_text);
+  }
+  if (property.type === 'people') {
+    return (property.people || []).map((person) => person.name || person.person?.email || '').filter(Boolean).join('、');
+  }
+  return '';
+}
+
+function pageTitle(page, propertyName) {
+  return pageText(page, propertyName);
+}
+
+function pageSelect(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'select' ? property.select?.name || '' : '';
+}
+
+function pageStatus(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'status' ? property.status?.name || '' : '';
+}
+
+function pageDate(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'date' ? property.date?.start || '' : '';
+}
+
+function pageRelationTitleFallback(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'relation' && property.relation?.length ? '' : '';
+}
+
+function pageRelationIds(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'relation' ? (property.relation || []).map((item) => item.id).filter(Boolean) : [];
+}
+
+function pageCheckbox(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'checkbox' ? Boolean(property.checkbox) : false;
+}
+
+function richTextItemsPlain(items) {
+  return (items || []).map((item) => item.plain_text || item.text?.content || '').join('').trim();
+}
+
+function normalizeLooseText(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function normalizeId(value) {
+  return String(value || '').trim().replace(/-/g, '').toLowerCase();
+}
+
+function formatTaipeiDate(value) {
+  return new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'numeric', day: 'numeric' }).format(new Date(value));
+}
+
+function formatDateKey(date) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+    .format(date)
+    .replace(/[^0-9]/g, '');
+}
+
 function clampText(value, maxLength) {
   const text = value == null ? '' : String(value);
   return text.length > maxLength ? text.slice(0, maxLength - 1) + '…' : text;
@@ -1922,6 +2040,15 @@ function loadDotenv() {
 }
 
 const port = Number(process.env.PORT || 3000);
+
+if (eventQueue.enabled) {
+  eventQueue.init().catch((error) => {
+    console.error('Event queue init failed; webhook falls back to direct Notion writes.', error);
+  });
+} else {
+  console.warn('DATABASE_URL is not set. Webhook events are written to Notion synchronously without a durable queue.');
+}
+
 server.listen(port, () => {
   console.log(`LINE webhook server is listening on port ${port}`);
 });

@@ -5,7 +5,7 @@ loadEnvFile('../env.txt');
 
 const notionToken = process.env.NOTION_TOKEN;
 const notionVersion = process.env.NOTION_VERSION || '2026-03-11';
-const parentPageId = String(process.argv[2] || process.env.HOZO_DATA_SOURCE_PARENT_PAGE_ID || process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID || '').trim();
+const parentPageId = String(process.argv[2] || '37751c68-6dac-81b9-8496-dc98585dbf7b').trim();
 
 if (!notionToken) {
   throw new Error('NOTION_TOKEN is not set.');
@@ -117,4 +117,3 @@ function loadEnvFile(pathname) {
     process.env[match[1]] = match[2].replace(/^["']|["']$/g, '');
   }
 }
-

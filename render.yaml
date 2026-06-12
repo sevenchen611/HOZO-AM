@@ -1,3 +1,10 @@
+databases:
+  # 訊息持久化佇列。free 方案 30 天後到期，正式使用請升級為 basic-256mb 以上付費方案。
+  - name: hozoam-queue-db
+    plan: free
+    databaseName: hozoam_queue
+    user: hozoam
+
 services:
   - type: web
     name: hozo-am-line-oa-webhook
@@ -14,26 +21,18 @@ services:
         sync: false
       - key: NOTION_TOKEN
         sync: false
-      - key: NOTION_VERSION
-        value: "2025-09-03"
-      - key: HOZO_OUTGOING_ACTOR_NAME
-        value: "HOZO Jr."
-      - key: HOZO_CODEX_COMMAND_TRIGGERS
-        value: "HOZO Junior,HOZ Jr.,HOZO Jr."
-      - key: HOZO_DATA_SOURCE_PARENT_BLOCK_ID
-        value: 35f51c68-6dac-805f-88b4-e1cf5a86bbc1
-      - key: HOZO_DATA_SOURCE_PARENT_PAGE_ID
-        value: 35d51c68-6dac-802c-81e6-c71b560c0498
       - key: HOZO_CONVERSATIONS_DATA_SOURCE_ID
-        value: 37451c68-6dac-8163-b4fa-000b17271536
+        sync: false
       - key: HOZO_MESSAGES_DATA_SOURCE_ID
-        value: 37451c68-6dac-8187-a6bc-000bbd69c364
+        sync: false
       - key: HOZO_ATTACHMENTS_DATA_SOURCE_ID
-        value: 37551c68-6dac-81bb-97de-000bebacea77
-      - key: HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID
-        value: 4ce26dc1-0b90-49ad-8e96-73f3a8f23a1f
+        sync: false
       - key: HOZO_CODEX_COMMANDS_DATA_SOURCE_ID
-        value: 6a500d4c-43ae-4523-bd76-c19a80697bb3
+        sync: false
+      - key: HOZO_DATA_SOURCE_PARENT_BLOCK_ID
+        sync: false
+      - key: HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID
+        sync: false
       - key: HOZO_MEETINGS_DATA_SOURCE_ID
         value: fd351c68-6dac-8298-8f0e-87ab1eb6027c
       - key: HOZO_TASKS_DATA_SOURCE_ID
@@ -41,17 +40,7 @@ services:
       - key: HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID
         value: add70895-645c-4268-9763-3e4bcb2b5b95
       - key: HOZO_DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID
-        sync: false
-      - key: HOZO_JUDGMENT_CALIBRATION_CASES_DATA_SOURCE_ID
-        sync: false
-      - key: HOZO_JUDGMENT_RULES_DATA_SOURCE_ID
-        sync: false
-      - key: HOZO_JUDGMENT_REVIEW_TARGET_NAME_KEYWORD
-        value: Maggie
-      - key: HOZO_RISK_DECISIONS_DATA_SOURCE_ID
-        value: 1f6ef6e0-3f5f-49fb-8b80-add787898d7d
-      - key: HOZO_AUTOMATION_RUN_LOG_DATA_SOURCE_ID
-        value: 5f7a870d-5a34-44a2-b1c8-a17171b6353a
+        value: 607884fd-afa2-4ddc-8319-70daeb31c549
       - key: HOZO_RESPONSIBILITY_DATA_SOURCE_ID
         value: 5d06662d-47a6-49d2-86dd-f2f59d497077
       - key: HOZO_LINE_GROUP_OPTIONS_DATA_SOURCE_ID
@@ -60,40 +49,77 @@ services:
         value: 685ddbd8-a7da-42a3-b526-07f335c1bb9e
       - key: HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID
         value: 800976c4-59ca-44d2-866b-b43d513c23ce
-      - key: HOZO_REPORT_TARGET_ID
-        sync: false
-      - key: HOZO_REPORT_TARGET_TYPE
-        value: user
-      - key: HOZO_REPORT_TARGET_NAME_KEYWORD
-        value: Maggie
-      - key: HOZO_REPORT_CC_TARGET_IDS
-        value: U77e5ebe92da94e8803e0786d8684f69a
-      - key: HOZO_REPORT_CC_TARGET_TYPE
-        value: user
-      - key: HOZO_REPORT_CC_NAME_KEYWORDS
-        value: Seven陳聖文,Seven 陳聖文
+      - key: HOZO_JUDGMENT_CALIBRATION_CASES_DATA_SOURCE_ID
+        value: d46acd97-f0c1-41ee-b046-a6982a025616
+      - key: HOZO_JUDGMENT_RULES_DATA_SOURCE_ID
+        value: 9cf2b88d-8d13-4cea-a477-88d12b34674b
+      - key: HOZO_JUDGMENT_REVIEW_TARGET_NAME_KEYWORD
+        value: "陸昱晴"
       - key: HOZO_CONTROL_API_KEY
         sync: false
-      - key: HOZO_REPORT_APPROVAL_KEY
+      - key: HOZO_USER_UI_USERNAME
         sync: false
-      - key: HOZO_PUBLIC_BASE_URL
-        value: https://hozo-am-line-oa-webhook.onrender.com
+      - key: HOZO_USER_UI_PASSWORD
+        sync: false
+      - key: HOZO_REPORT_TARGET_IDS
+        sync: false
+      - key: HOZO_REPORT_CC_TARGET_IDS
+        sync: false
+      - key: HOZO_REPORT_CC_NAME_KEYWORDS
+        sync: false
+      - key: HOZO_ALERT_TARGET_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hozoam-queue-db
+          property: connectionString
 
   - type: cron
     name: hozo-am-line-message-judgement-sync
     runtime: node
     plan: starter
     buildCommand: npm install
-    startCommand: npm run line:judgements -- --include-outgoing-groups --limit 50
+    startCommand: node scripts/run-cron-with-alert.js -- node scripts/llm-task-extraction.js --include-outgoing-groups --limit 20
     schedule: "10 0-14 * * *"
     envVars:
+      - key: AM_SKIP_IF_WORKER_ACTIVE
+        value: "true"
+      - key: AM_WORKER_STATUS_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/worker/status
+      - key: CRON_JOB_NAME
+        value: hozo-am-line-message-judgement-sync
+      - key: ANTHROPIC_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: ANTHROPIC_API_KEY
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: HOZO_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
       - key: NOTION_TOKEN
         fromService:
           name: hozo-am-line-oa-webhook
           type: web
           envVarKey: NOTION_TOKEN
-      - key: HOZO_MESSAGES_DATA_SOURCE_ID
-        value: 37451c68-6dac-8187-a6bc-000bbd69c364
+      - key: HOZO_CONVERSATIONS_DATA_SOURCE_ID
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONVERSATIONS_DATA_SOURCE_ID
       - key: HOZO_TASKS_DATA_SOURCE_ID
         value: 9c9e34ff-45af-4543-a3ae-11c5cd432b36
       - key: HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID
@@ -104,9 +130,26 @@ services:
     runtime: node
     plan: starter
     buildCommand: npm install
-    startCommand: npm run meetings:sync -- --limit 50
+    startCommand: node scripts/run-cron-with-alert.js -- node scripts/sync-meeting-actions.js --limit 50
     schedule: "0 0-14 * * *"
     envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-meeting-action-sync
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: HOZO_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
       - key: NOTION_TOKEN
         fromService:
           name: hozo-am-line-oa-webhook
@@ -124,28 +167,241 @@ services:
     runtime: node
     plan: starter
     buildCommand: npm install
-    startCommand: npm run line:groups && npm run responsibility:sync
+    startCommand: node scripts/run-cron-with-alert.js -- node scripts/sync-responsibility-candidates.js
     schedule: "15 0-14 * * *"
     envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-responsibility-candidate-sync
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: HOZO_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
       - key: NOTION_TOKEN
         fromService:
           name: hozo-am-line-oa-webhook
           type: web
           envVarKey: NOTION_TOKEN
-      - key: NOTION_VERSION
-        value: "2025-09-03"
       - key: HOZO_RESPONSIBILITY_DATA_SOURCE_ID
         value: 5d06662d-47a6-49d2-86dd-f2f59d497077
-      - key: HOZO_CONVERSATIONS_DATA_SOURCE_ID
-        value: 37451c68-6dac-8163-b4fa-000b17271536
-      - key: HOZO_MESSAGES_DATA_SOURCE_ID
-        value: 37451c68-6dac-8187-a6bc-000bbd69c364
       - key: HOZO_LINE_GROUP_OPTIONS_DATA_SOURCE_ID
         value: bdab58cf-be1f-4e10-85bd-3ab1b9d5e527
       - key: HOZO_LINE_GROUP_MEMBERS_DATA_SOURCE_ID
         value: 685ddbd8-a7da-42a3-b526-07f335c1bb9e
-      - key: HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID
-        value: 800976c4-59ca-44d2-866b-b43d513c23ce
+
+  - type: cron
+    name: hozo-am-codex-command-triage
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: node scripts/run-cron-with-alert.js -- node scripts/llm-codex-command-triage.js --limit 10
+    # 工作時段台北 07:00-23:00（UTC 23:00-15:00）；夜間不執行。
+    schedule: "*/15 0-14,23 * * *"
+    envVars:
+      - key: AM_SKIP_IF_WORKER_ACTIVE
+        value: "true"
+      - key: AM_WORKER_STATUS_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/worker/status
+      - key: CRON_JOB_NAME
+        value: hozo-am-codex-command-triage
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: HOZO_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
+      - key: ANTHROPIC_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: ANTHROPIC_API_KEY
+      - key: NOTION_TOKEN
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: NOTION_TOKEN
+      - key: HOZO_CODEX_COMMANDS_DATA_SOURCE_ID
+        value: 6a500d4c-43ae-4523-bd76-c19a80697bb3
+
+  - type: cron
+    name: hozo-am-attachment-parsing
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: node scripts/run-cron-with-alert.js -- node scripts/parse-attachments.js --limit 8
+    # 工作時段台北 07:00-23:00（UTC 23:00-15:00）；夜間不執行。
+    schedule: "7,22,37,52 0-14,23 * * *"
+    envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-attachment-parsing
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: HOZO_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
+      - key: ANTHROPIC_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: ANTHROPIC_API_KEY
+      - key: NOTION_TOKEN
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: NOTION_TOKEN
+      - key: HOZO_ATTACHMENTS_DATA_SOURCE_ID
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_ATTACHMENTS_DATA_SOURCE_ID
+
+  - type: cron
+    name: hozo-am-scheduled-actions
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: node scripts/run-cron-with-alert.js -- node scripts/run-scheduled-actions.js --limit 20
+    # 工作時段台北 07:00-23:00（UTC 23:00-15:00）；夜間到期的排程會在早上第一輪補發。
+    schedule: "3,18,33,48 0-14,23 * * *"
+    envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-scheduled-actions
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: HOZO_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
+      - key: NOTION_TOKEN
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: NOTION_TOKEN
+      - key: HOZO_TASKS_DATA_SOURCE_ID
+        value: 9c9e34ff-45af-4543-a3ae-11c5cd432b36
+
+  - type: cron
+    name: hozo-am-project-proposals
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: node scripts/run-cron-with-alert.js -- node scripts/propose-projects.js
+    schedule: "20 14 * * *"
+    envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-project-proposals
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: HOZO_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
+      - key: ANTHROPIC_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: ANTHROPIC_API_KEY
+      - key: NOTION_TOKEN
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: NOTION_TOKEN
+      - key: HOZO_TASKS_DATA_SOURCE_ID
+        value: 9c9e34ff-45af-4543-a3ae-11c5cd432b36
+      - key: HOZO_CONVERSATIONS_DATA_SOURCE_ID
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONVERSATIONS_DATA_SOURCE_ID
+
+  - type: cron
+    name: hozo-am-extraction-feedback-sync
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: node scripts/run-cron-with-alert.js -- node scripts/sync-extraction-feedback.js --since-days 7
+    schedule: "45 14 * * *"
+    envVars:
+      - key: CRON_JOB_NAME
+        value: hozo-am-extraction-feedback-sync
+      - key: CONTROL_LINE_PUSH_URL
+        value: https://hozo-am-line-oa-webhook.onrender.com/control/line/push
+      - key: AM_PROJECT_ENV_PREFIX
+        value: HOZO
+      - key: AM_CONTROL_HEADER_PREFIX
+        value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
+      - key: AM_CRON_ALERTS_ENABLED
+        value: "true"
+      - key: HOZO_CONTROL_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
+      - key: ANTHROPIC_API_KEY
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: ANTHROPIC_API_KEY
+      - key: NOTION_TOKEN
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: NOTION_TOKEN
+      - key: HOZO_TASKS_DATA_SOURCE_ID
+        value: 9c9e34ff-45af-4543-a3ae-11c5cd432b36
+      - key: HOZO_JUDGMENT_CALIBRATION_CASES_DATA_SOURCE_ID
+        value: d46acd97-f0c1-41ee-b046-a6982a025616
+      - key: HOZO_JUDGMENT_RULES_DATA_SOURCE_ID
+        value: 9cf2b88d-8d13-4cea-a477-88d12b34674b
 
   - type: cron
     name: hozo-am-morning-brief
@@ -167,6 +423,8 @@ services:
         value: HOZO
       - key: AM_CONTROL_HEADER_PREFIX
         value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
       - key: AM_CRON_RETRY_DELAYS_MS
         value: "10000,30000,60000"
       - key: AM_CRON_REQUEST_TIMEOUT_MS
@@ -176,7 +434,10 @@ services:
       - key: AM_CRON_ALERTS_ENABLED
         value: "true"
       - key: HOZO_CONTROL_API_KEY
-        sync: false
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
 
   - type: cron
     name: hozo-am-followup-morning
@@ -198,6 +459,8 @@ services:
         value: HOZO
       - key: AM_CONTROL_HEADER_PREFIX
         value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
       - key: AM_CRON_RETRY_DELAYS_MS
         value: "10000,30000,60000"
       - key: AM_CRON_REQUEST_TIMEOUT_MS
@@ -207,7 +470,10 @@ services:
       - key: AM_CRON_ALERTS_ENABLED
         value: "true"
       - key: HOZO_CONTROL_API_KEY
-        sync: false
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
 
   - type: cron
     name: hozo-am-followup-midday
@@ -229,6 +495,8 @@ services:
         value: HOZO
       - key: AM_CONTROL_HEADER_PREFIX
         value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
       - key: AM_CRON_RETRY_DELAYS_MS
         value: "10000,30000,60000"
       - key: AM_CRON_REQUEST_TIMEOUT_MS
@@ -238,7 +506,10 @@ services:
       - key: AM_CRON_ALERTS_ENABLED
         value: "true"
       - key: HOZO_CONTROL_API_KEY
-        sync: false
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
 
   - type: cron
     name: hozo-am-followup-afternoon
@@ -260,6 +531,8 @@ services:
         value: HOZO
       - key: AM_CONTROL_HEADER_PREFIX
         value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
       - key: AM_CRON_RETRY_DELAYS_MS
         value: "10000,30000,60000"
       - key: AM_CRON_REQUEST_TIMEOUT_MS
@@ -269,7 +542,10 @@ services:
       - key: AM_CRON_ALERTS_ENABLED
         value: "true"
       - key: HOZO_CONTROL_API_KEY
-        sync: false
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY
 
   - type: cron
     name: hozo-am-daily-report
@@ -291,6 +567,8 @@ services:
         value: HOZO
       - key: AM_CONTROL_HEADER_PREFIX
         value: hozo
+      - key: AM_OUTGOING_ACTOR_NAME
+        value: "HOZO Jr."
       - key: AM_CRON_RETRY_DELAYS_MS
         value: "10000,30000,60000"
       - key: AM_CRON_REQUEST_TIMEOUT_MS
@@ -300,4 +578,7 @@ services:
       - key: AM_CRON_ALERTS_ENABLED
         value: "true"
       - key: HOZO_CONTROL_API_KEY
-        sync: false
+        fromService:
+          name: hozo-am-line-oa-webhook
+          type: web
+          envVarKey: HOZO_CONTROL_API_KEY

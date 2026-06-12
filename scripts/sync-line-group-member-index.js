@@ -22,9 +22,9 @@ if (!memberIndexDataSourceId) fail('HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID 
 
 try {
   await Promise.all([
-    assertHozoDataSource(conversationsDataSourceId),
-    assertHozoDataSource(groupOptionsDataSourceId),
-    assertHozoDataSource(memberIndexDataSourceId),
+    assertSevenDataSource(conversationsDataSourceId),
+    assertSevenDataSource(groupOptionsDataSourceId),
+    assertSevenDataSource(memberIndexDataSourceId),
   ]);
 
   const [conversations, groupOptions, existingIndexRows] = await Promise.all([
@@ -266,11 +266,11 @@ async function updatePage(pageId, properties) {
   });
 }
 
-async function assertHozoDataSource(dataSourceId) {
+async function assertSevenDataSource(dataSourceId) {
   const dataSource = await notionRequest(`/v1/data_sources/${dataSourceId}`, { method: 'GET' });
   const title = plainText(dataSource.title || []);
-  if (!/(HOZO|好住|寓好|LINE|group|member|conversation)/i.test(title)) {
-    fail(`Refusing to write to non-HOZO data source: ${title || dataSourceId}`);
+  if (!/(HOZO|HOZOAM|LINE|group|member|conversation)/i.test(title)) {
+    fail(`Refusing to write to non-7AM data source: ${title || dataSourceId}`);
   }
   return dataSource;
 }
@@ -398,4 +398,3 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
-

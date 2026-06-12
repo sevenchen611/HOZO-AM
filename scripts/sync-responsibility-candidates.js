@@ -19,12 +19,6 @@ if (!groupOptionsDataSourceId) fail('HOZO_LINE_GROUP_OPTIONS_DATA_SOURCE_ID is n
 if (!groupMembersDataSourceId) fail('HOZO_LINE_GROUP_MEMBERS_DATA_SOURCE_ID is not set.');
 
 try {
-  await Promise.all([
-    assertHozoDataSource(responsibilityDataSourceId),
-    assertHozoDataSource(groupOptionsDataSourceId),
-    assertHozoDataSource(groupMembersDataSourceId),
-  ]);
-
   const [responsibilities, groups, members] = await Promise.all([
     queryAllPages(responsibilityDataSourceId, { page_size: limit }),
     queryAllPages(groupOptionsDataSourceId, { page_size: 100 }),
@@ -101,8 +95,14 @@ function buildResponsibilityCandidateUpdate(page, groupOptions, memberOptions) {
     候選群組數: { number: candidateGroups.length },
     候選負責人數: { number: candidateMembers.length },
     選擇狀態: { select: { name: status } },
-    選擇說明: richTextProperty(buildInstruction({ project, candidateGroups, selectedGroup, candidateMembers })),
-    更新時間: dateProperty(new Date()),
+    選擇說明: {
+      rich_text: [{
+        type: 'text',
+        text: {
+          content: buildInstruction({ project, candidateGroups, selectedGroup, candidateMembers }),
+        },
+      }],
+    },
   };
 
   if (selectedMember) {
@@ -112,7 +112,7 @@ function buildResponsibilityCandidateUpdate(page, groupOptions, memberOptions) {
   } else if (selectedGroup) {
     properties['LINE對象名稱（結果）'] = richTextProperty(selectedGroup.title);
     properties['LINE對象ID（結果）'] = richTextProperty(selectedGroup.groupId);
-    properties['LINE對象類型（結果）'] = { select: { name: selectedGroup.targetType || 'group' } };
+    properties['LINE對象類型（結果）'] = { select: { name: 'group' } };
   }
 
   return {
@@ -147,10 +147,9 @@ function normalizeGroupOption(page) {
   const props = page.properties || {};
   return {
     id: page.id,
-    title: titleText(props['群組顯示名稱']) || textProperty(props.LINE對話名稱) || textProperty(props.自定義名稱),
-    project: selectName(props.總控專案),
+    title: titleText(props['群組顯示名稱']) || textProperty(props['LINE對話名稱']) || textProperty(props['自定義名稱']),
+    project: selectName(props['總控專案']),
     groupId: textProperty(props.GroupID),
-    targetType: selectName(props.對象類型) || 'group',
   };
 }
 
@@ -163,7 +162,7 @@ function normalizeMemberOption(page) {
     userId: textProperty(props.UserID),
     groupId: textProperty(props.GroupID),
     groupName: textProperty(props['群組顯示名稱']),
-    groupPageIds: relationIds(props.LINE群組),
+    groupPageIds: relationIds(props['LINE群組']),
   };
 }
 
@@ -193,14 +192,6 @@ async function updatePage(pageId, properties) {
   });
 }
 
-async function assertHozoDataSource(dataSourceId) {
-  const dataSource = await notionRequest(`/v1/data_sources/${dataSourceId}`, { method: 'GET' });
-  const title = titleText({ title: dataSource.title || [] });
-  if (!/(HOZO|好住|寓好|LINE|Responsibility|group|member)/i.test(title)) {
-    fail(`Refusing to write to non-HOZO data source: ${title || dataSourceId}`);
-  }
-}
-
 async function notionRequest(pathname, { method, body }) {
   const response = await fetch(`https://api.notion.com${pathname}`, {
     method,
@@ -224,11 +215,7 @@ function relationProperty(ids) {
 }
 
 function richTextProperty(content) {
-  return { rich_text: content ? [{ type: 'text', text: { content: String(content).slice(0, 1900) } }] : [] };
-}
-
-function dateProperty(value) {
-  return { date: { start: value instanceof Date ? value.toISOString() : new Date(value).toISOString() } };
+  return { rich_text: content ? [{ type: 'text', text: { content } }] : [] };
 }
 
 function relationIds(property) {

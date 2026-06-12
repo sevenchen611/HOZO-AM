@@ -14,11 +14,11 @@
   "mainControllerConversation": {
     "purpose": "The main controller conversation is the highest-priority source for user instructions, task results, rule corrections, cross-group answers, and final status overrides.",
     "aliasesByProject": {
-      "SevenAM": [
-        "Seven Junior",
+      "HOZO AM": [
+        "HOZO Junior",
         "7Junior",
-        "7 Junior",
-        "Seven Jr.",
+        "HOZO Jr.",
+        "HOZO Jr.",
         "7 Jr."
       ],
       "HOZO_AM": [
@@ -241,7 +241,7 @@
   },
   "versionNotes": [
     "This prompt intentionally excludes User UI manual organization controls.",
-    "This prompt is portable across SevenAM, HOZO_AM, and future AM projects.",
+    "This prompt is portable across HOZO AM, HOZO_AM, and future AM projects.",
     "Project-local implementation must keep project data local and store only the shared prompt and schema contract in AMCore."
   ]
 }

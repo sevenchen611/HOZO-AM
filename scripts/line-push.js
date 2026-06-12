@@ -4,7 +4,7 @@ loadEnvFile('.env');
 loadEnvFile('../env.txt');
 
 const controlApiKey = process.env.HOZO_CONTROL_API_KEY;
-const pushUrl = process.env.CONTROL_LINE_PUSH_URL || '';
+const pushUrl = process.env.CONTROL_LINE_PUSH_URL || 'https://hozo-am-line-oa-webhook.onrender.com/control/line/push';
 
 const targetType = String(process.argv[2] || '').trim();
 const targetId = String(process.argv[3] || '').trim();
@@ -12,9 +12,6 @@ const text = process.argv.slice(4).join(' ').trim();
 
 if (!controlApiKey) {
   fail('HOZO_CONTROL_API_KEY is not set.');
-}
-if (!pushUrl) {
-  fail('CONTROL_LINE_PUSH_URL is not set.');
 }
 
 if (!['user', 'group', 'room'].includes(targetType)) {
@@ -64,4 +61,3 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
-

@@ -6,10 +6,9 @@ loadEnvFile('../env.txt');
 
 const notionToken = process.env.NOTION_TOKEN;
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
-const defaultMeetingsDataSourceId = 'fd351c68-6dac-8298-8f0e-87ab1eb6027c';
-const meetingsDataSourceId = process.env.HOZO_MEETINGS_DATA_SOURCE_ID || defaultMeetingsDataSourceId;
-const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
-const progressReportsDataSourceId = process.env.HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID || '';
+const meetingsDataSourceId = process.env.HOZO_MEETINGS_DATA_SOURCE_ID || 'fd351c68-6dac-8298-8f0e-87ab1eb6027c';
+const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '9c9e34ff-45af-4543-a3ae-11c5cd432b36';
+const progressReportsDataSourceId = process.env.HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID || 'add70895-645c-4268-9763-3e4bcb2b5b95';
 const hierarchyPrompt = loadJsonFile(new URL('../config/conversation-task-hierarchy-prompt.json', import.meta.url));
 const hierarchyContract = loadJsonFile(new URL('../config/task-hierarchy-judgment-contract.json', import.meta.url));
 
@@ -22,9 +21,6 @@ const limit = clampNumber(Number(args.limit || 20), 1, 100);
 
 if (!notionToken) {
   fail('NOTION_TOKEN is not set.');
-}
-if (!meetingsDataSourceId) {
-  fail('HOZO_MEETINGS_DATA_SOURCE_ID is not set.');
 }
 
 try {
@@ -58,18 +54,19 @@ try {
 async function syncMeeting(page) {
   const meeting = summarizeMeeting(page);
   const bodyText = await readPageText(page.id);
-  const sourceText = buildActionSourceText(meeting, bodyText);
+  const sourceText = [meeting.actionItems, meeting.meetingRecord, bodyText].filter(Boolean).join('\n');
   const extractedItems = extractActionItems(sourceText);
   const actionItemTexts = extractedItems.map((item) => item.text);
   const createdTasks = [];
   const skippedTasks = [];
+  const skipDecision = shouldSkipMeetingSync(meeting, sourceText);
 
-  if (isExcludedScope(`${meeting.name}\n${meeting.summary}\n${sourceText}`)) {
+  if (skipDecision.skip) {
     return {
       meeting: publicMeetingSummary(meeting),
       createdTasks,
-      skippedTasks: [{ reason: 'excluded-scope' }],
-      progressReport: { action: 'skipped', reason: 'excluded-scope' },
+      skippedTasks: [{ reason: skipDecision.reason }],
+      progressReport: { action: 'skipped', reason: skipDecision.reason },
     };
   }
 
@@ -177,40 +174,6 @@ async function readPageText(pageId) {
   return lines.join('\n');
 }
 
-function buildActionSourceText(meeting, bodyText) {
-  const consolidatedSection = extractHozoMigrationActionSection(bodyText);
-  if (consolidatedSection) {
-    return [meeting.meetingRecord, consolidatedSection].filter(Boolean).join('\n');
-  }
-  return [meeting.actionItems, meeting.meetingRecord, bodyText].filter(Boolean).join('\n');
-}
-
-function extractHozoMigrationActionSection(text) {
-  const value = String(text || '');
-  const markerIndex = value.indexOf('HOZO-AM 移轉整理');
-  if (markerIndex === -1) {
-    return '';
-  }
-
-  const markerText = value.slice(markerIndex);
-  const sectionNames = ['整併後待辦事項', '跨會議整併後待辦總表'];
-  const starts = sectionNames
-    .map((name) => markerText.indexOf(name))
-    .filter((index) => index >= 0);
-  if (!starts.length) {
-    return '';
-  }
-
-  const start = Math.min(...starts);
-  const sectionText = markerText.slice(start);
-  const endMarkers = ['\n整併原則', '\n---'];
-  const ends = endMarkers
-    .map((marker) => sectionText.indexOf(marker))
-    .filter((index) => index > 0);
-  const end = ends.length ? Math.min(...ends) : sectionText.length;
-  return sectionText.slice(0, end).trim();
-}
-
 async function getBlockChildren(blockId) {
   const blocks = [];
   let startCursor;
@@ -255,7 +218,6 @@ function isCheckboxActionLine(value) {
 function normalizeActionLine(value) {
   return String(value || '')
     .replace(/^\s*(?:[-*+]|[0-9０-９]+[.)、．]|[一二三四五六七八九十]+[、.．]|□|☐|☑|✅)\s*/u, '')
-    .replace(/^\s*\[[ xX]\]\s*/u, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -291,7 +253,7 @@ function looksLikeActionItem(value) {
 
 function buildTaskCandidate(itemText, meeting, options = {}) {
   const analysisText = `${meeting.name}\n${meeting.summary}\n${itemText}`;
-  const project = normalizeTaskProject(meeting.selectedProject || inferProject(analysisText));
+  const project = meeting.selectedProject || inferProject(analysisText);
   const riskLevel = inferRiskLevel(analysisText);
   const status = inferTaskStatus(itemText);
   const confidence = riskLevel === 'High' ? '低' : inferConfidence(itemText, project);
@@ -303,7 +265,7 @@ function buildTaskCandidate(itemText, meeting, options = {}) {
     options.checkboxDerived
       ? '判斷：由會議 checkbox 行動項目轉入已確認任務。'
       : '判斷：由會議行動項目轉入候選任務。',
-    riskLevel === 'High' ? '注意：內容可能涉及敏感或高風險事項，需 HOZO 主管確認後再推進。' : '',
+    riskLevel === 'High' ? '注意：內容可能涉及敏感或高風險事項，需 Seven 確認後再推進。' : '',
   ].filter(Boolean).join('\n');
 
   return {
@@ -356,7 +318,7 @@ async function createTask(candidate) {
 
 async function maybeCreateProgressReport(meeting, bodyText, actionItems) {
   const sourceText = `${meeting.name}\n${meeting.summary}\n${bodyText}\n${actionItems.join('\n')}`;
-  const project = normalizeProgressProject(meeting.selectedProject || inferProject(sourceText));
+  const project = meeting.selectedProject || inferProject(sourceText);
 
   if (project === '未分類' || isExcludedScope(sourceText)) {
     return { action: 'skipped', reason: 'no-confident-project' };
@@ -416,7 +378,7 @@ function buildProgressReport(meeting, bodyText, actionItems, project) {
       '本週進展': richTextProperty(meeting.summary || `由會議「${meeting.name}」同步。`),
       '主要卡點': richTextProperty(blockers || '尚未從會議紀錄辨識出明確卡點。'),
       下一步: richTextProperty(nextSteps || '待補充下一步。'),
-      '需要主管決策': richTextProperty(decisions || '暫無明確決策需求。'),
+      '需要 Seven 決策': richTextProperty(decisions || '暫無明確決策需求。'),
       關聯頁面: urlProperty(meeting.url),
       報表週期: dateProperty(meeting.meetingDate || new Date()),
     }),
@@ -426,14 +388,13 @@ function buildProgressReport(meeting, bodyText, actionItems, project) {
 function inferProject(text) {
   const value = String(text || '').toLowerCase();
   const projectRules = [
-    ['後臺設計製作', ['hozo 後臺', 'hozo 後台', '後臺', '後台', 'backend', 'admin']],
-    ['網頁設計', ['網頁', '網站', '官網', 'hozo.com', 'web design']],
-    ['招租管理', ['招租', '出租', '帶看', '租客', '刊登']],
+    ['茲心園工程', ['茲心園', '台翰', '改建', '工程']],
     ['包租代管', ['包租', '代管', '租賃管理']],
-    ['SmartFront / AI Brain', ['smartfront', 'ai brain', 'codex', '自動化', 'line oa']],
+    ['SmartFront / AI Brain', ['smartfront', 'ai brain', 'codex', '自動化', 'line oa', 'seven jr', 'hozoam']],
     ['財務', ['財務', '付款', '匯款', '發票', '報價', '預算']],
     ['人資', ['人資', '薪資', '招募', '面談', '到職']],
     ['營運', ['營運', '流程', '客服', '行政']],
+    ['私人事務', ['私人', '個人']],
   ];
 
   for (const [project, keywords] of projectRules) {
@@ -446,34 +407,30 @@ function inferProject(text) {
 }
 
 function isExcludedScope(text) {
-  return /hogo/i.test(String(text || ''));
+  return /hozo|hogo|好住|寓好/i.test(String(text || ''));
 }
 
-function normalizeTaskProject(project) {
-  const normalized = normalizeProjectName(project);
-  const allowed = new Set(['招租管理', '網頁設計', '後臺設計製作', '包租代管', '營運', '財務', '人資', '未分類']);
-  return allowed.has(normalized) ? normalized : '未分類';
+function shouldSkipMeetingSync(meeting, sourceText) {
+  const value = [
+    meeting.type,
+    meeting.name,
+    meeting.summary,
+    sourceText,
+  ].filter(Boolean).join('\n');
+
+  if (isExcludedScope(value)) {
+    return { skip: true, reason: 'excluded-scope' };
+  }
+
+  if (isNonActionMeeting(value)) {
+    return { skip: true, reason: 'non-action-meeting' };
+  }
+
+  return { skip: false, reason: '' };
 }
 
-function normalizeProgressProject(project) {
-  const normalized = normalizeProjectName(project);
-  const allowed = new Set(['招租管理', '網頁設計', '後臺設計製作', '包租代管', 'SmartFront / AI Brain', '財務', '人資', '營運', '未分類']);
-  return allowed.has(normalized) ? normalized : '未分類';
-}
-
-function normalizeProjectName(project) {
-  const value = String(project || '').trim();
-  const aliases = new Map([
-    ['HOZO 後臺', '後臺設計製作'],
-    ['HOZO 後台', '後臺設計製作'],
-    ['後臺', '後臺設計製作'],
-    ['後台', '後臺設計製作'],
-    ['網站', '網頁設計'],
-    ['官網', '網頁設計'],
-    ['茲心園工程', '未分類'],
-    ['私人事務', '未分類'],
-  ]);
-  return aliases.get(value) || value || '未分類';
+function isNonActionMeeting(text) {
+  return /讀書會|學術討論|不產生任務|不轉任務|不建立任務|純討論|知識分享|課程筆記|研討/i.test(String(text || ''));
 }
 
 function inferTaskStatus(text) {
@@ -590,7 +547,7 @@ function extractBlockers(text) {
 }
 
 function extractDecisionNeeds(text) {
-  return extractMatchingLines(text, /決定|決策|確認|批准|同意|是否|需主管|需要主管|需 HOZO|需要 HOZO/i).join('\n');
+  return extractMatchingLines(text, /決定|決策|確認|批准|同意|是否|需 Seven|需要 Seven/i).join('\n');
 }
 
 function extractMatchingLines(text, pattern) {
@@ -695,7 +652,7 @@ async function notionRequest(pathname, { method, body }) {
     if (response.status === 404 && pathname.includes('/data_sources/')) {
       throw new Error([
         `Notion data source is not accessible: ${pathname}`,
-        'Please confirm the database is inside HOZO 好住、寓好 and shared with the Notion integration used by NOTION_TOKEN.',
+        'Please confirm the database is inside Codex 總控中心 and shared with the Notion integration used by NOTION_TOKEN.',
         `Notion response: ${responseText}`,
       ].join('\n'));
     }

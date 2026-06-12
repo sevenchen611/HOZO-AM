@@ -8,9 +8,9 @@ const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
 const controlApiKey = process.env.HOZO_CONTROL_API_KEY || '';
 const pushUrl = process.env.CONTROL_LINE_PUSH_URL || 'https://hozo-am-line-oa-webhook.onrender.com/control/line/push';
 const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
-const messagesDataSourceId = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
+const conversationsDataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID || '';
 const groupMembersDataSourceId = process.env.HOZO_LINE_GROUP_MEMBERS_DATA_SOURCE_ID || '';
-const defaultTargetName = process.env.HOZO_JUDGMENT_REVIEW_TARGET_NAME_KEYWORD || 'Maggie';
+const defaultTargetName = process.env.HOZO_JUDGMENT_REVIEW_TARGET_NAME_KEYWORD || '陸昱晴';
 
 const command = String(process.argv[2] || 'help').trim().toLowerCase();
 const args = parseArgs(process.argv.slice(3));
@@ -105,7 +105,7 @@ async function createCalibrationDatabases() {
     rulesDataSourceId = dataSourceIdFromDatabase(rulesDatabase);
     created.push('judgment rules');
   } else {
-    await assertHOZOCalibrationDataSource(rulesDataSourceId);
+    await assertSevenCalibrationDataSource(rulesDataSourceId);
   }
 
   if (!casesDataSourceId) {
@@ -118,7 +118,7 @@ async function createCalibrationDatabases() {
     casesDataSourceId = dataSourceIdFromDatabase(casesDatabase);
     created.push('judgment calibration cases');
   } else {
-    await assertHOZOCalibrationDataSource(casesDataSourceId);
+    await assertSevenCalibrationDataSource(casesDataSourceId);
   }
 
   return {
@@ -153,8 +153,8 @@ async function resolveReviewTarget() {
   const member = groupMembersDataSourceId ? await findTargetFromGroupMembers(targetName) : null;
   if (member) return member;
 
-  const messageAuthor = messagesDataSourceId ? await findTargetFromMessages(targetName) : null;
-  if (messageAuthor) return messageAuthor;
+  const conversationTarget = conversationsDataSourceId ? await findTargetFromConversations(targetName) : null;
+  if (conversationTarget) return conversationTarget;
 
   fail(`Unable to find LINE user target by name: ${targetName}`);
 }
@@ -172,16 +172,16 @@ async function findTargetFromGroupMembers(targetName) {
   return match || null;
 }
 
-async function findTargetFromMessages(targetName) {
-  const pages = await queryAllPages(messagesDataSourceId, {
+async function findTargetFromConversations(targetName) {
+  const pages = await queryAllPages(conversationsDataSourceId, {
     page_size: clampNumber(Number(args.limit || 100), 1, 100),
-    sorts: [{ property: '排序時間', direction: 'descending' }],
+    sorts: [{ property: '最後訊息時間', direction: 'descending' }],
   });
   const match = pages
     .map((page) => ({
-      id: pageText(page, '發話者 ID'),
-      name: pageText(page, '發話者名稱'),
-      source: 'line messages',
+      id: pageText(page, 'User ID'),
+      name: pageText(page, '自定義名稱') || pageText(page, 'LINE 對話名稱') || pageTitle(page, 'LINE 對話名稱'),
+      source: 'line conversations',
       type: 'user',
     }))
     .find((item) => item.id && item.id.startsWith('U') && normalizedIncludes(item.name, targetName));
@@ -341,15 +341,15 @@ async function requireCalibrationDatabases() {
   const rulesDataSourceId = process.env.HOZO_JUDGMENT_RULES_DATA_SOURCE_ID || '';
   if (!casesDataSourceId) fail('HOZO_JUDGMENT_CALIBRATION_CASES_DATA_SOURCE_ID is not set. Run create --write-env first.');
   if (!rulesDataSourceId) fail('HOZO_JUDGMENT_RULES_DATA_SOURCE_ID is not set. Run create --write-env first.');
-  await assertHOZOCalibrationDataSource(casesDataSourceId);
-  await assertHOZOCalibrationDataSource(rulesDataSourceId);
+  await assertSevenCalibrationDataSource(casesDataSourceId);
+  await assertSevenCalibrationDataSource(rulesDataSourceId);
   return { casesDataSourceId, rulesDataSourceId };
 }
 
-async function assertHOZOCalibrationDataSource(dataSourceId) {
+async function assertSevenCalibrationDataSource(dataSourceId) {
   const dataSource = await notionRequest(`/v1/data_sources/${dataSourceId}`, { method: 'GET' });
   const title = plainText(dataSource.title || []);
-  if (!/(HOZO|7AM|判斷|校準|規則|Judgment|Calibration|Rule|Case)/i.test(title)) {
+  if (!/(Seven|7AM|判斷|校準|規則|Judgment|Calibration|Rule|Case)/i.test(title)) {
     fail(`Refusing to write to non-calibration data source: ${title || dataSourceId}`);
   }
   return dataSource;
@@ -362,7 +362,7 @@ function judgmentRuleProperties() {
     'Preferred Judgment': { rich_text: {} },
     'Avoided Judgment': { rich_text: {} },
     Reason: { rich_text: {} },
-    'Applies To': { multi_select: { options: ['AMCore', 'HOZO_AM', 'future AM projects'].map((name) => ({ name })) } },
+    'Applies To': { multi_select: { options: ['AMCore', 'HOZO_AM', 'HOZO_AM', 'future AM projects'].map((name) => ({ name })) } },
     Exceptions: { rich_text: {} },
     'Source Case Count': { number: { format: 'number' } },
     Status: { select: { options: ['Draft', 'Needs review', 'Active', 'Deprecated'].map((name) => ({ name })) } },
@@ -374,7 +374,7 @@ function judgmentRuleProperties() {
 function judgmentCaseProperties({ rulesDataSourceId }) {
   const properties = {
     'Review ID': { title: {} },
-    Project: { select: { options: ['HOZO_AM'].map((name) => ({ name })) } },
+    Project: { select: { options: ['HOZO_AM', 'HOZO_AM'].map((name) => ({ name })) } },
     'Source Type': { select: { options: ['total-control task', 'report candidate', 'LINE message', 'meeting action', 'manual review'].map((name) => ({ name })) } },
     'Source URL': { url: {} },
     'Task Type': { select: { options: ['task', 'note', 'report signal', 'responsibility item', 'goal', 'deployment', 'data governance', 'unknown'].map((name) => ({ name })) } },
@@ -457,7 +457,7 @@ async function pushLine(target, text) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'x-seven-control-key': controlApiKey,
+      'x-hozo-control-key': controlApiKey,
     },
     body: JSON.stringify({ targetType: target.type, targetId: target.id, text }),
   });
@@ -685,9 +685,9 @@ function printHelp() {
   console.log([
     'Usage:',
     '  npm run judgment:calibration -- create --write-env',
-    '  npm run judgment:calibration -- find-target [--target-name "Maggie"]',
-    '  npm run judgment:calibration -- send-test [--target-name "Maggie"]',
-    '  npm run judgment:calibration -- send-next [--target-name "Maggie"]',
+    '  npm run judgment:calibration -- find-target [--target-name "陸昱晴"]',
+    '  npm run judgment:calibration -- send-test [--target-name "陸昱晴"]',
+    '  npm run judgment:calibration -- send-next [--target-name "陸昱晴"]',
     '  npm run judgment:calibration -- record-reply --review-id <id> --direction <direction> [--reason <reason>] [--rule <rule>]',
   ].join('\n'));
 }

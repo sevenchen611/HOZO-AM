@@ -3,80 +3,287 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HOZO 每日總控報告</title>
+  <title>每日總控報告</title>
   <style>
-    :root{--bg:#f7f8f5;--panel:#fff;--ink:#20242a;--muted:#647067;--line:#d9ded7;--green:#2f6f5e;--red:#9d3b3b;--amber:#9b6b1f}
+    :root{--bg:#f6f7f4;--panel:#fff;--ink:#20242a;--muted:#667085;--line:#d9ded7;--green:#2f6f5e;--yellow:#9b6b1f;--red:#9d3b3b;--shadow:0 10px 28px rgba(23,30,26,.08)}
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC",system-ui,sans-serif;line-height:1.6}
-    main{max-width:960px;margin:0 auto;padding:28px 18px 44px}
-    header{padding:22px 0 18px;border-bottom:1px solid var(--line);margin-bottom:18px}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC",system-ui,sans-serif;line-height:1.55}
+    button,select,input{font:inherit}
+    .app{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
+    .side{position:sticky;top:0;height:100vh;background:#25352f;color:#f4f7f2;padding:24px 18px}
+    .side strong{display:block;font-size:20px}
+    .side span{display:block;color:#bfd0c8;font-size:13px;margin-top:4px}
+    .nav{display:grid;gap:8px;margin-top:26px}
+    .nav a{color:#dce7e1;text-decoration:none;padding:9px 10px;border-radius:6px}
+    .nav a:hover{background:rgba(255,255,255,.08)}
+    main{padding:28px}
+    .top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
     h1{margin:0;font-size:28px;line-height:1.25}
-    h2{margin:0 0 12px;font-size:20px}
-    .sub{color:var(--muted);margin-top:8px}
-    .alert{background:#fff3f3;border:1px solid #efc3c3;color:#743232;border-radius:8px;padding:16px 18px;margin:18px 0}
-    .alert strong{display:block;margin-bottom:6px}
-    section{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;margin:14px 0}
-    ul,ol{margin:0;padding-left:24px}
-    li{margin:6px 0}
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .item{border:1px solid var(--line);border-radius:8px;padding:12px;background:#fbfcfa}
-    .item strong{display:block;color:var(--green)}
-    .tag{display:inline-block;border-radius:999px;background:#edf3ef;color:var(--green);font-size:13px;padding:2px 9px;margin-top:8px}
-    .warn{background:#fff7e8;color:var(--amber)}
-    .disabled{opacity:.55;pointer-events:none}
-    .footer{color:var(--muted);font-size:13px;margin-top:18px}
-    @media(max-width:720px){.grid{grid-template-columns:1fr}main{padding:20px 14px 34px}h1{font-size:24px}}
+    .sub{margin-top:6px;color:var(--muted)}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:9px 14px;cursor:pointer}
+    .btn.primary{border-color:var(--green);background:var(--green);color:#fff}
+    .btn:disabled{opacity:.65;cursor:wait}
+    .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
+    .metric,section{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}
+    .metric{padding:14px}
+    .metric span{display:block;color:var(--muted);font-size:13px}
+    .metric strong{display:block;margin-top:6px;font-size:24px}
+    section{margin-bottom:20px;overflow:hidden}
+    .head{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:#fbfcfa}
+    .head h2{margin:0;font-size:18px}
+    .note{color:var(--muted);font-size:13px}
+    .project{display:grid;grid-template-columns:150px 1fr 160px;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+    .project:last-child{border-bottom:0}
+    .name{font-weight:700}
+    .chips{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border-radius:999px;font-size:12px;background:#edf3ef;color:var(--green);white-space:nowrap}
+    .chip.warn{background:#fff4df;color:var(--yellow)}
+    .chip.risk{background:#f9e8e8;color:var(--red)}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:middle}
+    th{color:var(--muted);font-size:13px;font-weight:600;background:#fbfcfa}
+    tr:last-child td{border-bottom:0}
+    input[type=checkbox]{width:18px;height:18px;accent-color:var(--green)}
+    select{width:100%;min-width:128px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:8px 10px;color:var(--ink)}
+    ol{margin:0;padding:16px 18px 16px 36px}
+    li{margin-bottom:8px}
+    .result{display:none;margin-top:16px;padding:14px 16px;border:1px solid #bfd9cd;background:#edf6f1;border-radius:8px;color:#1f4e42}
+    .result.show{display:block}
+    .result.error{border-color:#efc3c3;background:#fff0f0;color:#873333}
+    .muted{color:var(--muted)}
+    @media(max-width:900px){.app{display:block}.side{position:static;height:auto}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.project{grid-template-columns:1fr}.top{display:block}.actions{margin-top:12px;justify-content:flex-start}table{display:block;overflow-x:auto}}
+    @media(max-width:560px){main{padding:16px}.metrics{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <main>
-    <header>
-      <h1>HOZO 每日總控報告</h1>
-      <div class="sub">好住寓好專用報告頁。更新時間：2026-06-08 20:30 後緊急修正。</div>
-    </header>
+  <div class="app">
+    <aside class="side">
+      <strong>每日總控</strong>
+      <span>2026-06-06 20:30 回報</span>
+      <nav class="nav">
+        <a href="#overview">總覽</a>
+        <a href="#projects">專案進度</a>
+        <a href="#attachments">附件確認</a>
+        <a href="#tasks">待辦確認</a>
+        <a href="#tomorrow">明日工作</a>
+      </nav>
+    </aside>
 
-    <div class="alert">
-      <strong>緊急更正</strong>
-      先前 20:30 報告頁曾顯示舊版 prototype 內容，包含不符合 HOZO 目前總控專案分類的資料。該舊內容已停用，請不要依照舊頁面的任務、附件或專案內容執行，也不要寫回 Notion。
-    </div>
-
-    <section>
-      <h2>目前處理狀態</h2>
-      <ol>
-        <li>已發出 LINE 更正通知，要求忽略上一則 20:30 報告。</li>
-        <li>此頁已移除舊的任務確認與附件寫回操作。</li>
-        <li>正式每日報告必須重新從 HOZO 自己的 Notion 資料庫產生。</li>
-        <li>在確認資料來源前，本頁不提供「確認並寫回」功能。</li>
-      </ol>
-    </section>
-
-    <section>
-      <h2>HOZO 總控專案分類</h2>
-      <div class="grid">
-        <div class="item"><strong>住客服務與體驗管理</strong><span class="tag">住客 / 通路 / 體驗</span></div>
-        <div class="item"><strong>工程建置管理</strong><span class="tag">工程 / 場域 / 設備</span></div>
-        <div class="item"><strong>工務維修管理</strong><span class="tag">報修 / 派工 / 結案</span></div>
-        <div class="item"><strong>房務管理</strong><span class="tag">清潔 / 備品 / 點收</span></div>
-        <div class="item"><strong>營運和資料交接</strong><span class="tag">SOP / 交接 / 現場資料</span></div>
-        <div class="item"><strong>財務與帳務管理</strong><span class="tag">收付款 / 憑證 / 對帳</span></div>
-        <div class="item"><strong>品牌官網</strong><span class="tag">官網 / 品牌 / 表單</span></div>
-        <div class="item"><strong>公司治理</strong><span class="tag">設立 / 合約 / 合規</span></div>
-        <div class="item"><strong>自動化</strong><span class="tag">LINE / Notion / 報告</span></div>
-        <div class="item"><strong>未分類</strong><span class="tag warn">暫存待判斷</span></div>
+    <main>
+      <div class="top" id="overview">
+        <div>
+          <h1>每日總控決策回報</h1>
+          <div class="sub">確認後會自動寫回 Notion，更新任務狀態、附件轉檔佇列與決策紀錄。</div>
+        </div>
+        <div class="actions">
+          <button class="btn" onclick="resetChoices()">重設</button>
+          <button class="btn primary js-confirm" onclick="confirmReport()">確認並寫回</button>
+        </div>
       </div>
-    </section>
 
-    <section>
-      <h2>下一步</h2>
-      <ol>
-        <li>重新產生 HOZO 專用 20:30 報告。</li>
-        <li>確認報告只讀取 HOZO 的 Notion Data Source ID。</li>
-        <li>確認報告頁不再使用舊 prototype 的固定內容。</li>
-        <li>確認 Render 排程只送 HOZO 專用報告給指定對象。</li>
-      </ol>
-    </section>
+      <div class="metrics">
+        <div class="metric"><span>活躍專案</span><strong>3</strong></div>
+        <div class="metric"><span>今日 LINE 訊息</span><strong>15+</strong></div>
+        <div class="metric"><span>待確認任務</span><strong>1</strong></div>
+        <div class="metric"><span>待判斷事項</span><strong>3</strong></div>
+      </div>
 
-    <p class="footer">資料隔離原則：HOZO AM 與 7AM 是不同事業體，本頁不得讀取、呈現或寫入 7AM 資料。</p>
-  </main>
+      <section id="projects">
+        <div class="head"><h2>專案進度摘要</h2><span class="note">依 LINE 對話與 Notion 紀錄整理</span></div>
+        <div class="project">
+          <div class="name">茲心園工程</div>
+          <div>台翰營造與茲心園改建群組已有工程回報，建議明天追蹤現場狀況、照片或下一步施工安排。</div>
+          <div class="chips"><span class="chip">進行中</span><span class="chip warn">需追蹤</span></div>
+        </div>
+        <div class="project">
+          <div class="name">包租代管</div>
+          <div>今日與 HOZO CRM 相關資料仍需整理，建議先確認哪些內容要進入 HOZO LINE 附件紀錄與轉檔流程。</div>
+          <div class="chips"><span class="chip">資料整理</span></div>
+        </div>
+        <div class="project">
+          <div class="name">財務</div>
+          <div>Bonnie 提供一份資料，尚未確認是否要轉成財務專案任務。</div>
+          <div class="chips"><span class="chip warn">待確認</span></div>
+        </div>
+      </section>
+
+      <section id="attachments">
+        <div class="head"><h2>附件轉檔確認</h2><span class="note">勾選後會建立轉檔佇列；確定不轉檔會只寫回判斷</span></div>
+        <table>
+          <thead>
+            <tr><th>轉檔</th><th>附件</th><th>來源</th><th>專案</th><th>目前狀態</th><th>確認動作</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox" class="ocr-check" data-file="sample.pdf"></td>
+              <td><a class="source-link" href="https://app.notion.com/p/37751c686dac812eb252c9e7b444f43f" target="_blank">sample.pdf</a><div class="muted">PDF，待判斷</div></td>
+              <td>HOZO LINE 測試</td>
+              <td>未分類</td>
+              <td><span class="chip warn">尚未解析</span></td>
+              <td>
+                <select class="file-action">
+                  <option>暫不轉檔</option>
+                  <option>確定不轉檔</option>
+                  <option>OCR 圖片文字</option>
+                  <option>PDF 文字解析</option>
+                  <option>檔案摘要整理</option>
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="tasks">
+        <div class="head"><h2>待辦狀態確認</h2><span class="note">確認後會更新或建立到總控任務庫</span></div>
+        <table>
+          <thead>
+            <tr><th>任務</th><th>專案</th><th>來源</th><th>目前狀態</th><th>確認狀態</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>追蹤台翰營造對工程進度與現場狀況的回覆</td>
+              <td>茲心園工程</td>
+              <td>LINE 訊息</td>
+              <td><span class="chip warn">等待回覆</span></td>
+              <td><select class="task-status" data-task="追蹤台翰營造對工程進度與現場狀況的回覆"><option>等待回覆</option><option>未開始</option><option>進行中</option><option>待確認完成</option><option>已完成</option><option>封存</option></select></td>
+            </tr>
+            <tr>
+              <td>確認 Bonnie 財務資料是否需要寫入 Notion</td>
+              <td>財務</td>
+              <td>手動整理</td>
+              <td><span class="chip warn">待確認</span></td>
+              <td><select class="task-status" data-task="確認 Bonnie 財務資料是否需要寫入 Notion"><option>待確認</option><option>未開始</option><option>進行中</option><option>等待回覆</option><option>已完成</option><option>封存</option></select></td>
+            </tr>
+            <tr>
+              <td>測試 #待辦 是否自動進入總控任務庫</td>
+              <td>SmartFront / AI Brain</td>
+              <td>總控規則</td>
+              <td><span class="chip">未開始</span></td>
+              <td><select class="task-status" data-task="測試 #待辦 是否自動進入總控任務庫"><option>未開始</option><option>進行中</option><option>等待回覆</option><option>待確認完成</option><option>已完成</option><option>封存</option></select></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="tomorrow">
+        <div class="head"><h2>明日優先工作確認</h2><span class="note">作為明天早報與追蹤事項的基礎</span></div>
+        <ol>
+          <li>確認 Bonnie 財務資料是否已整理完成，並決定是否轉為財務專案任務。</li>
+          <li>在 LINE 群組測試一則 #待辦，確認是否被正確寫入總控任務庫。</li>
+          <li>整理台翰營造與茲心園工程相關的今日更新，確認是否有新的風險或卡點。</li>
+          <li>判斷今日附件是否需要 OCR、PDF 文字解析或摘要整理。</li>
+          <li>確認晚間 20:30 報告確認機制是否能正確寫回 Notion。</li>
+        </ol>
+      </section>
+
+      <div class="actions">
+        <button class="btn" onclick="resetChoices()">重設</button>
+        <button class="btn primary js-confirm" onclick="confirmReport()">確認並寫回</button>
+      </div>
+      <div class="result" id="result"></div>
+    </main>
+  </div>
+
+  <script>
+    const DEFAULT_APPROVAL_API = 'https://hozo-am-line-oa-webhook.onrender.com/control/reports/approve';
+
+    function getApprovalApi() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('approvalApi') || DEFAULT_APPROVAL_API;
+    }
+
+    function getApprovalKey() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('approvalKey') || window.localStorage.getItem('sevenApprovalKey') || '';
+    }
+
+    async function confirmReport() {
+      const result = document.getElementById('result');
+      const buttons = document.querySelectorAll('.js-confirm');
+      buttons.forEach((button) => { button.disabled = true; button.textContent = '寫回中...'; });
+      result.className = 'result show';
+      result.innerHTML = '<strong>正在寫回 Notion...</strong><br>請稍候，這次確認會記錄到決策庫，並更新任務與附件轉檔佇列。';
+
+      const selectedFiles = Array.from(document.querySelectorAll('#attachments tbody tr')).map((row) => {
+        const input = row.querySelector('.ocr-check');
+        const action = row.querySelector('.file-action').value;
+        const link = row.querySelector('.source-link');
+        if (!input.checked && action !== '確定不轉檔') {
+          return null;
+        }
+        return {
+          file: input.dataset.file,
+          action,
+          sourceUrl: link ? link.href : '',
+        };
+      }).filter(Boolean);
+
+      const taskUpdates = Array.from(document.querySelectorAll('.task-status')).map((select) => ({
+        task: select.dataset.task,
+        status: select.value,
+      }));
+
+      const payload = {
+        reportType: 'daily',
+        approvedBy: '陸昱晴',
+        submittedAt: new Date().toISOString(),
+        source: 'daily-control-report-prototype',
+        attachments: selectedFiles,
+        tasks: taskUpdates,
+      };
+
+      const approvalKey = getApprovalKey();
+      if (approvalKey) {
+        payload.approvalKey = approvalKey;
+      }
+
+      try {
+        const response = await fetch(getApprovalApi(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || `寫回失敗 (${response.status})`);
+        }
+
+        const fileText = selectedFiles.length
+          ? selectedFiles.map((item) => `${escapeHtml(item.file)}：${escapeHtml(item.action)}`).join('<br>')
+          : '沒有勾選要轉檔的附件。';
+        const taskText = taskUpdates.map((item) => `${escapeHtml(item.task)} -> ${escapeHtml(item.status)}`).join('<br>');
+
+        result.className = 'result show';
+        result.innerHTML = `<strong>已寫回 Notion。</strong><br><br><strong>附件確認：</strong><br>${fileText}<br><br><strong>任務狀態：</strong><br>${taskText}<br><br><span>已建立決策紀錄，任務共 ${data.tasksWritten || 0} 筆，附件轉檔佇列共 ${data.attachmentsWritten || 0} 筆，附件判斷共 ${data.attachmentsReviewed || data.attachmentsWritten || 0} 筆。</span>`;
+      } catch (error) {
+        result.className = 'result show error';
+        result.innerHTML = `<strong>寫回失敗。</strong><br>${escapeHtml(error.message || '未知錯誤')}<br><br><span>請先保留這頁選擇，稍後再重試。</span>`;
+      } finally {
+        buttons.forEach((button) => { button.disabled = false; button.textContent = '確認並寫回'; });
+        result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function resetChoices() {
+      document.querySelectorAll('.ocr-check').forEach((input) => { input.checked = false; });
+      document.querySelectorAll('.file-action').forEach((select) => { select.selectedIndex = 0; });
+      document.querySelectorAll('.task-status').forEach((select) => { select.selectedIndex = 0; });
+      const result = document.getElementById('result');
+      result.className = 'result';
+      result.innerHTML = '';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+      }[char]));
+    }
+  </script>
 </body>
 </html>

@@ -25,11 +25,12 @@ if (command === 'create') {
     responsibilityDataSourceId: requiredArg('responsibility', process.env.HOZO_RESPONSIBILITY_DATA_SOURCE_ID),
     groupOptionsDataSourceId: requiredArg('groups', process.env.HOZO_LINE_GROUP_OPTIONS_DATA_SOURCE_ID),
     groupMembersDataSourceId: requiredArg('members', process.env.HOZO_LINE_GROUP_MEMBERS_DATA_SOURCE_ID),
+    memberIndexDataSourceId: requiredArg('member-index', memberIndexDataSourceId),
     limit: clampNumber(Number(args.limit || 100), 1, 100),
   });
   console.log(JSON.stringify(result, null, 2));
 } else {
-  fail('Usage: npm run setup:responsibility -- create OR npm run setup:responsibility -- seed --responsibility <id> --groups <id> --members <id> [--limit 100]');
+  fail('Usage: npm run setup:responsibility -- create OR npm run setup:responsibility -- seed --responsibility <id> --groups <id> --members <id> --member-index <id> [--limit 100]');
 }
 
 async function createResponsibilityOwnerNarrowingDatabases() {
@@ -87,12 +88,11 @@ async function createResponsibilityOwnerNarrowingDatabases() {
   };
 }
 
-async function seedResponsibilityOwnerNarrowingData({ responsibilityDataSourceId, groupOptionsDataSourceId, groupMembersDataSourceId, limit }) {
-  await assertHozoDataSource(responsibilityDataSourceId);
-  await assertHozoDataSource(groupOptionsDataSourceId);
-  await assertHozoDataSource(groupMembersDataSourceId);
-  if (!memberIndexDataSourceId) fail('HOZO_LINE_GROUP_MEMBER_INDEX_DATA_SOURCE_ID is not set.');
-  await assertHozoDataSource(memberIndexDataSourceId);
+async function seedResponsibilityOwnerNarrowingData({ responsibilityDataSourceId, groupOptionsDataSourceId, groupMembersDataSourceId, memberIndexDataSourceId, limit }) {
+  await assertSevenDataSource(responsibilityDataSourceId);
+  await assertSevenDataSource(groupOptionsDataSourceId);
+  await assertSevenDataSource(groupMembersDataSourceId);
+  await assertSevenDataSource(memberIndexDataSourceId);
 
   const conversations = await queryAllPages(conversationsDataSourceId, {
     page_size: limit,
@@ -125,38 +125,25 @@ async function seedResponsibilityOwnerNarrowingData({ responsibilityDataSourceId
     groupOptions.push({ ...option, pageId: page.id, conversationPageId: conversation.id });
   }
 
-  const memberIndexRows = await queryAllPages(memberIndexDataSourceId, {
-    page_size: limit,
-    filter: { property: 'UserID', rich_text: { is_not_empty: true } },
-    sorts: [{ property: '最後出現時間', direction: 'descending' }],
-  });
-
   const memberMap = new Map();
-  for (const indexRow of memberIndexRows.map(normalizeMemberIndexRow)) {
-    if (!indexRow.userId || indexRow.status === 'left') continue;
-    const groupOption = groupOptions.find((option) => option.targetKey === indexRow.targetKey);
-    if (!groupOption) continue;
-    const userId = indexRow.userId;
-    if (!userId || userId === groupOption.targetId) continue;
-    const key = `${groupOption.pageId}:${userId}`;
-    const existing = memberMap.get(key);
-    const seenAt = indexRow.lastSeenAt || indexRow.syncedAt;
-    if (existing) {
-      existing.count += 1;
-      if (seenAt && (!existing.lastSeenAt || new Date(seenAt) > new Date(existing.lastSeenAt))) {
-        existing.lastSeenAt = seenAt;
-      }
-      continue;
+  const memberIndexRows = await queryAllPages(memberIndexDataSourceId, { page_size: 100 });
+  const memberIndex = memberIndexRows.map(normalizeMemberIndexRow).filter((member) => member.userId && member.status !== 'left');
+  for (const groupOption of groupOptions) {
+    const groupMembers = memberIndex.filter((member) => member.targetKey === groupOption.targetKey);
+    for (const member of groupMembers) {
+      if (!member.displayName || member.displayName === groupOption.displayName) continue;
+      const key = `${groupOption.pageId}:${member.userId}`;
+      if (memberMap.has(key)) continue;
+      memberMap.set(key, {
+        userId: member.userId,
+        displayName: member.displayName,
+        groupPageId: groupOption.pageId,
+        groupId: groupOption.targetId,
+        groupName: groupOption.displayName,
+        lastSeenAt: member.lastSeenAt || member.syncedAt || groupOption.lastMessageAt,
+        count: 1,
+      });
     }
-    memberMap.set(key, {
-      userId,
-      displayName: indexRow.displayName || '未命名成員',
-      groupPageId: groupOption.pageId,
-      groupId: groupOption.targetId,
-      groupName: groupOption.displayName,
-      lastSeenAt: seenAt,
-      count: 1,
-    });
   }
 
   const members = [];
@@ -168,7 +155,7 @@ async function seedResponsibilityOwnerNarrowingData({ responsibilityDataSourceId
       GroupID: richTextProperty(member.groupId),
       群組顯示名稱: richTextProperty(member.groupName),
       LINE群組: relationProperty([member.groupPageId]),
-      來源: richTextProperty('HOZO LINE 群組成員索引'),
+      來源: richTextProperty('HOZO LINE 對話主檔'),
       最後出現時間: member.lastSeenAt ? dateProperty(member.lastSeenAt) : undefined,
       出現次數: numberProperty(member.count),
       同步狀態: selectProperty('自動建立'),
@@ -177,7 +164,7 @@ async function seedResponsibilityOwnerNarrowingData({ responsibilityDataSourceId
   }
 
   const responsibilities = [];
-  for (const project of hozoProjectOptions()) {
+  for (const project of sevenProjectOptions()) {
     const page = await createPage(responsibilityDataSourceId, {
       權責項目名稱: titleProperty(project),
       '第一層：總控專案': selectProperty(project),
@@ -367,11 +354,11 @@ async function createPage(dataSourceId, properties) {
   });
 }
 
-async function assertHozoDataSource(dataSourceId) {
+async function assertSevenDataSource(dataSourceId) {
   const dataSource = await notionRequest(`/v1/data_sources/${dataSourceId}`, { method: 'GET' });
   const title = plainText(dataSource.title);
-  if (!/(HOZO|好住|寓好|LINE|Responsibility|group|member)/i.test(title)) {
-    fail(`Refusing to write to non-HOZO data source: ${title || dataSourceId}`);
+  if (!/(Seven|好住|寓好|LINE|Responsibility|group|member)/i.test(title)) {
+    fail(`Refusing to write to non-Seven data source: ${title || dataSourceId}`);
   }
   return dataSource;
 }
@@ -415,7 +402,7 @@ function normalizeConversationOption(page) {
 }
 
 function normalizeMemberIndexRow(page) {
-  const targetType = selectName(page.properties?.['對象類型']) || 'group';
+  const targetType = pageSelect(page, '對象類型') || 'group';
   const targetId = targetType === 'room' ? pageText(page, 'RoomID') : pageText(page, 'GroupID');
   return {
     userId: pageText(page, 'UserID'),
@@ -423,7 +410,7 @@ function normalizeMemberIndexRow(page) {
     targetType,
     targetId,
     targetKey: `${targetType}:${targetId}`,
-    status: selectName(page.properties?.['成員狀態']) || 'unknown',
+    status: pageSelect(page, '成員狀態') || 'unknown',
     syncedAt: pageDate(page, '最後同步時間'),
     lastSeenAt: pageDate(page, '最後出現時間'),
   };
@@ -451,7 +438,7 @@ function inferProject(value) {
 function projectSelectSchema() {
   return {
     select: {
-      options: hozoProjectOptions().map((name, index) => ({
+      options: sevenProjectOptions().map((name, index) => ({
         name,
         color: ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray'][index] || 'gray',
       })),
@@ -459,7 +446,7 @@ function projectSelectSchema() {
   };
 }
 
-function hozoProjectOptions() {
+function sevenProjectOptions() {
   return [
     '公司治理、法規合規',
     '場域建置、資產採購',
@@ -499,6 +486,11 @@ function urlProperty(value) {
   return value ? { url: value } : undefined;
 }
 
+function pageTitle(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return plainText(property?.title || []);
+}
+
 function pageText(page, propertyName) {
   const property = page?.properties?.[propertyName];
   return plainText(property?.title || property?.rich_text || []);
@@ -517,10 +509,6 @@ function pageDate(page, propertyName) {
 function pageNumber(page, propertyName) {
   const property = page?.properties?.[propertyName];
   return Number(property?.number || 0);
-}
-
-function pageRelationIds(page, propertyName) {
-  return (page?.properties?.[propertyName]?.relation || []).map((item) => item.id).filter(Boolean);
 }
 
 function plainText(items) {
@@ -585,3 +573,5 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
+
+

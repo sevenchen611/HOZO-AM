@@ -5,7 +5,7 @@ loadEnv(path.resolve('.env'));
 
 const notionToken = process.env.NOTION_TOKEN;
 const notionVersion = process.env.NOTION_VERSION || '2025-09-03';
-const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '3be363a9-3b2f-4a51-9229-2cd2ec180c6a';
+const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '9c9e34ff-45af-4543-a3ae-11c5cd432b36';
 const dryRun = !process.argv.includes('--write');
 
 if (!notionToken) throw new Error('NOTION_TOKEN is not set.');

@@ -1,30 +1,32 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import http from 'node:http';
+import { renderTaskReviewPage } from './report-pages.js';
+import { renderDashboardOverview, renderProjectPage, renderTaskPage } from './dashboard-pages.js';
 
 loadDotenv();
 
 const originalCreateServer = http.createServer.bind(http);
 
-const TASKS_DATA_SOURCE_ID = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
-const RISK_DECISIONS_DATA_SOURCE_ID = process.env.HOZO_RISK_DECISIONS_DATA_SOURCE_ID || '';
-const ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID = process.env.HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID || '';
-const CODEX_COMMANDS_DATA_SOURCE_ID = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '';
-const DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID = process.env.HOZO_DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID || '';
+const TASKS_DATA_SOURCE_ID = process.env.HOZO_TASKS_DATA_SOURCE_ID || '9c9e34ff-45af-4543-a3ae-11c5cd432b36';
+const RISK_DECISIONS_DATA_SOURCE_ID = process.env.HOZO_RISK_DECISIONS_DATA_SOURCE_ID || '1f6ef6e0-3f5f-49fb-8b80-add787898d7d';
+const ATTACHMENTS_DATA_SOURCE_ID = process.env.HOZO_ATTACHMENTS_DATA_SOURCE_ID || '';
+const ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID = process.env.HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID || '4ce26dc1-0b90-49ad-8e96-73f3a8f23a1f';
+const CODEX_COMMANDS_DATA_SOURCE_ID = process.env.HOZO_CODEX_COMMANDS_DATA_SOURCE_ID || '6a500d4c-43ae-4523-bd76-c19a80697bb3';
+const DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID = process.env.HOZO_DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID || '607884fd-afa2-4ddc-8319-70daeb31c549';
+const PROGRESS_REPORTS_DATA_SOURCE_ID = process.env.HOZO_PROGRESS_REPORTS_DATA_SOURCE_ID || 'add70895-645c-4268-9763-3e4bcb2b5b95';
 const JUDGMENT_RULES_DATA_SOURCE_ID = process.env.HOZO_JUDGMENT_RULES_DATA_SOURCE_ID || '';
 const CONVERSATIONS_DATA_SOURCE_ID = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID || '';
+// Raw/outgoing LINE event log only. Hourly task judgement reads the conversation master.
 const MESSAGES_DATA_SOURCE_ID = process.env.HOZO_MESSAGES_DATA_SOURCE_ID || '';
-const RESPONSIBILITY_DATA_SOURCE_ID = process.env.HOZO_RESPONSIBILITY_DATA_SOURCE_ID || '';
+const LINE_GROUP_OPTIONS_DATA_SOURCE_ID = process.env.HOZO_LINE_GROUP_OPTIONS_DATA_SOURCE_ID || '';
+const LINE_GROUP_MEMBERS_DATA_SOURCE_ID = process.env.HOZO_LINE_GROUP_MEMBERS_DATA_SOURCE_ID || '';
 const OUTGOING_ACTOR_NAME = process.env.HOZO_OUTGOING_ACTOR_NAME || 'HOZO Jr.';
-const HOZO_DATA_SOURCE_PARENT_BLOCK_ID = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID || '35f51c68-6dac-805f-88b4-e1cf5a86bbc1');
-const HOZO_DATA_SOURCE_PARENT_PAGE_ID = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_PAGE_ID || '35d51c68-6dac-802c-81e6-c71b560c0498');
-const verifiedHozoDataSources = new Map();
-const dailyConversationProjectCache = new Map();
 const CONVERSATION_ANCHOR_TEXT = '【HOZO LINE】對話記錄';
-const CONVERSATION_ANCHOR_PATTERN = /對話記錄(?:（最新在最上方）)?/;
 const OUTGOING_BLOCK_COLOR = 'orange';
-const PUBLIC_BASE_URL = (process.env.HOZO_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
-const CODEX_COMMAND_TRIGGERS = buildCodexCommandTriggers(process.env.HOZO_CODEX_COMMAND_TRIGGERS || 'HOZO Junior,HOZ Jr.,HOZO Jr.');
+const HOZO_DATA_SOURCE_PARENT_BLOCK_ID = normalizeId(process.env.HOZO_DATA_SOURCE_PARENT_BLOCK_ID || '');
+const PUBLIC_BASE_URL = (process.env.HOZO_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://hozo-am-line-oa-webhook.onrender.com').replace(/\/+$/, '');
+const verifiedSevenDataSources = new Map();
 const REPORT_ROUTES = new Map([
   ['/reports/morning-brief', '../reports/morning-brief-prototype.html'],
   ['/reports/morning-brief-prototype.html', '../reports/morning-brief-prototype.html'],
@@ -38,8 +40,32 @@ http.createServer = function createServerWithControlApi(listener) {
   return originalCreateServer(async (req, res) => {
     const pathname = new URL(req.url ?? '/', 'http://localhost').pathname.replace(/\/+$/, '') || '/';
 
+    if (req.method === 'GET' && pathname === '/reports/followup-recipient-candidates') {
+      return serveFollowupRecipientCandidates(req, res);
+    }
+
+    if (req.method === 'GET' && (pathname === '/reports/daily-control-report' || pathname === '/reports/followup-confirmation')) {
+      return serveDynamicTaskReview(req, res, pathname);
+    }
+
+    if (req.method === 'GET' && (pathname === '/dashboard' || pathname.startsWith('/dashboard/'))) {
+      return serveDashboard(req, res, pathname);
+    }
+
+    if (req.method === 'POST' && pathname === '/dashboard/assign-project') {
+      return handleDashboardAssignProject(req, res);
+    }
+
+    if (req.method === 'POST' && pathname === '/dashboard/set-parent') {
+      return handleDashboardSetParent(req, res);
+    }
+
     if (req.method === 'GET' && REPORT_ROUTES.has(pathname)) {
       return serveReportPage(res, pathname);
+    }
+
+    if (req.method === 'GET' && pathname.startsWith('/user-ui')) {
+      return serveUserUiPage(req, res, pathname);
     }
 
     if (pathname.startsWith('/control/')) {
@@ -64,14 +90,15 @@ async function handleControlRequest(req, res, pathname) {
       approvalAcknowledgementEnabled: Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN),
       outgoingMessageLoggingEnabled: Boolean(process.env.NOTION_TOKEN && CONVERSATIONS_DATA_SOURCE_ID && MESSAGES_DATA_SOURCE_ID),
       defaultReportTargetConfigured: Boolean(process.env.HOZO_REPORT_TARGET_ID),
-      defaultReportCcConfigured: Boolean(process.env.HOZO_REPORT_CC_TARGET_IDS || process.env.HOZO_REPORT_CC_NAME_KEYWORDS || 'Seven陳聖文'),
+      multiRecipientReportEnabled: true,
+      reportCcConfigured: Boolean(process.env.HOZO_REPORT_CC_TARGET_IDS || process.env.HOZO_REPORT_CC_NAME_KEYWORDS),
       defaultReportTargetAutoResolveEnabled: Boolean(process.env.NOTION_TOKEN && process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID),
       codexCommandQueueConfigured: Boolean(CODEX_COMMANDS_DATA_SOURCE_ID),
       dailyReportSnapshotsConfigured: Boolean(DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID),
       judgmentRulesConfigured: Boolean(JUDGMENT_RULES_DATA_SOURCE_ID),
       userUiLoginEnabled: Boolean(process.env.HOZO_USER_UI_USERNAME && process.env.HOZO_USER_UI_PASSWORD),
       reportTypes: ['morning', 'daily', 'followup-morning', 'followup-midday', 'followup-afternoon'],
-      endpoints: ['POST /control/line/push', 'POST /control/reports/send', 'POST /control/reports/preview', 'POST /control/reports/approve', 'POST /control/codex-commands/test', 'POST /control/tasks/update', 'POST /control/judgment-rules/create'],
+      endpoints: ['GET /user-ui/user-ui-connected-preview.html', 'GET /reports/followup-recipient-candidates', 'POST /control/line/push', 'POST /control/reports/send', 'POST /control/reports/preview', 'POST /control/reports/approve', 'POST /control/followups/dispatch', 'POST /control/tasks/update', 'POST /control/tasks/send-planned', 'POST /control/attachments/update', 'POST /control/judgment-rules/create', 'POST /control/codex-commands/test'],
     });
   }
 
@@ -107,6 +134,11 @@ async function handleControlRequest(req, res, pathname) {
       return sendJson(res, 200, result);
     }
 
+    if (pathname === '/control/followups/dispatch') {
+      const result = await dispatchFollowupsFromControl(body);
+      return sendJson(res, 200, result);
+    }
+
     if (pathname === '/control/codex-commands/test') {
       const result = await createCodexCommandTest(body);
       return sendJson(res, 200, result);
@@ -114,6 +146,16 @@ async function handleControlRequest(req, res, pathname) {
 
     if (pathname === '/control/tasks/update') {
       const result = await updateTaskFromUserUi(req, body);
+      return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/control/tasks/send-planned') {
+      const result = await sendPlannedTaskMessage(req, body);
+      return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/control/attachments/update') {
+      const result = await updateAttachmentFromUserUi(req, body);
       return sendJson(res, 200, result);
     }
 
@@ -138,7 +180,7 @@ async function createCodexCommandTest(body) {
   }
 
   const now = new Date();
-  const originalText = String(body.text || body.originalText || `${OUTGOING_ACTOR_NAME} 測試 Command Queue：請回覆我你已成功收到這個測試命令。`).trim();
+  const originalText = String(body.text || body.originalText || 'HOZO Junior 測試 Command Queue：請回覆我你已成功收到這個測試命令。').trim();
   const trigger = findCodexCommandTrigger(originalText);
   const commandText = extractCodexCommand(originalText);
   const sourceType = String(body.sourceType || body.targetType || 'user').trim();
@@ -159,7 +201,7 @@ async function createCodexCommandTest(body) {
         'Source Type': selectProperty(sourceType),
         'Source ID': richTextProperty(sourceId),
         'User ID': richTextProperty(sourceType === 'user' ? sourceId : String(body.userId || '')),
-        'Conversation Name': richTextProperty(String(body.conversationName || `${OUTGOING_ACTOR_NAME} control test`)),
+        'Conversation Name': richTextProperty(String(body.conversationName || 'HOZO Jr. control test')),
         'Actor Name': richTextProperty(String(body.actorName || '陸昱晴')),
         'Conversation Key': richTextProperty(`${sourceType}:${sourceId}`),
         'LINE Message ID': richTextProperty(lineMessageId),
@@ -279,11 +321,16 @@ async function updateTaskFromUserUi(req, body) {
     throw new Error('Task page id is required.');
   }
 
+  // 先確保預定訊息／下次行動欄位存在，這樣頁面快照才會帶出它們。
+  await ensureTaskReviewProperties();
   const page = await assertTaskPage(pageId);
   const submittedAt = new Date();
   const updates = body.updates && typeof body.updates === 'object' ? body.updates : body;
-  const editedBy = stringOrEmpty(updates.editedBy || updates.editor || updates.userName) || 'User UI 使用者';
+  const editedBy = resolveUserUiEditor(req, updates);
+  const editNoteForProperty = stringOrEmpty(updates.editNote);
   const properties = compactProperties({
+    // 備註同步寫入「最新備註」欄位，讓每小時的 AI 判讀讀得到。
+    最新備註: editNoteForProperty ? taskPropertyUpdate(page, '最新備註', `[${formatTaipeiDateTime(submittedAt)}] ${editNoteForProperty}`) : undefined,
     狀態: taskPropertyUpdate(page, '狀態', normalizeOptionalTaskStatus(updates.status)),
     確認狀態: taskPropertyUpdate(page, '確認狀態', stringOrEmpty(updates.confirmation)),
     負責人: taskPropertyUpdate(page, '負責人', stringOrEmpty(updates.owner)),
@@ -296,8 +343,19 @@ async function updateTaskFromUserUi(req, body) {
     逾期狀態: taskPropertyUpdate(page, '逾期狀態', stringOrEmpty(updates.overdueStatus)),
     'Codex 判斷摘要': taskPropertyUpdate(page, 'Codex 判斷摘要', stringOrEmpty(updates.judgment)),
     來源原文: taskPropertyUpdate(page, '來源原文', stringOrEmpty(updates.rawSource)),
+    預定訊息內容: taskPropertyUpdate(page, '預定訊息內容', stringOrEmpty(updates.plannedMessage)),
+    預定發送對象: taskPropertyUpdate(page, '預定發送對象', stringOrEmpty(updates.plannedTargetName)),
+    預定發送對象ID: taskPropertyUpdate(page, '預定發送對象ID', stringOrEmpty(updates.plannedTargetId)),
+    下次行動時間: taskPropertyUpdate(page, '下次行動時間', stringOrEmpty(updates.nextActionAt)),
+    下次行動模式: taskPropertyUpdate(page, '下次行動模式', stringOrEmpty(updates.nextActionMode)),
+    下次行動說明: taskPropertyUpdate(page, '下次行動說明', stringOrEmpty(updates.nextActionNote)),
     最後更新: page.properties?.最後更新 ? dateProperty(submittedAt) : undefined,
   });
+
+  // 取消排程：清空下次行動時間（taskPropertyUpdate 不處理清除，這裡明確設 null）。
+  if (updates.clearNextAction === true && page.properties?.['下次行動時間']) {
+    properties['下次行動時間'] = { date: null };
+  }
 
   if (!Object.keys(properties).length && !stringOrEmpty(updates.editNote) && !stringOrEmpty(updates.pageContent)) {
     throw new Error('No supported task fields were provided.');
@@ -339,6 +397,186 @@ async function updateTaskFromUserUi(req, body) {
   };
 }
 
+// 立即發送任務的預定訊息：對象優先用 預定發送對象ID，沒有就回退到來源對話。
+// 發送後寫入任務內文、暫緩 2 天、狀態改為等待回覆（已是完成/封存者不動）。
+async function sendPlannedTaskMessage(req, body) {
+  if (!process.env.NOTION_TOKEN) {
+    throw new Error('NOTION_TOKEN is not set.');
+  }
+
+  await ensureTaskReviewProperties();
+  const pageId = normalizeId(body.pageId || body.taskPageId || '');
+  const page = pageId
+    ? await assertTaskPage(pageId)
+    : await findTaskByName(String(body.task || '').trim());
+  if (!page) {
+    throw new Error('Task not found.');
+  }
+
+  const submittedAt = new Date();
+  const editedBy = resolveUserUiEditor(req, body);
+  const message = clampLineText(stringOrEmpty(body.message) || pageTextProperty(page, '預定訊息內容'));
+  if (!message) {
+    throw new Error('沒有可發送的訊息內容，請先填寫預定訊息內容。');
+  }
+
+  const targetSpec = stringOrEmpty(body.targetId) || pageTextProperty(page, '預定發送對象ID');
+  const targetName = stringOrEmpty(body.targetName) || pageTextProperty(page, '預定發送對象');
+  let target = parsePlannedTarget(targetSpec, targetName);
+  if (!target) {
+    target = await resolveTaskFollowupTarget(pageUrlProperty(page, '關聯 Notion 頁面'));
+  }
+  if (!target) {
+    throw new Error('無法解析發送對象：請先設定預定發送對象，或確認任務有來源對話。');
+  }
+
+  const pushResult = await pushToTargets([target], [{ type: 'text', text: message }]);
+
+  const timestamp = formatTaipeiDateTime(submittedAt);
+  await notionRequest(`/v1/blocks/${page.id}/children`, {
+    method: 'PATCH',
+    body: {
+      children: [
+        { object: 'block', type: 'heading_3', heading_3: { rich_text: [{ type: 'text', text: { content: `預定訊息已發送（${timestamp}）` } }] } },
+        { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: clampNotionText(message) } }] } },
+        { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: `發送對象：${target.name || target.id}（${target.type}）；由 ${editedBy} 確認後發送。` } }], color: 'gray' } },
+      ],
+    },
+  });
+
+  const currentStatus = pageSelectProperty(page, '狀態');
+  const snoozeUntil = new Date(submittedAt.getTime() + 2 * 24 * 60 * 60 * 1000);
+  await notionRequest(`/v1/pages/${page.id}`, {
+    method: 'PATCH',
+    body: {
+      properties: compactProperties({
+        // 發送後把這次用的內容與對象存回任務，下次就是「預設訊息」。
+        預定訊息內容: taskPropertyUpdate(page, '預定訊息內容', message),
+        預定發送對象: taskPropertyUpdate(page, '預定發送對象', target.name || targetName),
+        預定發送對象ID: taskPropertyUpdate(page, '預定發送對象ID', `${target.type}:${target.id}`),
+        狀態: ['已完成', '封存'].includes(currentStatus) ? undefined : taskPropertyUpdate(page, '狀態', '等待回覆'),
+        確認狀態: ['已完成', '封存'].includes(currentStatus) ? undefined : taskPropertyUpdate(page, '確認狀態', '已確認'),
+        追蹤暫緩至: dateProperty(snoozeUntil),
+        最後更新: page.properties?.最後更新 ? dateProperty(submittedAt) : undefined,
+      }),
+    },
+  });
+
+  return {
+    ok: true,
+    pageId: normalizeId(page.id),
+    target: { id: target.id, type: target.type, name: target.name || targetName || '' },
+    message,
+    pushResult: pushResult.results || [],
+    sentAt: submittedAt.toISOString(),
+  };
+}
+
+// 預定發送對象ID 的格式是「type:id」（例如 group:Cxxx／user:Uxxx）；也接受裸 LINE ID。
+function parsePlannedTarget(spec, name) {
+  const trimmed = String(spec || '').trim();
+  if (!trimmed) return null;
+  const match = trimmed.match(/^(group|room|user)\s*[:：]\s*(\S+)$/i);
+  if (match) {
+    return { id: match[2], type: match[1].toLowerCase(), name: String(name || '').trim(), source: 'planned-target' };
+  }
+  if (/^[CRU][0-9a-f]{10,}$/i.test(trimmed)) {
+    return { id: trimmed, type: inferTargetType(trimmed), name: String(name || '').trim(), source: 'planned-target' };
+  }
+  return null;
+}
+
+async function updateAttachmentFromUserUi(req, body) {
+  if (!process.env.NOTION_TOKEN) {
+    throw new Error('NOTION_TOKEN is not set.');
+  }
+  if (!ATTACHMENTS_DATA_SOURCE_ID) {
+    throw new Error('HOZO_ATTACHMENTS_DATA_SOURCE_ID is not set.');
+  }
+
+  const pageId = normalizeId(body.pageId || body.attachmentPageId || body.id);
+  if (!pageId) {
+    throw new Error('Attachment page id is required.');
+  }
+
+  const page = await assertAttachmentPage(pageId);
+  const submittedAt = new Date();
+  const updates = body.updates && typeof body.updates === 'object' ? body.updates : body;
+  const action = stringOrEmpty(updates.action || body.action || 'update');
+  const editedBy = resolveUserUiEditor(req, updates);
+  const editNote = stringOrEmpty(updates.editNote || updates.note);
+
+  if (/^(archive|delete|discard|不保存|刪除|封存)$/i.test(action)) {
+    const children = [
+      paragraphProperty(`【User UI 附件不保存】${formatTaipeiDateTime(submittedAt)}｜編輯者：${editedBy}｜${editNote || '使用者從 User UI 標記此附件不需要保留。'}`),
+    ];
+    await notionRequest(`/v1/blocks/${pageId}/children`, { method: 'PATCH', body: { children } });
+    await notionRequest(`/v1/pages/${pageId}`, { method: 'PATCH', body: { archived: true } });
+    return {
+      ok: true,
+      action: 'archived',
+      pageId,
+      url: page.url,
+      editedBy,
+      updatedAt: submittedAt.toISOString(),
+    };
+  }
+
+  const properties = compactProperties({
+    關聯專案: taskPropertyUpdate(page, '關聯專案', normalizeProjectList(updates.projects || updates.project || updates['關聯專案'])),
+    轉檔狀態: taskPropertyUpdate(page, '轉檔狀態', normalizeAttachmentStatus(updates.conversionStatus || updates.status || updates['轉檔狀態'])),
+  });
+
+  let conversionPage = null;
+  if (/^(convert|conversion|startConversion|轉檔|建立轉檔請求)$/i.test(action)) {
+    conversionPage = await createAttachmentConversionRequest(page, {
+      conversionType: updates.conversionType || updates.type,
+      editedBy,
+      submittedAt,
+      note: editNote,
+    });
+    if (page.properties?.轉檔狀態) {
+      properties.轉檔狀態 = taskPropertyUpdate(page, '轉檔狀態', '待轉檔');
+    }
+    if (page.properties?.關聯轉檔頁 && conversionPage.url) {
+      properties.關聯轉檔頁 = taskPropertyUpdate(page, '關聯轉檔頁', conversionPage.url);
+    }
+  }
+
+  if (Object.keys(properties).length) {
+    await notionRequest(`/v1/pages/${pageId}`, {
+      method: 'PATCH',
+      body: { properties },
+    });
+  }
+
+  const children = [];
+  if (conversionPage) {
+    children.push(paragraphProperty(`【User UI 建立轉檔請求】${formatTaipeiDateTime(submittedAt)}｜編輯者：${editedBy}｜轉檔頁：${conversionPage.url || conversionPage.id}｜目前尚未執行 OCR/PDF 抽取 worker，已先建立待轉檔紀錄。`));
+  }
+  if (editNote) {
+    children.push(paragraphProperty(`【User UI 附件編輯】${formatTaipeiDateTime(submittedAt)}｜編輯者：${editedBy}｜${editNote}`));
+  }
+  if (children.length) {
+    await notionRequest(`/v1/blocks/${pageId}/children`, {
+      method: 'PATCH',
+      body: { children },
+    });
+  }
+
+  return {
+    ok: true,
+    action: conversionPage ? 'conversion-requested' : 'updated',
+    pageId,
+    url: page.url,
+    conversionPageId: conversionPage?.id,
+    conversionPageUrl: conversionPage?.url,
+    updatedProperties: Object.keys(properties),
+    editedBy,
+    updatedAt: submittedAt.toISOString(),
+  };
+}
+
 function resolveUserUiEditor(req, updates) {
   const bodyEditor = stringOrEmpty(updates.editedBy || updates.editor || updates.userName);
   if (bodyEditor) {
@@ -354,6 +592,15 @@ async function assertTaskPage(pageId) {
   const parentId = normalizeId(page.parent?.data_source_id || page.parent?.database_id || '');
   if (parentId !== normalizeId(TASKS_DATA_SOURCE_ID)) {
     throw new Error('Blocked Notion access: page is not in the HOZO AM task data source.');
+  }
+  return page;
+}
+
+async function assertAttachmentPage(pageId) {
+  const page = await notionFetchJson(`/v1/pages/${pageId}`);
+  const parentId = normalizeId(page.parent?.data_source_id || page.parent?.database_id || '');
+  if (parentId !== normalizeId(ATTACHMENTS_DATA_SOURCE_ID)) {
+    throw new Error('Blocked Notion access: page is not in the HOZO AM attachment data source.');
   }
   return page;
 }
@@ -401,13 +648,80 @@ function taskPropertyUpdate(page, propertyName, value) {
   return undefined;
 }
 
+async function createAttachmentConversionRequest(page, context) {
+  if (!ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID) {
+    throw new Error('HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID is not set.');
+  }
+
+  const fileName = pageTextProperty(page, '檔案名稱') || pageTextProperty(page, '附件項目') || '未命名附件';
+  const attachmentType = pageSelectProperty(page, '附件類型') || pageTextProperty(page, 'Content-Type') || 'file';
+  const sourceUrl = pageUrlProperty(page, '來源連結') || firstFileUrl(page, '附件檔案') || page.url || '';
+  const conversionType = normalizeAttachmentConversionType(context.conversionType || attachmentType || fileName);
+  const relationMessageIds = pageRelationIds(page, '訊息紀錄');
+  const relationConversationIds = pageRelationIds(page, '對話主檔');
+  const summary = `由 ${context.editedBy} 於 ${formatTaipeiDateTime(context.submittedAt)} 從 User UI 建立轉檔請求。${context.note ? `備註：${context.note}` : ''}`;
+
+  return notionRequest('/v1/pages', {
+    method: 'POST',
+    body: {
+      parent: { type: 'data_source_id', data_source_id: ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID },
+      properties: compactProperties({
+        轉檔項目: titleProperty(`${fileName} - ${conversionType}`),
+        原始檔名: richTextProperty(fileName),
+        轉檔狀態: selectProperty('待轉檔'),
+        轉檔類型: selectProperty(conversionType),
+        附件類型: selectProperty(attachmentType),
+        '可供 Codex 判斷': checkboxProperty(false),
+        轉檔時間: dateProperty(context.submittedAt),
+        摘要: richTextProperty(summary),
+        轉檔來源附件: sourceUrl ? urlProperty(sourceUrl) : undefined,
+        附件紀錄: relationArrayProperty([page.id]),
+        訊息紀錄: relationMessageIds.length ? relationArrayProperty(relationMessageIds) : undefined,
+        對話主檔: relationConversationIds.length ? relationArrayProperty(relationConversationIds) : undefined,
+        轉檔內容: richTextProperty('尚未執行 OCR/PDF 文件抽取；等待轉檔 worker 接手後，結果會寫入此欄位。'),
+      }),
+      children: [
+        paragraphProperty('【轉檔佇列】此頁由 User UI 建立，目前狀態為待轉檔。'),
+        paragraphProperty('OCR/PDF 文件抽取 worker 尚未接上；worker 完成後，請將全文寫入「轉檔內容」，並將「可供 Codex 判斷」改為勾選。'),
+      ],
+    },
+  });
+}
+
 function normalizeOptionalTaskStatus(value) {
   const status = stringOrEmpty(value);
   return status ? normalizeTaskStatus(status) : '';
 }
 
-function stringOrEmpty(value) {
-  return String(value || '').trim();
+function normalizeAttachmentStatus(value) {
+  const text = stringOrEmpty(value);
+  if (!text) return '';
+  const aliases = new Map([
+    ['pending', '待轉檔'],
+    ['queued', '待轉檔'],
+    ['processing', '轉檔中'],
+    ['done', '已完成'],
+    ['completed', '已完成'],
+    ['failed', '失敗'],
+    ['skip', '不需轉檔'],
+    ['skipped', '不需轉檔'],
+  ]);
+  return aliases.get(text.toLowerCase()) || text;
+}
+
+function normalizeAttachmentConversionType(value) {
+  const text = stringOrEmpty(value);
+  if (/pdf/i.test(text)) return 'PDF 文字抽取';
+  if (/image|png|jpe?g|gif|webp|heic|ocr|圖片|照片/i.test(text)) return 'OCR';
+  if (/audio|m4a|mp3|wav|語音/i.test(text)) return '語音轉文字';
+  return text || '文件轉文字';
+}
+
+function normalizeProjectList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => stringOrEmpty(item)).filter(Boolean).join(', ');
+  }
+  return stringOrEmpty(value);
 }
 
 function normalizeMultiSelect(value) {
@@ -417,24 +731,21 @@ function normalizeMultiSelect(value) {
   return [...new Set(values.map((item) => stringOrEmpty(item)).filter(Boolean))];
 }
 
+function stringOrEmpty(value) {
+  return String(value ?? '').trim();
+}
+
 function findCodexCommandTrigger(text) {
   const value = String(text || '');
-  return CODEX_COMMAND_TRIGGERS.find((trigger) => trigger.pattern.test(value)) || null;
-}
-
-function buildCodexCommandTriggers(value) {
-  return String(value || '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((label) => ({
-      label,
-      pattern: new RegExp(escapeRegex(label).replace(/\\\s+/g, '\\s+'), 'i'),
-    }));
-}
-
-function escapeRegex(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const triggers = [
+    { label: 'Eleven Junior', pattern: /eleven\s+junior/i },
+    { label: 'Eleven Jr.', pattern: /eleven\s+jr\.?/i },
+    { label: 'Elven Jr.', pattern: /elven\s+jr\.?/i },
+    { label: 'HOZO Junior', pattern: /hozo\s+junior/i },
+    { label: 'HOZO Jr.', pattern: /\b7\s*junior\b/i },
+    { label: '11 Jr.', pattern: /\b11\s*jr\.?\b/i },
+  ];
+  return triggers.find((trigger) => trigger.pattern.test(value)) || null;
 }
 
 function extractCodexCommand(text) {
@@ -526,10 +837,51 @@ async function approveReport(req, body) {
   const reportContent = String(body.reportContent || body.editedReport || '').trim();
   const decisions = normalizeApprovalList(body.decisions);
   const followups = normalizeApprovalList(body.followups);
+  const followupDispatch = await dispatchApprovedFollowups(followups, {
+    dryRun: body.dryRunFollowups === true || body.sendApprovedFollowups !== true,
+    approvedBy,
+    reportType,
+    submittedAt,
+  });
 
   const taskResults = [];
   for (const item of tasks) {
     taskResults.push(await applyTaskApproval(item, { reportType, approvedBy, submittedAt }));
+  }
+
+  const snoozeResults = [];
+  for (const item of normalizeApprovalList(body.snoozes)) {
+    snoozeResults.push(await applyTaskSnooze(item, { reportType, approvedBy, submittedAt }));
+  }
+
+  const noteResults = [];
+  for (const item of normalizeApprovalList(body.taskNotes)) {
+    noteResults.push(await applyTaskNote(item, { reportType, approvedBy, submittedAt }));
+  }
+
+  const followupSendResults = [];
+  for (const item of normalizeApprovalList(body.followupSends)) {
+    followupSendResults.push(await applyFollowupSend(item, { reportType, approvedBy, submittedAt }));
+  }
+
+  const scheduledSendResults = [];
+  for (const item of normalizeApprovalList(body.scheduledSends)) {
+    scheduledSendResults.push(await applyScheduledSend(item, { reportType, approvedBy, submittedAt }));
+  }
+
+  const projectAssignResults = [];
+  for (const item of normalizeApprovalList(body.projectAssigns)) {
+    projectAssignResults.push(await applyProjectAssign(item, { reportType, approvedBy, submittedAt }));
+  }
+
+  const attachmentDecisionResults = [];
+  for (const item of normalizeApprovalList(body.attachmentDecisions)) {
+    attachmentDecisionResults.push(await applyAttachmentDecision(item, { reportType, approvedBy, submittedAt }));
+  }
+
+  const projectProposalResults = [];
+  for (const item of normalizeApprovalList(body.projectProposalDecisions)) {
+    projectProposalResults.push(await applyProjectProposalDecision(item, { reportType, approvedBy, submittedAt }));
   }
 
   const attachmentResults = [];
@@ -546,6 +898,7 @@ async function approveReport(req, body) {
     reportContent,
     decisions,
     followups,
+    followupDispatch,
     notes: body.notes,
   });
   const snapshotUpdate = await maybeMarkDailyReportSnapshotConfirmed({
@@ -561,7 +914,15 @@ async function approveReport(req, body) {
     attachmentResults,
     decisions,
     followups,
+    followupDispatch,
     decisionPage,
+    snoozeResults,
+    noteResults,
+    followupSendResults,
+    scheduledSendResults,
+    projectAssignResults,
+    attachmentDecisionResults,
+    projectProposalResults,
   });
 
   return {
@@ -570,10 +931,19 @@ async function approveReport(req, body) {
     decisionPageId: decisionPage.id,
     acknowledgement,
     tasksWritten: taskResults.length,
-    attachmentsWritten: attachmentResults.length,
+    attachmentsWritten: attachmentResults.filter((item) => !item.skipped).length,
+    attachmentsReviewed: attachmentResults.length,
     snapshotUpdate,
+    followupDispatch,
     taskResults,
     attachmentResults,
+    snoozeResults,
+    noteResults,
+    followupSendResults,
+    scheduledSendResults,
+    projectAssignResults,
+    attachmentDecisionResults,
+    projectProposalResults,
   };
 }
 
@@ -615,10 +985,10 @@ async function resolveAcknowledgementTargets(body) {
   });
 }
 
-function buildApprovalAcknowledgementMessage({ reportType, approvedBy, submittedAt, taskResults, attachmentResults, decisions, followups, decisionPage }) {
+function buildApprovalAcknowledgementMessage({ reportType, approvedBy, submittedAt, taskResults, attachmentResults, decisions, followups, followupDispatch, decisionPage, snoozeResults = [], noteResults = [], followupSendResults = [], scheduledSendResults = [], projectAssignResults = [], attachmentDecisionResults = [], projectProposalResults = [] }) {
   const label = reportTypeLabel(reportType);
   const lines = [
-    `${OUTGOING_ACTOR_NAME} 已收到你送出的${label}確認。`,
+    `HOZO Jr. 已收到你送出的${label}確認。`,
     `確認人：${approvedBy}`,
     `時間：${formatTaipeiDateTime(submittedAt)}`,
   ];
@@ -628,16 +998,293 @@ function buildApprovalAcknowledgementMessage({ reportType, approvedBy, submitted
   if (followups.length) summary.push(`追蹤 ${followups.length} 項`);
   if (taskResults.length) summary.push(`任務 ${taskResults.length} 項`);
   if (attachmentResults.length) summary.push(`附件 ${attachmentResults.length} 項`);
+  if (followupDispatch?.sent) summary.push(`已發送追蹤 ${followupDispatch.sent} 則`);
+  if (followupDispatch?.dryRunResolved) summary.push(`可發送待確認 ${followupDispatch.dryRunResolved} 則`);
+  if (followupDispatch?.pending) summary.push(`待補對象 ${followupDispatch.pending} 則`);
+  const sentFollowups = followupSendResults.filter((item) => item.ok);
+  const failedFollowups = followupSendResults.filter((item) => !item.ok);
+  if (sentFollowups.length) summary.push(`追問訊息已發送 ${sentFollowups.length} 則`);
+  if (failedFollowups.length) summary.push(`追問發送失敗 ${failedFollowups.length} 則`);
+  const scheduledOk = scheduledSendResults.filter((item) => item.ok);
+  if (scheduledOk.length) summary.push(`排程自動發送 ${scheduledOk.length} 則`);
+  if (scheduledSendResults.length > scheduledOk.length) summary.push(`排程失敗 ${scheduledSendResults.length - scheduledOk.length} 則`);
+  if (snoozeResults.length) summary.push(`暫緩追蹤 ${snoozeResults.length} 項`);
+  if (noteResults.length) summary.push(`補充備註 ${noteResults.length} 項`);
+  if (projectAssignResults.length) summary.push(`專案歸屬 ${projectAssignResults.filter((item) => item.ok).length} 項`);
+  if (attachmentDecisionResults.length) summary.push(`附件解析決定 ${attachmentDecisionResults.filter((item) => item.ok).length} 項`);
+  if (projectProposalResults.length) {
+    const approved = projectProposalResults.filter((item) => item.decision === 'approved').length;
+    const rejected = projectProposalResults.filter((item) => item.decision === 'rejected').length;
+    if (approved) summary.push(`核准新專案 ${approved} 個`);
+    if (rejected) summary.push(`退回專案提案 ${rejected} 個`);
+  }
 
   lines.push(summary.length ? `已寫入：${summary.join('、')}` : '已寫入：本次確認紀錄');
 
+  const reportPageUrl = approvalReportPageUrl(reportType);
+  if (reportPageUrl) {
+    lines.push(`互動報告頁：${reportPageUrl}`);
+  }
+
   if (decisionPage?.url) {
-    lines.push(`Notion 紀錄：${decisionPage.url}`);
+    lines.push(`Notion 確認紀錄：${decisionPage.url}`);
   }
 
   lines.push('我會依照這次確認結果更新後續追蹤。');
 
   return { type: 'text', text: clampLineText(lines.join('\n')) };
+}
+
+function approvalReportPageUrl(reportType) {
+  const type = String(reportType || '').trim().toLowerCase();
+  const morningBriefUrl = process.env.MORNING_BRIEF_URL || `${PUBLIC_BASE_URL}/reports/morning-brief`;
+  const dailyReportUrl = process.env.DAILY_REPORT_URL || `${PUBLIC_BASE_URL}/reports/daily-control-report`;
+  const followupBaseUrl = process.env.FOLLOWUP_CONFIRMATION_URL || `${PUBLIC_BASE_URL}/reports/followup-confirmation`;
+
+  if (['morning', 'morning-brief', '早報'].includes(type)) return morningBriefUrl;
+  if (['daily', 'evening', 'night', '晚報', '每日報告'].includes(type)) return dailyReportUrl;
+  if (['followup-morning', 'followup-10', '10', '上午追蹤'].includes(type)) return withFollowupSlot(followupBaseUrl, '10');
+  if (['followup-midday', 'followup-13', '13', '中午追蹤'].includes(type)) return withFollowupSlot(followupBaseUrl, '13');
+  if (['followup-afternoon', 'followup-17', '17', '下午追蹤'].includes(type)) return withFollowupSlot(followupBaseUrl, '17');
+  return '';
+}
+
+async function dispatchApprovedFollowups(followups, context) {
+  const items = followups
+    .map((item, index) => normalizeFollowupDispatchItem(item, index))
+    .filter((item) => item.shouldDispatch);
+
+  const results = [];
+  for (const item of items) {
+    const resolved = await resolveFollowupDispatchTarget(item);
+    if (!resolved.ok) {
+      results.push({
+        target: item.target,
+        action: item.action,
+        speaker: item.speaker,
+        targetMemberName: item.targetMemberName,
+        targetMemberUserId: item.targetMemberUserId,
+        message: item.message,
+        status: 'pending-target',
+        reason: resolved.reason,
+        candidates: resolved.candidates || [],
+      });
+      continue;
+    }
+
+    if (context.dryRun) {
+      results.push({
+        target: item.target,
+        action: item.action,
+        speaker: item.speaker,
+        targetMemberName: item.targetMemberName,
+        targetMemberUserId: item.targetMemberUserId,
+        message: item.message,
+        status: 'dry-run',
+        resolvedTarget: resolved.target,
+      });
+      continue;
+    }
+
+    const pushResult = await pushToTargets([resolved.target], [{ type: 'text', text: item.message }]);
+    results.push({
+      target: item.target,
+      action: item.action,
+      speaker: item.speaker,
+      targetMemberName: item.targetMemberName,
+      targetMemberUserId: item.targetMemberUserId,
+      message: item.message,
+      status: 'sent',
+      resolvedTarget: resolved.target,
+      pushResult,
+    });
+  }
+
+  const sent = results.filter((item) => item.status === 'sent').length;
+  const dryRun = results.filter((item) => item.status === 'dry-run').length;
+  const pending = results.filter((item) => item.status === 'pending-target').length;
+  return {
+    ok: pending === 0,
+    dryRun: context.dryRun,
+    requested: items.length,
+    sent,
+    dryRunResolved: dryRun,
+    pending,
+    results,
+  };
+}
+
+function normalizeFollowupDispatchItem(item, index) {
+  const action = String(item.action || item.decision || '').trim();
+  const speaker = String(item.speaker || item.sender || item.voice || 'HOZO Jr. 協助追蹤').trim();
+  const targetMemberName = String(item.targetMemberName || item.recipientName || '').trim();
+  const targetMemberUserId = String(item.targetMemberUserId || item.recipientUserId || '').trim();
+  const target = String(item.target || item.targetName || '').trim();
+  const message = String(item.message || item.text || '').trim();
+  const explicitTargetId = String(item.targetId || item.id || '').trim();
+  const explicitTargetType = String(item.targetType || item.type || '').trim();
+  const send = Boolean(item.send);
+  const approved = /批准|發送|送出|send|approved/i.test(action) && !/取消|暫緩|不發|不要/.test(action) && !/只作內部紀錄/.test(`${speaker} ${targetMemberName}`);
+
+  return {
+    index,
+    action,
+    speaker,
+    targetMemberName,
+    targetMemberUserId,
+    target,
+    message,
+    explicitTargetId,
+    explicitTargetType,
+    shouldDispatch: send && approved && Boolean(message),
+  };
+}
+
+async function resolveFollowupDispatchTarget(item) {
+  if (/私人事務|內部|不對外/.test(item.target)) {
+    return { ok: false, reason: 'internal-only-target' };
+  }
+
+  if (item.explicitTargetId) {
+    return {
+      ok: true,
+      target: {
+        id: item.explicitTargetId,
+        type: item.explicitTargetType || inferTargetType(item.explicitTargetId),
+        name: item.target,
+        source: 'followup-explicit',
+      },
+    };
+  }
+
+  const candidates = await findFollowupTargetsFromConversations(item.target);
+  if (!candidates.length) {
+    return { ok: false, reason: 'no-target-match' };
+  }
+
+  const topScore = candidates[0].score;
+  const topCandidates = candidates.filter((candidate) => candidate.score === topScore);
+  if (topCandidates.length !== 1) {
+    return {
+      ok: false,
+      reason: 'ambiguous-target-match',
+      candidates: topCandidates.map(publicFollowupCandidate),
+    };
+  }
+
+  const selected = topCandidates[0];
+  return {
+    ok: true,
+    target: {
+      id: selected.id,
+      type: selected.type,
+      name: selected.name,
+      source: 'followup-conversation-match',
+    },
+  };
+}
+
+async function findFollowupTargetsFromConversations(targetLabel) {
+  if (!process.env.NOTION_TOKEN || !CONVERSATIONS_DATA_SOURCE_ID) {
+    return [];
+  }
+
+  const pages = await listRecentConversationPagesForDispatch();
+  const label = normalizeDispatchText(targetLabel);
+  const terms = dispatchSearchTerms(targetLabel);
+  const scored = [];
+
+  for (const page of pages) {
+    const candidate = conversationDispatchCandidate(page);
+    if (!candidate.id) {
+      continue;
+    }
+
+    const haystack = normalizeDispatchText([
+      candidate.name,
+      candidate.customName,
+      candidate.project,
+      candidate.note,
+    ].join(' '));
+    const score = scoreFollowupTargetMatch({ label, terms, candidate, haystack });
+    if (score >= 40) {
+      scored.push({ ...candidate, score });
+    }
+  }
+
+  return scored.sort((a, b) => b.score - a.score || String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))).slice(0, 5);
+}
+
+async function listRecentConversationPagesForDispatch() {
+  const result = await notionRequest(`/v1/data_sources/${CONVERSATIONS_DATA_SOURCE_ID}/query`, {
+    method: 'POST',
+    body: {
+      page_size: 100,
+      sorts: [{ property: '最後訊息時間', direction: 'descending' }],
+    },
+  });
+  return result.results || [];
+}
+
+function conversationDispatchCandidate(page) {
+  const entityType = pageSelectProperty(page, '對象類型');
+  const groupId = pageTextProperty(page, 'Group ID');
+  const roomId = pageTextProperty(page, 'Room ID');
+  const userId = pageTextProperty(page, 'User ID');
+  const id = groupId || roomId || userId;
+  return {
+    id,
+    type: groupId ? 'group' : roomId ? 'room' : userId ? 'user' : inferTargetType(id),
+    entityType,
+    name: pageTextProperty(page, 'LINE 對話名稱'),
+    customName: pageTextProperty(page, '自定義名稱'),
+    project: pageSelectProperty(page, '總控專案'),
+    note: pageTextProperty(page, '備註'),
+    updatedAt: pageDateProperty(page, '最後訊息時間'),
+  };
+}
+
+function scoreFollowupTargetMatch({ label, terms, candidate, haystack }) {
+  let score = 0;
+  const name = normalizeDispatchText(candidate.name);
+  const customName = normalizeDispatchText(candidate.customName);
+
+  if (label && (name === label || customName === label)) score += 100;
+  if (label && (name.includes(label) || customName.includes(label) || label.includes(name) || label.includes(customName))) score += 60;
+
+  for (const term of terms) {
+    if (term.length >= 2 && haystack.includes(term)) score += 18;
+  }
+
+  if (candidate.project && label.includes(normalizeDispatchText(candidate.project))) score += 20;
+  if (candidate.type === 'group' || candidate.type === 'room') score += 8;
+  if (/私人|內部/.test(haystack)) score -= 40;
+
+  return score;
+}
+
+function dispatchSearchTerms(value) {
+  return normalizeDispatchText(value)
+    .split(/[\/／,，、\s&]+/)
+    .map((item) => item.trim())
+    .filter((item) => item.length >= 2 && !['群組', '專案', '追蹤'].includes(item));
+}
+
+function normalizeDispatchText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[()（）【】\[\]]/g, '')
+    .trim();
+}
+
+function publicFollowupCandidate(candidate) {
+  return {
+    name: candidate.customName || candidate.name,
+    type: candidate.type,
+    project: candidate.project,
+    score: candidate.score,
+  };
 }
 
 function reportTypeLabel(reportType) {
@@ -647,12 +1294,12 @@ function reportTypeLabel(reportType) {
     daily: '每日總控報告',
     evening: '每日總控報告',
     night: '每日總控報告',
-    'followup-morning': '10:00 目標追認與新任務確認',
-    'followup-midday': '13:00 目標追認與新任務確認',
-    'followup-afternoon': '17:00 目標追認與新任務確認',
-    'followup-10': '10:00 目標追認與新任務確認',
-    'followup-13': '13:00 目標追認與新任務確認',
-    'followup-17': '17:00 目標追認與新任務確認',
+    'followup-morning': '10:00 追蹤確認與新任務確認',
+    'followup-midday': '13:00 追蹤確認與新任務確認',
+    'followup-afternoon': '17:00 追蹤確認與新任務確認',
+    'followup-10': '10:00 追蹤確認與新任務確認',
+    'followup-13': '13:00 追蹤確認與新任務確認',
+    'followup-17': '17:00 追蹤確認與新任務確認',
   };
   return labels[String(reportType || '').trim().toLowerCase()] || `${reportType || '報告'}報告`;
 }
@@ -667,9 +1314,19 @@ async function applyTaskApproval(item, context) {
     throw new Error('Task approval is missing task name.');
   }
 
+  if (isMergeTaskApproval(item)) {
+    return applyTaskMergeApproval(taskName, item, context);
+  }
+
   const status = normalizeTaskStatus(item.status);
   const existingPage = await findTaskByName(taskName);
-  const summary = `由 ${context.approvedBy} 於 ${formatTaipeiDateTime(context.submittedAt)} 從 ${context.reportType} 報告確認。`;
+  // 封存 from a report means the user judged the extraction wrong. Setting
+  // 確認狀態=已確認 here would make the calibration feedback read it as a
+  // confirmed extraction, so dismissals must leave the confirmation untouched.
+  const isDismissal = status === '封存';
+  const summary = isDismissal
+    ? `由 ${context.approvedBy} 於 ${formatTaipeiDateTime(context.submittedAt)} 從 ${context.reportType} 報告判定不成立並封存。`
+    : `由 ${context.approvedBy} 於 ${formatTaipeiDateTime(context.submittedAt)} 從 ${context.reportType} 報告確認。`;
 
   if (existingPage) {
     await notionRequest(`/v1/pages/${existingPage.id}`, {
@@ -677,14 +1334,18 @@ async function applyTaskApproval(item, context) {
       body: {
         properties: compactProperties({
           狀態: selectProperty(status),
-          確認狀態: selectProperty('已確認'),
+          確認狀態: isDismissal ? undefined : selectProperty('已確認'),
           最後更新: dateProperty(context.submittedAt),
           'Codex 判斷摘要': richTextProperty(summary),
         }),
       },
     });
 
-    return { task: taskName, status, action: 'updated', pageId: existingPage.id };
+    return { task: taskName, status, action: isDismissal ? 'dismissed' : 'updated', pageId: existingPage.id };
+  }
+
+  if (isDismissal) {
+    return { task: taskName, status, action: 'dismiss-target-not-found', pageId: null };
   }
 
   const created = await notionRequest('/v1/pages', {
@@ -709,6 +1370,70 @@ async function applyTaskApproval(item, context) {
   return { task: taskName, status, action: 'created', pageId: created.id };
 }
 
+function isMergeTaskApproval(item) {
+  const actionKey = String(item.actionKey || item.action || item.decision || '').trim();
+  return actionKey === 'MERGE_INTO_EXISTING' || Boolean(String(item.mergeInto || item.targetTask || '').trim());
+}
+
+async function applyTaskMergeApproval(taskName, item, context) {
+  const mergeInto = String(item.mergeInto || item.targetTask || item.parentTask || '').trim();
+  if (!mergeInto) {
+    throw new Error(`Merge target is missing for task: ${taskName}`);
+  }
+
+  const sourcePage = await findTaskByName(taskName);
+  const targetPage = await findTaskByName(mergeInto);
+  if (!targetPage) {
+    throw new Error(`Merge target task was not found: ${mergeInto}`);
+  }
+
+  const note = String(item.note || '').trim();
+  const targetNext = note || `此任務已吸收「${taskName}」；請依主任務追蹤下一步。`;
+  const targetSummary = [
+    `由 ${context.approvedBy} 於 ${formatTaipeiDateTime(context.submittedAt)} 從 ${context.reportType} 報告確認。`,
+    `「${taskName}」合併到既有任務「${mergeInto}」。`,
+    note ? `使用者備註：${note}` : '',
+  ].filter(Boolean).join('\n');
+
+  await notionRequest(`/v1/pages/${targetPage.id}`, {
+    method: 'PATCH',
+    body: {
+      properties: compactProperties({
+        狀態: selectProperty(normalizeTaskStatus(item.targetStatus || '進行中')),
+        確認狀態: selectProperty('已確認'),
+        優先級: item.priority ? selectProperty(String(item.priority)) : undefined,
+        下一步: richTextProperty(targetNext),
+        'Codex 判斷摘要': richTextProperty(targetSummary),
+        最後更新: dateProperty(context.submittedAt),
+      }),
+    },
+  });
+
+  if (sourcePage) {
+    await notionRequest(`/v1/pages/${sourcePage.id}`, {
+      method: 'PATCH',
+      body: {
+        properties: compactProperties({
+          狀態: selectProperty('封存'),
+          確認狀態: selectProperty('合併到既有任務'),
+          下一步: richTextProperty(`已合併到「${mergeInto}」；不再作為獨立任務追蹤。`),
+          'Codex 判斷摘要': richTextProperty(targetSummary),
+          最後更新: dateProperty(context.submittedAt),
+        }),
+      },
+    });
+  }
+
+  return {
+    task: taskName,
+    status: '合併到既有任務',
+    action: sourcePage ? 'merged' : 'merged-source-not-found',
+    mergeInto,
+    pageId: sourcePage?.id || null,
+    targetPageId: targetPage.id,
+  };
+}
+
 async function findTaskByName(taskName) {
   const result = await notionRequest(`/v1/data_sources/${TASKS_DATA_SOURCE_ID}/query`, {
     method: 'POST',
@@ -719,6 +1444,308 @@ async function findTaskByName(taskName) {
   });
 
   return result.results?.[0] || null;
+}
+
+let taskReviewPropertiesEnsured = false;
+
+async function ensureTaskReviewProperties() {
+  if (taskReviewPropertiesEnsured) return;
+  try {
+    await notionRequest(`/v1/data_sources/${TASKS_DATA_SOURCE_ID}`, {
+      method: 'PATCH',
+      body: {
+        properties: {
+          追蹤暫緩至: { date: {} },
+          最新備註: { rich_text: {} },
+          預定訊息內容: { rich_text: {} },
+          預定發送對象: { rich_text: {} },
+          預定發送對象ID: { rich_text: {} },
+          下次行動時間: { date: {} },
+          下次行動模式: { select: { options: [{ name: '提醒我' }, { name: '自動發送' }] } },
+          下次行動說明: { rich_text: {} },
+        },
+      },
+    });
+    taskReviewPropertiesEnsured = true;
+  } catch (error) {
+    console.warn(`Unable to ensure task review properties (追蹤暫緩至/最新備註/預定訊息/下次行動): ${error.message}`);
+  }
+}
+
+async function applyProjectProposalDecision(item, context) {
+  const pageId = String(item.pageId || '').trim();
+  const decision = String(item.decision || '').trim();
+  if (!pageId || !['approve', 'reject'].includes(decision)) {
+    return { ok: false, pageId, error: 'invalid proposal decision' };
+  }
+
+  try {
+    const approve = decision === 'approve';
+    await notionRequest(`/v1/pages/${pageId}`, {
+      method: 'PATCH',
+      body: {
+        properties: compactProperties({
+          狀態: selectProperty(approve ? '規劃中' : '封存'),
+          啟用: { checkbox: approve },
+          開始日期: approve ? dateProperty(context.submittedAt) : undefined,
+        }),
+      },
+    });
+    return { ok: true, pageId, decision: approve ? 'approved' : 'rejected' };
+  } catch (error) {
+    return { ok: false, pageId, error: error.message };
+  }
+}
+
+async function applyAttachmentDecision(item, context) {
+  const pageId = String(item.pageId || '').trim();
+  const decision = String(item.decision || '').trim();
+  if (!pageId || !['已核准解析', '確定不解析'].includes(decision)) {
+    return { ok: false, pageId, error: 'invalid attachment decision' };
+  }
+
+  try {
+    await notionRequest(`/v1/pages/${pageId}`, {
+      method: 'PATCH',
+      body: {
+        properties: {
+          轉檔狀態: selectProperty(decision),
+        },
+      },
+    });
+    return { ok: true, pageId, decision };
+  } catch (error) {
+    return { ok: false, pageId, error: error.message };
+  }
+}
+
+async function applyProjectAssign(item, context) {
+  const taskName = String(item.task || item.name || '').trim();
+  const project = String(item.project || '').trim();
+  if (!taskName || !project) {
+    return { ok: false, task: taskName, error: 'missing task name or project' };
+  }
+
+  try {
+    const page = await findTaskByName(taskName);
+    if (!page) {
+      return { ok: false, task: taskName, error: 'task not found' };
+    }
+
+    await notionRequest(`/v1/pages/${page.id}`, {
+      method: 'PATCH',
+      body: {
+        properties: compactProperties({
+          專案: selectProperty(project),
+          最後更新: dateProperty(context.submittedAt),
+        }),
+      },
+    });
+
+    return { ok: true, task: taskName, project };
+  } catch (error) {
+    return { ok: false, task: taskName, error: error.message };
+  }
+}
+
+async function applyTaskSnooze(item, context) {
+  const taskName = String(item.task || item.name || '').trim();
+  const days = Math.min(Math.max(Number(item.days) || 1, 1), 30);
+  if (!taskName) {
+    return { ok: false, task: taskName, error: 'missing task name' };
+  }
+
+  try {
+    const page = await findTaskByName(taskName);
+    if (!page) {
+      return { ok: false, task: taskName, error: 'task not found' };
+    }
+
+    await ensureTaskReviewProperties();
+    const snoozeUntil = new Date(context.submittedAt.getTime() + days * 24 * 60 * 60 * 1000);
+    await notionRequest(`/v1/pages/${page.id}`, {
+      method: 'PATCH',
+      body: {
+        properties: compactProperties({
+          追蹤暫緩至: dateProperty(snoozeUntil),
+          最後更新: dateProperty(context.submittedAt),
+        }),
+      },
+    });
+
+    return { ok: true, task: taskName, days, snoozeUntil: snoozeUntil.toISOString() };
+  } catch (error) {
+    return { ok: false, task: taskName, error: error.message };
+  }
+}
+
+async function applyTaskNote(item, context) {
+  const taskName = String(item.task || item.name || '').trim();
+  const note = String(item.note || '').trim();
+  if (!taskName || !note) {
+    return { ok: false, task: taskName, error: 'missing task name or note' };
+  }
+
+  try {
+    const page = await findTaskByName(taskName);
+    if (!page) {
+      return { ok: false, task: taskName, error: 'task not found' };
+    }
+
+    const timestamp = formatTaipeiDateTime(context.submittedAt);
+    const sourceLabel = `來源：${reportTypeLabel(context.reportType)}，由 ${context.approvedBy} 於 ${timestamp} 提供`;
+
+    await notionRequest(`/v1/blocks/${page.id}/children`, {
+      method: 'PATCH',
+      body: {
+        children: [
+          { object: 'block', type: 'heading_3', heading_3: { rich_text: [{ type: 'text', text: { content: `補充備註（${timestamp}）` } }] } },
+          { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: clampNotionText(note) } }] } },
+          { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: sourceLabel } }], color: 'gray' } },
+        ],
+      },
+    });
+
+    await ensureTaskReviewProperties();
+    await notionRequest(`/v1/pages/${page.id}`, {
+      method: 'PATCH',
+      body: {
+        properties: compactProperties({
+          最新備註: richTextProperty(`[${timestamp}] ${note}`),
+          最後更新: dateProperty(context.submittedAt),
+        }),
+      },
+    });
+
+    return { ok: true, task: taskName };
+  } catch (error) {
+    return { ok: false, task: taskName, error: error.message };
+  }
+}
+
+async function applyFollowupSend(item, context) {
+  const taskName = String(item.task || item.name || '').trim();
+  const message = clampLineText(String(item.message || '').trim());
+  const conversationUrl = String(item.conversationUrl || '').trim();
+  if (!taskName || !message) {
+    return { ok: false, task: taskName, error: 'missing task name or message' };
+  }
+
+  try {
+    const target = await resolveTaskFollowupTarget(conversationUrl);
+    if (!target) {
+      return { ok: false, task: taskName, error: '無法從來源對話解析發送對象（缺少 Group ID / User ID）' };
+    }
+
+    const pushResult = await pushToTargets([target], [{ type: 'text', text: message }]);
+
+    const page = await findTaskByName(taskName);
+    if (page) {
+      const timestamp = formatTaipeiDateTime(context.submittedAt);
+      await notionRequest(`/v1/blocks/${page.id}/children`, {
+        method: 'PATCH',
+        body: {
+          children: [
+            { object: 'block', type: 'heading_3', heading_3: { rich_text: [{ type: 'text', text: { content: `追問已發送（${timestamp}）` } }] } },
+            { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: clampNotionText(message) } }] } },
+            { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: `發送對象：${target.name || target.id}（${target.type}）；由 ${context.approvedBy} 從 ${reportTypeLabel(context.reportType)} 核准發送。` } }], color: 'gray' } },
+          ],
+        },
+      });
+
+      // Auto-snooze so tomorrow's report doesn't immediately re-ask about the same task.
+      await ensureTaskReviewProperties();
+      const snoozeUntil = new Date(context.submittedAt.getTime() + 2 * 24 * 60 * 60 * 1000);
+      await notionRequest(`/v1/pages/${page.id}`, {
+        method: 'PATCH',
+        body: {
+          properties: compactProperties({
+            追蹤暫緩至: dateProperty(snoozeUntil),
+            最後更新: dateProperty(context.submittedAt),
+          }),
+        },
+      });
+    }
+
+    return { ok: true, task: taskName, target: { id: target.id, type: target.type, name: target.name || '' }, pushResult: pushResult.results || [] };
+  } catch (error) {
+    return { ok: false, task: taskName, error: error.message };
+  }
+}
+
+// 報告頁的「排程 N 天後自動發出」：把訊息與觸發時間寫進任務，到時由排程引擎
+// （scripts/run-scheduled-actions.js）自動發送。同步暫緩追蹤到觸發日，報告不再重複問。
+async function applyScheduledSend(item, context) {
+  const taskName = String(item.task || item.name || '').trim();
+  const message = clampLineText(String(item.message || '').trim());
+  const days = Math.min(Math.max(Number(item.days) || 1, 1), 30);
+  if (!taskName || !message) {
+    return { ok: false, task: taskName, error: 'missing task name or message' };
+  }
+
+  try {
+    const page = await findTaskByName(taskName);
+    if (!page) {
+      return { ok: false, task: taskName, error: 'task not found' };
+    }
+
+    await ensureTaskReviewProperties();
+    const fireAt = new Date(context.submittedAt.getTime() + days * 24 * 60 * 60 * 1000);
+    await notionRequest(`/v1/pages/${page.id}`, {
+      method: 'PATCH',
+      body: {
+        properties: compactProperties({
+          預定訊息內容: richTextProperty(message),
+          下次行動時間: dateProperty(fireAt),
+          下次行動模式: selectProperty('自動發送'),
+          追蹤暫緩至: dateProperty(fireAt),
+          最後更新: dateProperty(context.submittedAt),
+        }),
+      },
+    });
+
+    await notionRequest(`/v1/blocks/${page.id}/children`, {
+      method: 'PATCH',
+      body: {
+        children: [
+          paragraphProperty(`【排程發送】${formatTaipeiDateTime(context.submittedAt)}｜由 ${context.approvedBy} 從 ${reportTypeLabel(context.reportType)} 排程，${days} 天後（${formatTaipeiDateTime(fireAt)}）自動發送預定訊息。`),
+        ],
+      },
+    });
+
+    return { ok: true, task: taskName, days, fireAt: fireAt.toISOString() };
+  } catch (error) {
+    return { ok: false, task: taskName, error: error.message };
+  }
+}
+
+async function resolveTaskFollowupTarget(conversationUrl) {
+  const pageId = extractNotionPageId(conversationUrl);
+  if (!pageId) return null;
+
+  const page = await notionRequest(`/v1/pages/${pageId}`, { method: 'GET' });
+  const properties = page.properties || {};
+  const targetType = properties['對象類型']?.select?.name || '';
+  const groupId = plainRichText(properties['Group ID']);
+  const roomId = plainRichText(properties['Room ID']);
+  const userId = plainRichText(properties['User ID']);
+  const name = plainRichText(properties['自定義名稱'])
+    || (properties['LINE 對話名稱']?.title || []).map((item) => item.plain_text || '').join('');
+
+  if (targetType === '群組' && groupId) return { id: groupId, type: 'group', name, source: 'task-followup' };
+  if (targetType === '聊天室' && roomId) return { id: roomId, type: 'room', name, source: 'task-followup' };
+  if (userId) return { id: userId, type: 'user', name, source: 'task-followup' };
+  if (groupId) return { id: groupId, type: 'group', name, source: 'task-followup' };
+  return null;
+}
+
+function plainRichText(property) {
+  return (property?.rich_text || []).map((item) => item.plain_text || item.text?.content || '').join('').trim();
+}
+
+function extractNotionPageId(url) {
+  const match = String(url || '').match(/([0-9a-f]{32})(?:\?|$)/i) || String(url || '').match(/([0-9a-f]{32})/i);
+  return match ? match[1] : '';
 }
 
 async function createAttachmentConversionApproval(item, context) {
@@ -732,6 +1759,17 @@ async function createAttachmentConversionApproval(item, context) {
   const conversionType = resolveConversionType(action);
   const sourceUrl = String(item.sourceUrl || '').trim();
   const summary = `由 ${context.approvedBy} 於 ${formatTaipeiDateTime(context.submittedAt)} 從 ${context.reportType} 報告確認：${action}`;
+
+  if (isConfirmedNoConversion(action)) {
+    return {
+      file: fileName,
+      action,
+      conversionStatus: '不需轉檔',
+      conversionType: '不轉檔',
+      skipped: true,
+      reason: 'confirmed-no-conversion',
+    };
+  }
 
   const created = await notionRequest('/v1/pages', {
     method: 'POST',
@@ -754,7 +1792,7 @@ async function createAttachmentConversionApproval(item, context) {
   return { file: fileName, action, conversionStatus, conversionType, pageId: created.id };
 }
 
-async function createApprovalDecisionPage({ reportType, approvedBy, submittedAt, taskResults, attachmentResults, reportContent, decisions, followups, notes }) {
+async function createApprovalDecisionPage({ reportType, approvedBy, submittedAt, taskResults, attachmentResults, reportContent, decisions, followups, followupDispatch, notes }) {
   const title = `${reportType} 報告確認 ${formatTaipeiDateTime(submittedAt)}`;
   const taskLines = taskResults.length
     ? taskResults.map((item) => `${item.task} -> ${item.status} (${item.action})`).join('\n')
@@ -763,16 +1801,27 @@ async function createApprovalDecisionPage({ reportType, approvedBy, submittedAt,
     ? attachmentResults.map((item) => `${item.file} -> ${item.action} (${item.conversionStatus})`).join('\n')
     : '沒有附件轉檔確認。';
   const decisionLines = decisions?.length
-    ? decisions.map((item) => `${item.item || item.title || '決策'} -> ${item.decision || item.value || item.status || ''}${item.actionKey ? ` (${item.actionKey})` : ''}`).join('\n')
+    ? decisions.map((item) => `${item.item || item.title || '決策'} -> ${item.decision || item.value || item.status || ''}`).join('\n')
     : '沒有額外決策選擇。';
   const followupLines = followups?.length
     ? followups.map((item) => [
       `目標：${item.target || ''}`,
       `動作：${item.action || ''}`,
+      `追蹤對象：${item.targetMemberName || '尚未指定個人'}${item.targetMemberUserId ? ` (${item.targetMemberUserId})` : ''}`,
       `是否發送：${item.send ? '是' : '否'}`,
       `訊息：${item.message || ''}`,
     ].join('\n')).join('\n---\n')
     : '沒有追蹤訊息確認。';
+  const dispatchLines = followupDispatch?.results?.length
+    ? followupDispatch.results.map((item) => [
+      `目標：${item.target || ''}`,
+      `追蹤對象：${item.targetMemberName || '尚未指定個人'}${item.targetMemberUserId ? ` (${item.targetMemberUserId})` : ''}`,
+      `狀態：${item.status || ''}`,
+      item.resolvedTarget ? `解析對象：${item.resolvedTarget.name || item.resolvedTarget.id} (${item.resolvedTarget.type})` : '',
+      item.reason ? `原因：${item.reason}` : '',
+      item.candidates?.length ? `候選：${item.candidates.map((candidate) => `${candidate.name || ''} (${candidate.type || ''}, ${candidate.project || ''})`).join('、')}` : '',
+    ].filter(Boolean).join('\n')).join('\n---\n')
+    : '沒有執行追蹤訊息推送解析。';
   const reportText = reportContent || '沒有提供修改後報告內容。';
 
   return notionRequest('/v1/pages', {
@@ -785,7 +1834,7 @@ async function createApprovalDecisionPage({ reportType, approvedBy, submittedAt,
         專案: selectProperty('跨專案'),
         狀態: selectProperty('已決策'),
         嚴重度: selectProperty('低'),
-        說明: richTextProperty(`確認人：${approvedBy}\n報告類型：${reportType}\n\n修改後報告內容：\n${reportText}\n\n決策：\n${decisionLines}\n\n追蹤訊息：\n${followupLines}\n\n任務：\n${taskLines}\n\n附件：\n${attachmentLines}`),
+        說明: richTextProperty(`確認人：${approvedBy}\n報告類型：${reportType}\n\n修改後報告內容：\n${reportText}\n\n決策：\n${decisionLines}\n\n追蹤訊息：\n${followupLines}\n\n追蹤推送解析：\n${dispatchLines}\n\n任務：\n${taskLines}\n\n附件：\n${attachmentLines}`),
         後續行動: richTextProperty(notes ? String(notes) : '依照本次確認結果更新任務與附件轉檔佇列。'),
       }),
     },
@@ -803,10 +1852,15 @@ function resolveConversionStatus(action) {
 }
 
 function resolveConversionType(action) {
+  if (isConfirmedNoConversion(action)) return '不轉檔';
   if (/OCR|圖片|影像/.test(action)) return 'OCR';
   if (/PDF|文字/.test(action)) return 'PDF 文字';
   if (/摘要|整理/.test(action)) return '檔案摘要';
   return '人工整理';
+}
+
+function isConfirmedNoConversion(action) {
+  return /確定不轉檔|不需轉檔|不用轉檔|不要轉檔/.test(String(action || ''));
 }
 
 async function sendReport(req, body) {
@@ -816,7 +1870,7 @@ async function sendReport(req, body) {
   const cronMeta = readCronMeta(req, body);
 
   if (!targets.length) {
-    throw new Error(`No LINE report target found. Send a message to ${OUTGOING_ACTOR_NAME} first, or set HOZO_REPORT_TARGET_ID.`);
+    throw new Error('No LINE report target found. Send a message to HOZO Jr. first, or set HOZO_REPORT_TARGET_ID.');
   }
 
   if (cronMeta) {
@@ -850,31 +1904,47 @@ async function previewReport(body) {
   };
 }
 
+async function dispatchFollowupsFromControl(body) {
+  const followups = normalizeApprovalList(body.followups);
+  const shouldActuallySend = body.sendApprovedFollowups === true || body.confirmSend === true;
+  const dryRun = body.dryRun !== false || !shouldActuallySend;
+  const result = await dispatchApprovedFollowups(followups, {
+    dryRun,
+    approvedBy: String(body.approvedBy || '陸昱晴').trim(),
+    reportType: String(body.reportType || 'manual-followup-dispatch').trim(),
+    submittedAt: body.submittedAt ? new Date(body.submittedAt) : new Date(),
+  });
+
+  return {
+    ok: true,
+    dryRun,
+    followupDispatch: result,
+  };
+}
+
 async function resolveReportTargets(body) {
   const targets = normalizeTargets(body.targets, body.targetId, body.targetType);
   if (targets.length) {
     return uniqueTargets(targets);
   }
 
-  const defaultTargets = [];
-  defaultTargets.push(...targetsFromIds(process.env.HOZO_REPORT_TARGET_IDS || process.env.HOZO_REPORT_TARGET_ID, process.env.HOZO_REPORT_TARGET_TYPE || 'user'));
-  defaultTargets.push(...targetsFromIds(process.env.HOZO_REPORT_CC_TARGET_IDS, process.env.HOZO_REPORT_CC_TARGET_TYPE || 'user'));
+  const resolvedTargets = [];
+  resolvedTargets.push(...targetsFromIds(process.env.HOZO_REPORT_TARGET_IDS || process.env.HOZO_REPORT_TARGET_ID, process.env.HOZO_REPORT_TARGET_TYPE || 'user', 'env-primary'));
+  resolvedTargets.push(...targetsFromIds(process.env.HOZO_REPORT_CC_TARGET_IDS, process.env.HOZO_REPORT_CC_TARGET_TYPE || 'user', 'env-cc'));
 
-  const mainKeywords = process.env.HOZO_REPORT_TARGET_NAME_KEYWORD || (defaultTargets.length ? '' : 'Maggie');
-  defaultTargets.push(...await findReportTargetsFromNotion(mainKeywords, { fallbackLatestPersonal: !defaultTargets.length }));
+  const mainKeywords = process.env.HOZO_REPORT_TARGET_NAME_KEYWORD || (resolvedTargets.length ? '' : 'Maggie');
+  resolvedTargets.push(...await findReportTargetsFromNotion(mainKeywords, { fallbackLatestPersonal: !resolvedTargets.length, source: 'notion-primary' }));
+  resolvedTargets.push(...await findReportTargetsFromNotion(process.env.HOZO_REPORT_CC_NAME_KEYWORDS || '', { fallbackLatestPersonal: false, source: 'notion-cc' }));
 
-  const ccKeywords = process.env.HOZO_REPORT_CC_NAME_KEYWORDS || 'Seven陳聖文,Seven 陳聖文';
-  defaultTargets.push(...await findReportTargetsFromNotion(ccKeywords, { fallbackLatestPersonal: false }));
-
-  return uniqueTargets(defaultTargets);
+  return uniqueTargets(resolvedTargets);
 }
 
-function targetsFromIds(value, targetType) {
+function targetsFromIds(value, targetType, source) {
   return String(value || '')
     .split(',')
     .map((id) => id.trim())
     .filter(Boolean)
-    .map((id) => ({ id, type: targetType || inferTargetType(id), source: 'env' }));
+    .map((id) => ({ id, type: targetType || inferTargetType(id), source }));
 }
 
 async function maybeCreateDailyReportSnapshot({ reportType, report, targets, cronMeta, sentAt }) {
@@ -887,12 +1957,13 @@ async function maybeCreateDailyReportSnapshot({ reportType, report, targets, cro
     const reportUrl = firstUrlFromText(text);
     const reportDate = taipeiDateOnly(sentAt);
     const targetSummary = targets.map((target) => target.name || target.id).filter(Boolean).join('、');
+    const title = `${reportDate} 每日總控總確認`;
     const page = await notionRequest('/v1/pages', {
       method: 'POST',
       body: {
         parent: { type: 'data_source_id', data_source_id: DAILY_REPORT_SNAPSHOTS_DATA_SOURCE_ID },
         properties: compactProperties({
-          報告名稱: titleProperty(`${reportDate} 每日總控總確認`),
+          報告名稱: titleProperty(title),
           報告日期: dateProperty(`${reportDate}T00:00:00+08:00`),
           報告類型: selectProperty('每日總控總確認'),
           狀態: selectProperty('已發送'),
@@ -962,54 +2033,81 @@ async function maybeMarkDailyReportSnapshotConfirmed({ reportType, decisionPage,
   }
 }
 
-function uniqueTargets(targets) {
-  const seen = new Set();
-  return targets.filter((target) => {
-    const id = String(target.id || '').trim();
-    if (!id || seen.has(id)) {
-      return false;
-    }
-    seen.add(id);
-    target.id = id;
-    target.type = target.type || inferTargetType(id);
-    return true;
-  });
+async function findDefaultReportTargetFromNotion() {
+  const targets = await findReportTargetsFromNotion(process.env.HOZO_REPORT_TARGET_NAME_KEYWORD || 'Maggie', { fallbackLatestPersonal: true, source: 'notion-auto' });
+  return targets[0] || null;
 }
 
-async function findReportTargetsFromNotion(keywordList, { fallbackLatestPersonal = false } = {}) {
+async function findReportTargetsFromNotion(keywordValue, options = {}) {
   const notionToken = process.env.NOTION_TOKEN;
   const dataSourceId = process.env.HOZO_CONVERSATIONS_DATA_SOURCE_ID;
   if (!notionToken || !dataSourceId) {
     return [];
   }
 
-  const keywords = String(keywordList || '')
-    .split(',')
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-
   const result = await notionRequest(`/v1/data_sources/${dataSourceId}/query`, {
     method: 'POST',
     body: {
-      page_size: 100,
+      page_size: 10,
       filter: { property: '對象類型', select: { equals: '個人' } },
       sorts: [{ property: '最後訊息時間', direction: 'descending' }],
     },
   });
 
   const pages = result.results || [];
-  const selectedPages = keywords.length
-    ? pages.filter((page) => {
-      const name = `${pageTextProperty(page, 'LINE 對話名稱')} ${pageTextProperty(page, '自定義名稱')}`.toLowerCase();
-      return keywords.some((keyword) => name.includes(keyword));
-    })
-    : [];
+  const keywords = String(keywordValue || '')
+    .split(',')
+    .map((keyword) => keyword.trim().toLowerCase())
+    .filter(Boolean);
 
-  const fallbackPages = selectedPages.length || !fallbackLatestPersonal ? [] : pages.slice(0, 1);
-  return [...selectedPages, ...fallbackPages]
-    .map((page) => pageTextProperty(page, 'User ID'))
-    .filter(Boolean)
-    .map((id) => ({ id, type: 'user', source: 'notion-auto' }));
+  let selectedPages = [];
+  if (keywords.length) {
+    selectedPages = pages.filter((page) => {
+      const names = [
+        pageTextProperty(page, 'LINE 對話名稱'),
+        pageTextProperty(page, '自定義名稱'),
+        pageTextProperty(page, '備註'),
+      ].join(' ').toLowerCase();
+      return keywords.some((keyword) => names.includes(keyword));
+    });
+  }
+
+  if (!selectedPages.length && options.fallbackLatestPersonal) {
+    selectedPages = pages.slice(0, 1);
+  }
+
+  return selectedPages
+    .map((page) => {
+      const userId = pageTextProperty(page, 'User ID');
+      return userId
+        ? {
+            id: userId,
+            type: 'user',
+            name: pageTextProperty(page, '自定義名稱') || pageTextProperty(page, 'LINE 對話名稱'),
+            source: options.source || 'notion-auto',
+          }
+        : null;
+    })
+    .filter(Boolean);
+}
+
+function uniqueTargets(targets) {
+  const seen = new Set();
+  const unique = [];
+  for (const target of targets) {
+    const id = String(target?.id || '').trim();
+    if (!id) {
+      continue;
+    }
+    const type = target.type || inferTargetType(id);
+    const key = `${type}:${id}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    unique.push({ ...target, id, type });
+  }
+  return unique;
 }
 
 async function buildReportMessage(reportType, customText) {
@@ -1024,7 +2122,7 @@ async function buildReportMessage(reportType, customText) {
   if (['morning', 'morning-brief', '早報'].includes(reportType)) {
     return {
       type: 'text',
-      text: `早上 8 點半行程與待辦報告：\n${morningBriefUrl}\n\n請確認今日行程、優先工作、未完成事項與需要決策的項目。`,
+      text: `早上 8 點半晨報：\n${morningBriefUrl}\n\n請先做目標追認：今天新增或尚未確認的任務/專案，都要先問負責人「完成目標是什麼、怎樣叫完成、由誰驗收」。口述內容要寫進「目標口述原文」並上傳給 Codex 確認；確認前不列入真實進度。`,
     };
   }
 
@@ -1064,283 +2162,42 @@ async function buildReportMessage(reportType, customText) {
   throw new Error('Unknown reportType. Use morning, daily, followup-morning, followup-midday, or followup-afternoon.');
 }
 
-async function buildDynamicMorningBriefText() {
-  if (!process.env.NOTION_TOKEN || !TASKS_DATA_SOURCE_ID) {
-    return '';
-  }
-
-  try {
-    const model = await buildMorningBriefModel();
-
-    return [
-      '# 今日行程與待辦報告',
-      `2026-06-10｜08:30`,
-      '',
-      '## 今日行程',
-      ...model.scheduleItems.map((item) => `${item.time} ${item.title}：${item.note}`),
-      '',
-      buildMorningTaskSection('## 昨日未完成與延續事項', model.carryoverTasks),
-      '',
-      buildMorningTaskSection('## 今天建議優先處理', model.priorityTasks),
-      '',
-      buildMorningTaskSection('## 今天需要你決策或回覆', model.decisionTasks),
-      '',
-      '## 今日建議工作時段',
-      ...model.workBlocks.map((item) => `${item.time} ${item.note}`),
-    ].join('\n');
-  } catch (error) {
-    console.warn(`Unable to build dynamic morning brief: ${error.message}`);
-    return '';
-  }
-}
-
-async function buildMorningBriefModel() {
-  const tasks = await listOpenTasksForMorningBrief();
-  const today = taipeiDateOnly(new Date());
-  const carryoverTasks = tasks
-    .filter((task) => ['等待回覆', '進行中', '待確認完成'].includes(task.status) || task.overdueStatus === '已逾期')
-    .sort(compareMorningTaskPriority)
-    .slice(0, 5);
-  const priorityTasks = tasks
-    .filter((task) => task.priority === '高' || ['待確認', '進行中', '等待回覆'].includes(task.status))
-    .sort(compareMorningTaskPriority)
-    .slice(0, 5);
-  const decisionTasks = tasks
-    .filter((task) => ['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus)
-      || /待確認|需決策|待主管|待回覆|待負責/.test(`${task.status} ${task.confirmation} ${task.nextStep}`))
-    .sort(compareMorningTaskPriority)
-    .slice(0, 4);
-
-  return {
-    today,
-    tasks,
-    openTaskCount: tasks.length,
-    scheduleItems: buildHozoMorningScheduleItems(),
-    carryoverTasks,
-    priorityTasks,
-    decisionTasks,
-    workBlocks: buildHozoMorningWorkBlocks(priorityTasks, decisionTasks),
-  };
-}
-
-function buildHozoMorningScheduleItems() {
-  return [
-    {
-      time: '08:30',
-      title: 'HOZO 早報確認',
-      note: '確認今日行程、優先工作、昨日延續事項與需要決策的項目。',
-      tag: '例行',
-    },
-    {
-      time: '10:00',
-      title: '上午追蹤確認',
-      note: '檢查早上新增訊息、候選任務與需要負責人口述目標的項目。',
-      tag: '需確認',
-    },
-    {
-      time: '13:00 / 17:00',
-      title: '午間與下午進度檢查',
-      note: '更新上午進度、等待回覆、現場事項與需要追問的任務。',
-      tag: '追蹤',
-    },
-    {
-      time: '20:30',
-      title: '每日總控狀態總結報告',
-      note: '收斂今天完成、未完成、風險與隔日優先事項。',
-      tag: '收斂',
-    },
-  ];
-}
-
-function buildHozoMorningWorkBlocks(priorityTasks, decisionTasks) {
-  const firstProject = priorityTasks[0]?.project || '今日優先任務';
-  const decisionProject = decisionTasks[0]?.project || '需決策事項';
-  return [
-    { time: '09:00-10:00', note: '整理昨晚到今早的新訊息，確認是否有新任務或新群組需要歸類。' },
-    { time: '10:20-12:00', note: `優先推進「${firstProject}」相關任務，先處理會卡住其他人的項目。` },
-    { time: '14:00-15:30', note: `處理「${decisionProject}」的目標口述、負責人確認與需要回覆的決策。` },
-  ];
-}
-
-async function listOpenTasksForMorningBrief() {
-  const result = await notionRequest(`/v1/data_sources/${TASKS_DATA_SOURCE_ID}/query`, {
-    method: 'POST',
-    body: {
-      page_size: 100,
-      filter: {
-        and: [
-          { property: '狀態', select: { does_not_equal: '已完成' } },
-          { property: '狀態', select: { does_not_equal: '封存' } },
-        ],
-      },
-      sorts: [{ property: '最後更新', direction: 'descending' }],
-    },
-  });
-
-  return (result.results || []).map((page) => ({
-    name: pageTextProperty(page, '任務名稱'),
-    project: pageSelectProperty(page, '專案') || '未分類',
-    status: pageSelectProperty(page, '狀態') || '未設定',
-    confirmation: pageSelectProperty(page, '確認狀態') || '未設定',
-    priority: pageSelectProperty(page, '優先級') || '未設定',
-    owner: pageTextProperty(page, '負責人'),
-    goalStatus: pageSelectProperty(page, 'Codex 目標確認'),
-    nextStep: pageTextProperty(page, '下一步給負責人') || pageTextProperty(page, '下一步'),
-    overdueStatus: pageSelectProperty(page, '逾期狀態'),
-    updatedAt: pageTextProperty(page, '最後更新') || page.last_edited_time || '',
-  }));
-}
-
-function groupMorningTasksByStatus(tasks) {
-  return tasks.reduce((groups, task) => {
-    const status = task.status || '未設定';
-    groups[status] = (groups[status] || 0) + 1;
-    return groups;
-  }, {});
-}
-
-function buildMorningTaskSection(title, tasks) {
-  if (!tasks.length) {
-    return `${title}\n目前沒有符合條件的任務。`;
-  }
-
-  return [
-    title,
-    ...tasks.map((task, index) => {
-      const action = morningTaskAction(task);
-      return `${index + 1}. ${conciseReportText(task.name, 46)}｜${task.project}｜${task.status}｜${action}`;
-    }),
-  ].join('\n');
-}
-
-function compareMorningTaskPriority(a, b) {
-  return morningTaskScore(b) - morningTaskScore(a)
-    || String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''));
-}
-
-function morningTaskScore(task) {
-  let score = task.priority === '高' ? 30 : task.priority === '中' ? 18 : 8;
-  if (['等待回覆', '進行中'].includes(task.status)) score += 14;
-  if (task.status === '待確認完成') score += 12;
-  if (['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus)) score += 12;
-  if (task.overdueStatus === '已逾期') score += 10;
-  if (/公司|銀行|法務|合約|證照|稅務/.test(task.name)) score += 6;
-  if (/工程|工務|設備|維修|施工/.test(task.name)) score += 5;
-  return score;
-}
-
-function morningTaskAction(task) {
-  if (['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus)) {
-    return `請 ${task.owner || '負責人'} 先口述完成目標與驗收標準。`;
-  }
-  if (task.status === '等待回覆') {
-    return `今天先追問回覆，避免卡住「${task.project}」。`;
-  }
-  if (task.status === '待確認完成') {
-    return '今天確認是否真的完成，補上證據或關閉條件。';
-  }
-  if (task.nextStep && !isDuplicateNextStep(task)) {
-    return conciseReportText(task.nextStep, 54);
-  }
-  return '今天確認下一步與負責人，避免只停在待確認。';
-}
-
-function isDuplicateNextStep(task) {
-  const name = normalizeReportComparableText(task.name);
-  const next = normalizeReportComparableText(task.nextStep);
-  return !next || name.includes(next) || next.includes(name);
-}
-
-function normalizeReportComparableText(value) {
-  return String(value || '').replace(/[，。、：:；;\s]/g, '').slice(0, 40);
-}
-
 async function buildDynamicDailyReportText(dailyReportUrl) {
-  if (!process.env.NOTION_TOKEN || !TASKS_DATA_SOURCE_ID) {
+  if (!process.env.NOTION_TOKEN || !TASKS_DATA_SOURCE_ID || !CONVERSATIONS_DATA_SOURCE_ID) {
     return '';
   }
 
   try {
     const reportDate = taipeiDateOnly(new Date());
-    const [tasks, messages, responsibilityGaps] = await Promise.all([
+    const [tasks, messages, progressReports] = await Promise.all([
       listRecentTasksForDailyReport(),
       listImportantMessagesForDailyReport(),
-      listResponsibilityGapsForDailyReport(),
+      listRecentProgressReportsForDailyReport(),
     ]);
+
     const reportItems = dedupeReportItems([...tasks, ...messages])
+      .filter((item) => item.project !== '未分類' || item.priority === '高')
       .sort(compareDailyReportItems);
-    const events = buildSynthesizedDailyEvents(reportItems);
-    const usedKeys = new Set(events.flatMap((event) => event.items.map(reportItemKey)));
+    const synthesizedEvents = buildSynthesizedDailyEvents(reportItems, progressReports);
+    const usedKeys = new Set(synthesizedEvents.flatMap((event) => event.items.map(reportItemKey)));
 
     const sections = [
-      '20:30 每日總控事件結論報告',
+      `20:30 每日總控報告`,
       `日期：${reportDate}`,
-      `摘要：已整合 ${events.length} 件主要事件；每件事以「主題、對象、影響、結論、建議待辦」呈現。`,
+      `摘要：已整合 ${synthesizedEvents.length} 件主要事件；每件事以「主題、對象、影響、結論、建議待辦」呈現。`,
       '',
-      buildEventSummarySection('一、今日主要事件', events, 6),
-      '',
+      buildEventSummarySection('一、今日主要事件', synthesizedEvents, 6),
       buildCompactDailySection('二、其他待確認線索', filterActionableRemainders(reportItems, usedKeys), 4),
       '',
-      '三、目標追認提醒',
-      '新增任務或專案若尚未取得負責人口述，先問完成目標；Codex 確認前不更新完成百分比。',
-      '',
-      buildResponsibilityGapSection(responsibilityGaps),
-      '',
       `報告頁：${dailyReportUrl}`,
-      '提醒：晚報第一層只放事件結論；零散訊息不直接上報，除非能形成待辦、風險或目標追認。',
-    ];
+      '提醒：第一層只放事件結論；零散訊息不直接上報，除非能形成待辦或風險。',
+    ].filter((line) => line !== null && line !== undefined);
 
     return sections.join('\n');
   } catch (error) {
     console.warn(`Unable to build dynamic daily report: ${error.message}`);
     return '';
   }
-}
-
-async function listResponsibilityGapsForDailyReport() {
-  if (!RESPONSIBILITY_DATA_SOURCE_ID) {
-    return [];
-  }
-
-  const result = await notionRequest(`/v1/data_sources/${RESPONSIBILITY_DATA_SOURCE_ID}/query`, {
-    method: 'POST',
-    body: {
-      page_size: 20,
-      filter: {
-        or: [
-          { property: '選擇狀態', select: { does_not_equal: '已完成' } },
-          { property: 'LINE對象ID（結果）', rich_text: { is_empty: true } },
-        ],
-      },
-      sorts: [{ property: '更新時間', direction: 'descending' }],
-    },
-  });
-
-  return (result.results || []).map((page) => ({
-    title: pageTextProperty(page, '權責項目名稱'),
-    project: pageSelectProperty(page, '第一層：總控專案'),
-    status: pageSelectProperty(page, '選擇狀態'),
-    candidateGroups: pageNumberProperty(page, '候選群組數'),
-    candidateOwners: pageNumberProperty(page, '候選負責人數'),
-    instruction: pageTextProperty(page, '選擇說明'),
-  }));
-}
-
-function buildResponsibilityGapSection(items) {
-  if (!items.length) {
-    return '四、權責指派提醒\n目前沒有未完成的權責指派列。';
-  }
-
-  const lines = items.slice(0, 5).map((item, index) => {
-    const project = item.project || item.title || '未分類';
-    const counts = `候選群組 ${item.candidateGroups}、候選負責人 ${item.candidateOwners}`;
-    return `${index + 1}. ${project}｜${item.status || '待確認'}｜${counts}\n   下一步：${conciseReportText(item.instruction || '請先確認主要 LINE 群組，再選主要負責人。', 78)}`;
-  });
-
-  return [
-    '四、權責指派提醒',
-    ...lines,
-  ].join('\n');
 }
 
 async function listRecentTasksForDailyReport() {
@@ -1363,68 +2220,99 @@ async function listRecentTasksForDailyReport() {
       confirmation: pageSelectProperty(page, '確認狀態'),
       goalStatus: pageSelectProperty(page, 'Codex 目標確認'),
       sourceType: pageSelectProperty(page, '來源'),
-      summary: pageTextProperty(page, 'Codex 判斷摘要') || pageTextProperty(page, '完成目標定義') || pageTextProperty(page, '來源原文'),
+      summary: pageTextProperty(page, 'Codex 判斷摘要') || pageTextProperty(page, '完成目標定義') || pageTextProperty(page, '下一步') || pageTextProperty(page, '來源原文'),
       nextStep: pageTextProperty(page, '下一步給負責人') || pageTextProperty(page, '下一步'),
       updatedAt: pageDateProperty(page, '最後更新') || page.last_edited_time || '',
       url: page.url,
     }))
     .filter((item) => isTodayTaipei(item.updatedAt, today)
-      || ['待確認', '未開始', '進行中', '等待回覆'].includes(item.status)
+      || ['待確認', '未確認', '進行中', '等待回覆'].includes(item.status)
       || item.confirmation === '未確認'
       || ['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(item.goalStatus))
     .slice(0, 30);
 }
 
 async function listImportantMessagesForDailyReport() {
-  if (!MESSAGES_DATA_SOURCE_ID) {
-    return [];
-  }
+  if (!CONVERSATIONS_DATA_SOURCE_ID) return [];
 
   const since = taipeiStartOfDayIso(new Date());
-  const result = await notionRequest(`/v1/data_sources/${MESSAGES_DATA_SOURCE_ID}/query`, {
+  const result = await notionRequest(`/v1/data_sources/${CONVERSATIONS_DATA_SOURCE_ID}/query`, {
     method: 'POST',
     body: {
       page_size: 80,
-      filter: { property: '排序時間', date: { on_or_after: since } },
-      sorts: [{ property: '排序時間', direction: 'ascending' }],
+      filter: { property: '最後訊息時間', date: { on_or_after: since } },
+      sorts: [{ property: '最後訊息時間', direction: 'ascending' }],
     },
   });
 
   const items = [];
   for (const page of result.results || []) {
-    const text = pageTextProperty(page, '文字內容') || pageTextProperty(page, '原始內容');
+    const lines = (await getBlockChildren(page.id)).map(plainBlockText).filter(Boolean);
+    const messages = parseConversationMasterMessagesForDailyReport(lines).slice(0, 10);
+    const text = messages.map((message) => `${message.speaker ? `${message.speaker}: ` : ''}${message.content}`).join('\n')
+      || pageTextProperty(page, '最新訊息預覽')
+      || pageTextProperty(page, 'LINE 對話名稱');
+    if (!text || isAssistantOperationConversationForDailyReport(page, text)) continue;
     const score = scoreDailyMessageImportance(text);
-    const conversation = await getDailyMessageConversationProject(pageRelationId(page, '對話主檔'));
     items.push({
-      source: 'message',
+      source: 'conversation',
       title: buildMessageReportTitle(text),
-      project: conversation.project || inferDailyMessageProject(text),
-      priority: score >= 6 ? '高' : score >= 3 ? '中' : '低',
-      status: pageTextProperty(page, '發話者名稱'),
+      project: pageSelectProperty(page, '總控專案') || inferDailyMessageProject(text),
+      priority: score >= 5 ? '高' : score >= 3 ? '中' : '低',
+      status: pageTextProperty(page, 'LINE 對話名稱') || pageTextProperty(page, '自定義名稱'),
       summary: text,
       nextStep: inferMessageNextStep(text),
-      updatedAt: pageDateProperty(page, '排序時間') || page.last_edited_time || '',
+      updatedAt: pageDateProperty(page, '最後訊息時間') || page.last_edited_time,
       url: page.url,
       tags: dailyMessageTags(text),
       score,
     });
   }
 
-  return items.filter((item) => item.score > 0).slice(0, 30);
+  return items
+    .sort((a, b) => new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0))
+    .filter((item) => item.score > 0)
+    .slice(0, 30);
 }
 
-async function getDailyMessageConversationProject(pageId) {
-  if (!pageId) {
-    return { project: '' };
-  }
-  if (dailyConversationProjectCache.has(pageId)) {
-    return dailyConversationProjectCache.get(pageId);
+async function listRecentProgressReportsForDailyReport() {
+  if (!PROGRESS_REPORTS_DATA_SOURCE_ID) return [];
+
+  const result = await notionRequest(`/v1/data_sources/${PROGRESS_REPORTS_DATA_SOURCE_ID}/query`, {
+    method: 'POST',
+    body: {
+      page_size: 20,
+      sorts: [{ property: '報表週期', direction: 'descending' }],
+    },
+  });
+
+  const today = taipeiDateOnly(new Date());
+  return (result.results || [])
+    .map((page) => ({
+      source: 'progress',
+      title: pageTextProperty(page, '報表名稱'),
+      project: pageSelectProperty(page, '專案'),
+      priority: pageSelectProperty(page, '目前狀態') === '需注意' ? '高' : '中',
+      status: pageSelectProperty(page, '目前狀態'),
+      summary: pageTextProperty(page, '本週進展') || pageTextProperty(page, '下一步'),
+      nextStep: pageTextProperty(page, '下一步'),
+      updatedAt: pageDateProperty(page, '報表週期') || page.last_edited_time,
+      url: page.url,
+    }))
+    .filter((item) => isTodayTaipei(item.updatedAt, today))
+    .slice(0, 10);
+}
+
+function buildDailySection(title, items, limit) {
+  const uniqueItems = dedupeReportItems(items).slice(0, limit);
+  if (!uniqueItems.length) {
+    return `${title}\n今天沒有明確項目。`;
   }
 
-  const page = await notionRequest(`/v1/pages/${pageId}`, { method: 'GET' });
-  const value = { project: pageSelectProperty(page, '總控專案') || pageSelectProperty(page, '專案') };
-  dailyConversationProjectCache.set(pageId, value);
-  return value;
+  return [
+    title,
+    ...uniqueItems.map((item, index) => formatReportCard(item, index + 1)),
+  ].join('\n\n');
 }
 
 function buildEventSummarySection(title, events, limit) {
@@ -1439,20 +2327,20 @@ function buildEventSummarySection(title, events, limit) {
   ].join('\n\n');
 }
 
-function buildSynthesizedDailyEvents(reportItems) {
+function buildSynthesizedDailyEvents(reportItems, progressReports) {
   const events = [];
   const addEvent = (event) => {
-    if (event && event.items.length) {
-      events.push(event);
-    }
+    if (!event || !event.items.length) return;
+    events.push(event);
   };
 
-  addEvent(buildHozoGovernanceEvent(reportItems));
-  addEvent(buildHozoSiteProcurementEvent(reportItems));
-  addEvent(buildHozoBrandWebsiteEvent(reportItems));
-  addEvent(buildHozoOperationsEvent(reportItems));
-  addEvent(buildHozoAutomationEvent(reportItems));
-  addEvent(buildHozoGoalRecognitionEvent(reportItems));
+  addEvent(buildMotherHealthEvent(reportItems));
+  addEvent(buildYifanMeetingEvent(reportItems));
+  addEvent(buildFireInsuranceEvent(reportItems));
+  addEvent(buildRentalCustomerIssueEvent(reportItems, progressReports));
+  addEvent(buildRelationshipEscalationEvent(reportItems));
+  addEvent(buildTaxEvent(reportItems));
+  addEvent(buildGoalRecognitionEvent(reportItems));
 
   const usedKeys = new Set(events.flatMap((event) => event.items.map(reportItemKey)));
   const remainingHigh = reportItems
@@ -1476,94 +2364,118 @@ function buildSynthesizedDailyEvents(reportItems) {
     .slice(0, 8);
 }
 
-function buildHozoGovernanceEvent(items) {
-  const matched = items.filter((item) => /公司|治理|法規|合規|銀行|開戶|驗資|股東|董事|監察人|合約|租賃|公證|用印|大小章|稅務|證照/.test(eventHaystack(item)));
+function buildMotherHealthEvent(items) {
+  const matched = items.filter((item) => /媽媽|媽，|頭痛|吃藥|不痛|醫師|半年|一年/.test(eventHaystack(item)));
   if (!matched.length) return null;
+
   return {
-    subject: '公司治理收斂',
-    target: '公司設立 / 銀行 / 合約 / 法務稅務',
-    project: '公司治理',
+    subject: '媽媽健康追蹤',
+    target: '媽媽 / Seven',
+    project: '私人事務',
     priority: '高',
-    impact: '若公司、銀行、合約與合規沒有收斂，後續場域、通路與營收啟動都缺乏正式承接基礎。',
-    conclusion: '目前需要把公司設立、銀行、合約、公證、證照與稅務整併成一個可驗收事件，而不是分散待辦。',
-    nextAction: '請主辦負責人口述完成目標，列出必須完成的文件、帳戶、合約與驗收人。',
-    solution: '用單一「公司治理收尾」任務追蹤，避免文件項目散落。',
-    depth: `${matched.length} 則治理/合規相關訊號已合併。`,
+    impact: '健康與家人關心事項，需要持續留意，但目前看起來不是立即危急事件。',
+    conclusion: '媽媽吃藥約 4-5 天後頭痛已比較不痛；她自述半年到一年會發作一次，目前狀況還好。',
+    nextAction: '1-2 天後再關心一次；若頭痛反覆或加劇，再提醒回診或確認用藥。',
+    solution: '低強度追蹤即可，不需要升級成緊急處理。',
+    depth: `${matched.length} 則健康相關訊息已合併。`,
     items: matched,
   };
 }
 
-function buildHozoSiteProcurementEvent(items) {
-  const matched = items.filter((item) => /場域|工程|裝修|水電|網路|設備|備品|採購|家具|衛浴|床墊|飲水機|洗烘|門鎖|磁扣|點收|驗收|供應商|報價/.test(eventHaystack(item)));
+function buildYifanMeetingEvent(items) {
+  const matched = items.filter((item) => /逸凡|YIFAN|月會|館長|參加月會|加入月會群組/.test(eventHaystack(item)));
   if (!matched.length) return null;
-  return {
-    subject: '工程建置可營運條件',
-    target: '工程 / 設備 / 備品 / 現場驗收',
-    project: '工程建置管理',
-    priority: '高',
-    impact: '工程與設備沒有定義可營運條件，就無法判斷是否能交付住客或進入營運。',
-    conclusion: '目前應把工程、設備、備品與點收整理成可營運驗收清單。',
-    nextAction: '請工程或採購窗口確認：哪些項目是營運前必須到位，誰做最後驗收。',
-    solution: '用「可營運驗收清單」合併工程缺失、設備到位、備品點收與現場交付。',
-    depth: `${matched.length} 則場域/採購相關訊號已合併。`,
-    items: matched,
-  };
-}
 
-function buildHozoBrandWebsiteEvent(items) {
-  const matched = items.filter((item) => /品牌|官網|網站|網域|hozo\.com|Email|表單|FAQ|設備設施|企業合作|文案|照片|素材|官方|上線/.test(eventHaystack(item)));
-  if (!matched.length) return null;
   return {
-    subject: '品牌官網公開條件',
-    target: '品牌 / 官網 / 表單 / 官方數位資產',
-    project: '品牌官網',
+    subject: '逸凡加入月會',
+    target: '逸凡 / 月會成員 / 茲心園',
+    project: '營運 / 茲心園工程',
     priority: '中',
-    impact: '品牌與官網若沒有明確公開條件，通路與企業合作內容會反覆等待。',
-    conclusion: '目前應把品牌名稱、網域、Email、官網內容與表單整理成一個可公開事件。',
-    nextAction: '請品牌或網站窗口口述：什麼狀態才算可以正式公開，誰驗收。',
-    solution: '用「官網可公開清單」整併頁面、FAQ、設備設施、表單與官方資訊一致性。',
-    depth: `${matched.length} 則品牌/官網相關訊號已合併。`,
+    impact: '茲心園現場資訊會進入固定月會節奏，後續能被總控追蹤。',
+    conclusion: '逸凡會加入月會，並已向大家同步自己會一起參與。',
+    nextAction: '確認逸凡知道月會時間、地點與報告重點即可。',
+    solution: '把逸凡視為月會固定成員，後續會議紀錄再轉成任務。',
+    depth: `${matched.length} 則月會相關訊息已合併。`,
     items: matched,
   };
 }
 
-function buildHozoOperationsEvent(items) {
-  const matched = items.filter((item) => /營運|通路|營收|上架|月租|招租|帶看|交接|房務|維運|清潔|SOP|櫻桃|商務會館|財務移轉|房客|入住|退房/.test(eventHaystack(item)));
+function buildFireInsuranceEvent(items) {
+  const matched = items.filter((item) => /火險|保險|保單|房貸|續保|7 月 20|7月20/.test(eventHaystack(item)));
   if (!matched.length) return null;
+
   return {
-    subject: '營運啟動與交接維運',
-    target: '通路 / 收客 / 交接 / 房務維運',
-    project: '營運和資料交接',
+    subject: '房貸火險續保',
+    target: 'Seven / 保險窗口',
+    project: '財務',
     priority: '高',
-    impact: '通路收客與現場維運若不同步，會出現可銷售但不可交付、或可交付但不可收客的落差。',
-    conclusion: '目前應把通路營收啟動和交接房務維運合併為營運啟動事件。',
-    nextAction: '請營運窗口分別確認通路可收客、交接可接手、房務可維持的驗收標準。',
-    solution: '用一個營運啟動看板追蹤通路、定價、素材、交接、SOP 與維修窗口。',
-    depth: `${matched.length} 則營運相關訊號已合併。`,
+    impact: '保險不能中斷，否則房貸/住宅風險會增加。',
+    conclusion: '不論老婆口氣如何，結論是火險要繼續買；Seven 已確定要續保。',
+    nextAction: '跟保險窗口確認續保方式、申請書、簽名流程與完成期限，並持續追蹤到續保完成。',
+    solution: '同一套解法：找窗口確認流程，補齊文件，完成續保。',
+    depth: `${matched.length} 則火險/續保相關訊息與任務已合併。`,
     items: matched,
   };
 }
 
-function buildHozoAutomationEvent(items) {
-  const matched = items.filter((item) => /LINE|Notion|PMS|webhook|自動化|同步|每日報告|早報|晚報|任務庫|目標定義|點收|OCR|附件|Codex|HOZO Jr|資料治理/.test(eventHaystack(item)));
+function buildRentalCustomerIssueEvent(items, progressReports) {
+  const matched = [...items, ...progressReports].filter((item) => /包租代管|HOZO|房客|租客|燈光|浴室|發黴|客人問題回報|設備租用|清潔打掃 SOP/.test(eventHaystack(item)));
   if (!matched.length) return null;
+
   return {
-    subject: '自動化與資料治理驗收',
-    target: 'LINE / Notion / PMS / 報告 / 點收',
-    project: '自動化',
+    subject: '包租代管客人問題 SOP',
+    target: 'HOZO 房客 / 房務清潔 / 包租代管營運',
+    project: '包租代管',
     priority: '高',
-    impact: '系統若只收資料但不能產生可追蹤結論，管理仍會回到人工整理。',
-    conclusion: '目前應把 LINE webhook、Notion 同步、報告追認、PMS 與點收整理成可驗收功能組。',
-    nextAction: '請系統 owner 確認每個功能的驗收條件，並把未定義目標先送 Codex 確認。',
-    solution: '用「自動化驗收清單」追蹤收訊、同步、報告、點收與資料治理。',
-    depth: `${matched.length} 則系統/自動化相關訊號已合併。`,
+    impact: '若沒有標準，客人可能要求隨意更換設備，清潔疏漏也會反覆變成客訴。',
+    conclusion: '事件其實只有一個待辦：把 SOP 做出來。燈光太暗要定義標準回覆與不可任意更換原則；可另設移動式燈具租用。廁所發黴要建立清潔檢查 SOP。',
+    nextAction: '產出兩份 SOP：燈光回覆/租用燈具標準、浴室發黴清潔檢查標準。',
+    solution: '用同一套「客人問題處理 SOP」解決燈光與發黴兩個問題。',
+    depth: `${matched.length} 則包租代管相關訊息/進度已合併。`,
     items: matched,
   };
 }
 
-function buildHozoGoalRecognitionEvent(items) {
+function buildRelationshipEscalationEvent(items) {
+  const matched = items.filter((item) => /吳|小姐|碧純|財務|不滿|客訴|投訴|抱怨|失望|沒有回報|沒回報|回報進度|反應速度|太慢|抱歉|道歉|安撫/.test(eventHaystack(item)));
+  if (!matched.length) return null;
+
+  return {
+    subject: '吳小姐案件：財務回應速度',
+    target: '吳小姐 / 公司財務窗口 / Seven',
+    project: '營運 / 財務',
+    priority: '高',
+    impact: '財務回應速度太慢會讓對方感覺事情被拖延，影響信任與後續合作關係。',
+    conclusion: '吳小姐案件需要追蹤的是「財務為什麼反應慢、目前處理到哪裡、何時回覆」。',
+    nextAction: '向財務窗口確認案件狀態與延遲原因，整理一段清楚回覆給吳小姐。',
+    solution: '建立「對外承諾/財務案件回報節奏」：承辦人、目前狀態、下一步、回覆時間。',
+    depth: `${matched.length} 則關係/財務回報相關訊息已合併。`,
+    items: matched,
+  };
+}
+
+function buildTaxEvent(items) {
+  const matched = items.filter((item) => /報稅|稅務|稅|申報|逾期/.test(eventHaystack(item)));
+  if (!matched.length) return null;
+
+  return {
+    subject: '報稅時間點追蹤',
+    target: 'Seven / 稅務處理窗口',
+    project: '財務',
+    priority: '高',
+    impact: '目前還沒報稅，若繼續延後會有逾期或資料缺漏風險。',
+    conclusion: '要報稅就要趕快報；目前最重要不是討論方法，而是確認實際報稅時間點。',
+    nextAction: '確認何時報稅、資料是否齊全、誰負責送出，並追蹤到完成。',
+    solution: '把報稅拆成三個狀態：資料齊全、預計送出時間、已完成送出。',
+    depth: `${matched.length} 則稅務相關訊息/任務已合併。`,
+    items: matched,
+  };
+}
+
+function buildGoalRecognitionEvent(items) {
   const matched = items.filter((item) => /完成目標|目標口述|Codex 目標確認|待負責人口述|待上傳給 Codex|追認|驗收|怎樣叫完成|完成百分比/.test(eventHaystack(item)));
   if (!matched.length) return null;
+
   return {
     subject: '目標追認缺口',
     target: '所有新增任務與專案負責人',
@@ -1582,12 +2494,12 @@ function formatEventSummaryCard(event, index) {
   const project = event.project ? `｜${event.project}` : '';
   const priority = event.priority ? `｜${event.priority}` : '';
   return [
-    `${index}. ${event.subject}${project}${priority}`,
-    `   主題：${conciseReportText(event.subject, 48)}`,
+    `${index}. ${event.subject || event.title}${project}${priority}`,
+    `   主題：${conciseReportText(event.subject || event.title, 48)}`,
     `   對象：${conciseReportText(event.target || event.project || '未分類', 48)}`,
-    `   影響：${conciseReportText(event.impact, 76)}`,
-    `   結論：${conciseReportText(event.conclusion, 92)}`,
-    `   建議待辦：${conciseReportText(event.nextAction, 86)}`,
+    `   影響：${conciseReportText(event.impact || event.effect, 76)}`,
+    `   結論：${conciseReportText(event.conclusion || event.result, 92)}`,
+    `   建議待辦：${conciseReportText(event.nextAction || event.nextStep, 86)}`,
     event.solution ? `   解法：${conciseReportText(event.solution, 74)}` : '',
     `   深看：${conciseReportText(event.depth, 58)}`,
   ].filter(Boolean).join('\n');
@@ -1596,7 +2508,9 @@ function formatEventSummaryCard(event, index) {
 function eventPriorityScore(event) {
   let score = event.priority === '高' ? 100 : event.priority === '中' ? 60 : 30;
   score += Math.min(event.items.length, 10);
-  if (/目標追認|系統|營運|場域|治理/.test(event.subject || '')) score += 20;
+  const subject = event.subject || event.title || '';
+  if (/媽媽|健康|火險|房客|關係|客訴|報稅|吳小姐/.test(subject)) score += 20;
+  if (/逸凡|月會/.test(subject)) score += 55;
   return score;
 }
 
@@ -1624,13 +2538,77 @@ function buildCompactDailySection(title, items, limit) {
   ].join('\n');
 }
 
+function parseConversationMasterMessagesForDailyReport(lines) {
+  const messages = [];
+  let current = null;
+
+  for (const rawLine of lines || []) {
+    const line = String(rawLine || '').trim();
+    if (!line || line.includes(CONVERSATION_ANCHOR_TEXT)) continue;
+    const parsed = parseConversationLineForDailyReport(line);
+    if (parsed) {
+      if (current) messages.push(current);
+      current = parsed;
+      continue;
+    }
+    if (current) {
+      current.content = `${current.content}\n${line}`.trim();
+    }
+  }
+  if (current) messages.push(current);
+  return messages.filter((message) => message.content);
+}
+
+function parseConversationLineForDailyReport(line) {
+  const match = line.match(/^【(?<time>[^】]+)】(?:(?<conversation>.*?)\s+-\s+)?(?<speaker>[^（:：\n]+)(?:（(?<type>[^）]+)）)?[:：]?\s*(?<content>.*)$/u)
+    || line.match(/^\[(?<time>[^\]]+)\]\s*(?<speaker>[^:：\n]{1,80})[:：]\s*(?<content>.*)$/u)
+    || line.match(/^(?<speaker>[^:：\n]{1,80})[:：]\s*(?<content>.+)$/u);
+  if (!match?.groups?.speaker) return null;
+  const speaker = String(match.groups.speaker || '').trim();
+  const content = String(match.groups.content || '').trim();
+  const typeLabel = String(match.groups.type || '').trim();
+  if (!speaker || /^(LINE|對話|訊息|原始|摘要|主檔|來源)$/i.test(speaker)) return null;
+  return {
+    time: String(match.groups.time || '').trim(),
+    speaker,
+    type: typeLabel,
+    content: content || typeLabel || '',
+  };
+}
+
+function isAssistantOperationConversationForDailyReport(page, text) {
+  const name = `${pageTextProperty(page, 'LINE 對話名稱')} ${pageTextProperty(page, '自定義名稱')}`;
+  const value = String(text || '');
+  const assistantAddressed = /(Seven\s*Jr\.?|Seven\s*Junior|謝孟娟|謝夢娟)/i.test(`${name}\n${value}`);
+  if (!assistantAddressed) return false;
+
+  return /查待辦|列出.*待辦|打開.*任務|看一下.*任務|任務校準|每日總控報告|追蹤確認|新任務確認|followup-confirmation|daily-control-report|排程警告|Cron logs|已收到你送出的/.test(value);
+}
+
 function filterActionableRemainders(items, usedKeys) {
   return items
     .filter((item) => !usedKeys.has(reportItemKey(item)))
-    .filter((item) => item.priority === '高'
-      || ['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(item.goalStatus)
-      || /待辦|確認|追蹤|決策|卡點|處理|回覆|期限|到期|驗收|完成目標|報價|合約|通路|交接/.test(eventHaystack(item)))
+    .filter((item) => item.priority === '高' || /待辦|確認|追蹤|決策|卡點|處理|回覆|期限|到期|客訴|投訴|健康|保險|報稅|發黴|漏水|月會/.test(eventHaystack(item)))
+    .filter((item) => !/寄東西很方便|枕頭都太好睡|今天的行程安排/.test(eventHaystack(item)))
     .sort(compareDailyReportItems);
+}
+
+function filterUnusedReportItems(items, usedKeys, keywords) {
+  const matched = items.filter((item) => {
+    if (usedKeys.has(reportItemKey(item))) return false;
+    const haystack = [
+      item.project,
+      item.title,
+      item.summary,
+      item.priority,
+      item.status,
+      ...(item.tags || []),
+    ].join('\n');
+    return keywords.some((keyword) => haystack.includes(keyword));
+  });
+
+  matched.forEach((item) => usedKeys.add(reportItemKey(item)));
+  return matched;
 }
 
 function dedupeReportItems(items) {
@@ -1648,10 +2626,6 @@ function reportItemKey(item) {
   return cleaned || normalizeReportKey(item.url || item.title || item.summary);
 }
 
-function normalizeReportKey(value) {
-  return String(value || '').replace(/\s+/g, '').replace(/[^\p{L}\p{N}:：]/gu, '').slice(0, 120);
-}
-
 function compareDailyReportItems(a, b) {
   const aScore = reportItemImportanceScore(a);
   const bScore = reportItemImportanceScore(b);
@@ -1664,22 +2638,46 @@ function compareDailyReportItems(a, b) {
 }
 
 function reportItemImportanceScore(item) {
-  const haystack = eventHaystack(item);
+  const haystack = `${item.project}\n${item.title}\n${item.summary}\n${(item.tags || []).join('\n')}`;
   let score = item.priority === '高' ? 10 : item.priority === '中' ? 5 : 1;
-  if (['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(item.goalStatus)) score += 8;
-  if (/公司|合約|銀行|稅務|證照|治理|法規/.test(haystack)) score += 7;
-  if (/工程|設備|備品|採購|點收|驗收/.test(haystack)) score += 7;
-  if (/通路|營收|交接|房務|維運|SOP/.test(haystack)) score += 7;
-  if (/LINE|Notion|PMS|webhook|自動化|每日報告|目標定義/.test(haystack)) score += 6;
-  if (/品牌|官網|表單|網域|Email/.test(haystack)) score += 4;
+  if (/頭痛|身體不舒服|生病|醫院|吃藥|health/.test(haystack)) score += 9;
+  if (/火險|保險|保單|房貸|續保|報稅|稅|finance|insurance/.test(haystack)) score += 8;
+  if (/房客|租客|發黴|漏水|故障|燈光|浴室|customerIssue|tenant/.test(haystack)) score += 7;
+  if (/不滿|客訴|投訴|抱怨|沒有回報|回報進度|relationshipIssue/.test(haystack)) score += 6;
+  if (/你處理|交給你|提醒你|請你/.test(haystack)) score += 5;
+  if (/會議|月會|meeting/.test(haystack)) score += 3;
   return score + (Number(item.score) || 0);
+}
+
+function formatReportCard(item, index) {
+  const project = item.project && item.project !== '未分類' ? `｜${item.project}` : '';
+  const priority = item.priority ? `｜${item.priority}` : '';
+  const title = readableReportTitle(item);
+  const detail = conciseReportText(cleanReportSummary(item.summary), 54);
+  const nextStep = conciseReportText(item.nextStep || extractNextStep(item.summary) || inferMessageNextStep(`${item.title}\n${item.summary}`), 44);
+
+  return [
+    `${index}. ${title}${project}${priority}`,
+    detail ? `   重點：${detail}` : '',
+    nextStep ? `   下一步：${nextStep}` : '',
+  ].filter(Boolean).join('\n');
 }
 
 function readableReportTitle(item) {
   const project = String(item.project || '');
   let title = String(item.title || item.summary || '').replace(/\s+/g, ' ').trim();
   title = title.replace(new RegExp(`^${escapeRegExp(project)}[：:]`), '');
-  return conciseReportText(title || cleanReportSummary(item.summary), 36);
+  title = title.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
+  title = title.replace(/[0-9a-f]{32}/gi, '');
+  title = title.replace(/^判斷\s+/, '');
+  title = title.replace(/^確認保險\/火險續保處理\s*[-－]\s*/, '火險/保險續保：');
+  title = title.replace(/^關心與追蹤健康狀況\s*[-－]\s*/, '健康關心：');
+  title = title.replace(/^處理房客\/客戶問題\s*[-－]\s*/, '房客/客戶問題：');
+  title = title.replace(/^確認財務\/稅務事項\s*[-－]\s*/, '財務/稅務：');
+  title = title.replace(/^確認交由 Seven 處理事項\s*[-－]\s*/, '交由 Seven 處理：');
+  title = title.replace(/^確認決策\s*[-－]\s*/, '決策確認：');
+  title = title.replace(/\s+/g, ' ').trim();
+  return conciseReportText(title || cleanReportSummary(item.summary), 34);
 }
 
 function conciseReportText(value, maxLength) {
@@ -1700,59 +2698,73 @@ function cleanReportSummary(value) {
   return text;
 }
 
+function extractNextStep(value) {
+  const text = String(value || '');
+  return text.match(/建議處理：([^\n]+)/)?.[1]?.trim() || '';
+}
+
 function inferMessageNextStep(text) {
   const value = String(text || '');
-  if (/完成目標|怎樣叫完成|驗收/.test(value)) return '補齊負責人口述與驗收人，送 Codex 確認後再追蹤。';
-  if (/合約|銀行|稅務|證照|公證/.test(value)) return '確認文件、責任人、驗收條件與期限。';
-  if (/工程|設備|備品|採購|報價/.test(value)) return '確認到位清單、供應商回覆、缺口與驗收窗口。';
-  if (/通路|招租|帶看|房務|交接|維運/.test(value)) return '確認可營運條件、SOP、窗口與下一步。';
-  if (/LINE|Notion|PMS|webhook|自動化/.test(value)) return '確認功能驗收標準、目前卡點與下一個測試。';
-  return '確認是否保留為待辦，並補上完成目標定義。';
+  if (/頭痛|身體不舒服|生病|疼痛|疼|醫院|吃藥/.test(value)) return '關心身體狀況，必要時提醒就醫或追蹤是否已改善。';
+  if (/不滿|客訴|投訴|抱怨|失望|沒有回報|沒回報|回報進度|抱歉|道歉|安撫/.test(value)) return '確認要回覆、道歉、安撫或追蹤承諾進度。';
+  if (/火險|保險|保單|房貸|續保/.test(value)) return '確認到期日、是否續保、文件與簽名流程。';
+  if (/報稅|稅|發票|付款|匯款/.test(value)) return '確認期限、資料缺口與下一個處理動作。';
+  if (/房客|租客|發黴|漏水|故障|燈光|浴室/.test(value)) return '確認回覆口徑、修繕責任與是否列入 SOP。';
+  if (/會議|會議記錄|月會|例會/.test(value)) return '確認是否有會議行動項目需要寫入任務庫。';
+  if (/你處理|你要|交給你|提醒你/.test(value)) return '確認是否由 Seven 負責，以及期限與完成標準。';
+  return '確認是否保留為待辦或只作紀錄。';
 }
 
 function scoreDailyMessageImportance(text) {
   const value = String(text || '');
   const rules = [
-    [6, /完成目標|怎樣叫完成|驗收|負責人|目標口述/],
-    [5, /公司|合約|銀行|稅務|證照|公證|法規|治理/],
-    [5, /工程|裝修|水電|設備|備品|採購|報價|點收/],
-    [5, /通路|招租|月租|帶看|交接|房務|維運|SOP|房客/],
-    [5, /LINE|Notion|PMS|webhook|自動化|每日報告|附件|OCR/],
-    [4, /品牌|官網|網域|Email|表單|FAQ|素材|上線/],
-    [3, /進度|狀態|下一步|卡住|卡點|確認|決定|決策/],
+    [5, /頭痛|身體不舒服|生病|醫院|吃藥|疼痛|疼|受傷/],
+    [6, /不滿|客訴|投訴|抱怨|失望|感覺.*不舒服|沒有回報|沒回報|回報進度|抱歉|道歉|誤會|安撫|關係修復/],
+    [5, /火險|保險|保單|房貸|續保|報稅|稅|發票|付款|匯款/],
+    [5, /房客|租客|發黴|漏水|故障|燈光|浴室|修繕|投訴|反應|客人.*(問題|反應|投訴|抱怨)/],
+    [5, /你處理|你要|交給你|麻煩你|提醒你|請你|幫我/],
+    [4, /要不要|是不是|是否|怎麼辦|怎麼處理|確認|決定|決策/],
+    [4, /會議|會議記錄|月會|例會|結論|行動項目/],
+    [3, /進度|狀態|下一步|卡住|卡點|今天.*安排|想法|看法|策略|方向/],
+    [3, /媽媽|媽，|老婆|太太|家裡|家人|西周|天才家族/],
   ];
   return rules.reduce((score, [points, pattern]) => (pattern.test(value) ? score + points : score), 0);
 }
 
 function dailyMessageTags(text) {
   const tags = [];
-  if (/完成目標|怎樣叫完成|驗收|負責人|目標口述/.test(text)) tags.push('goal');
-  if (/公司|合約|銀行|稅務|證照|公證|法規|治理/.test(text)) tags.push('governance');
-  if (/工程|裝修|水電|設備|備品|採購|報價|點收/.test(text)) tags.push('site');
-  if (/通路|招租|月租|帶看|交接|房務|維運|SOP|房客/.test(text)) tags.push('operations');
-  if (/LINE|Notion|PMS|webhook|自動化|每日報告|附件|OCR/.test(text)) tags.push('automation');
-  if (/品牌|官網|網域|Email|表單|FAQ|素材|上線/.test(text)) tags.push('brand');
+  if (/頭痛|身體不舒服|生病|疼痛|疼|醫院|吃藥/.test(text)) tags.push('health', 'family');
+  if (/不滿|客訴|投訴|抱怨|失望|感覺.*不舒服|沒有回報|沒回報|回報進度|抱歉|道歉|誤會|安撫|關係修復/.test(text)) tags.push('relationshipIssue', 'customerIssue');
+  if (/火險|保險|保單|房貸|續保/.test(text)) tags.push('insurance', 'finance');
+  if (/報稅|稅|發票|付款|匯款/.test(text)) tags.push('finance');
+  if (/房客|租客|發黴|漏水|故障|燈光|浴室|客人.*(問題|反應|投訴|抱怨)/.test(text)) tags.push('customerIssue', 'tenant');
+  if (/會議|會議記錄|月會|例會/.test(text)) tags.push('meeting');
+  if (/進度|狀態|策略|方向|看法|想法/.test(text)) tags.push('progress');
   return tags;
 }
 
 function inferDailyMessageProject(text) {
-  if (/公司|合約|銀行|稅務|證照|公證|法規|治理/.test(text)) return '公司治理';
-  if (/工程|裝修|水電|設備|採購|報價|點收/.test(text)) return '工程建置管理';
-  if (/備品|房務|清潔|客房/.test(text)) return '房務管理';
-  if (/品牌|官網|網域|Email|表單|FAQ|素材|上線/.test(text)) return '品牌官網';
-  if (/通路|招租|月租|帶看|入住|退房|房客|住客/.test(text)) return '住客服務與體驗管理';
-  if (/交接|維運|SOP|營運資料|流程/.test(text)) return '營運和資料交接';
-  if (/LINE|Notion|PMS|webhook|自動化|每日報告|附件|OCR|資料治理/.test(text)) return '自動化';
+  if (/茲心園|改建|營造|工程|工地/.test(text)) return '茲心園工程';
+  if (/HOZO\s*後|HOZO後|後臺|後台|登入頁|CRM/.test(text)) return 'HOZO 後臺';
+  if (/包租代管|包租|代管|房客|租客|租屋|出租|招租|好住寓好|HOZO|發黴|浴室|燈光/.test(text)) return '包租代管';
+  if (/SmartFront|AI Brain|AI腦|智能前台/.test(text)) return 'SmartFront / AI Brain';
+  if (/不滿|客訴|投訴|抱怨|失望|沒有回報|沒回報|回報進度|抱歉|道歉|安撫|關係修復/.test(text)) {
+    return /同仁|員工|人員|人力|公司|update/i.test(text) ? '人資' : '營運';
+  }
+  if (/火險|保險|保單|房貸|續保|財務|付款|匯款|發票|報稅|稅|薪資/.test(text)) return '財務';
+  if (/人資|招募|面試|員工|同仁|資遣|解僱/.test(text)) return '人資';
+  if (/營運|月會|例會|流程|SOP|會議|公司助理系統|手機.*會議記錄/.test(text)) return '營運';
+  if (/老婆|太太|媽媽|媽，|家裡|家人|小孩|私人|西周|天才家族/.test(text)) return '私人事務';
   return '未分類';
 }
 
 function buildMessageReportTitle(text) {
   const value = String(text || '').replace(/\s+/g, ' ').trim();
-  if (/完成目標|怎樣叫完成|驗收/.test(value)) return `目標追認：${value.slice(0, 34)}`;
-  if (/公司|合約|銀行|稅務|證照/.test(value)) return `治理合規：${value.slice(0, 34)}`;
-  if (/工程|設備|備品|採購/.test(value)) return `場域採購：${value.slice(0, 34)}`;
-  if (/通路|交接|房務|維運/.test(value)) return `營運：${value.slice(0, 34)}`;
-  if (/LINE|Notion|PMS|自動化/.test(value)) return `系統自動化：${value.slice(0, 34)}`;
+  if (/頭痛|身體不舒服|生病|疼痛|疼/.test(value)) return `健康關心：${value.slice(0, 34)}`;
+  if (/不滿|客訴|投訴|抱怨|失望|沒有回報|沒回報|回報進度|抱歉|道歉|安撫/.test(value)) return `關係/客訴追蹤：${value.slice(0, 34)}`;
+  if (/火險|保險|保單|房貸|續保/.test(value)) return `保險/火險：${value.slice(0, 34)}`;
+  if (/房客|租客|發黴|漏水|燈光|浴室/.test(value)) return `房客問題：${value.slice(0, 34)}`;
+  if (/報稅|稅/.test(value)) return `報稅/稅務：${value.slice(0, 34)}`;
   return value.slice(0, 46);
 }
 
@@ -1770,6 +2782,39 @@ function isDailyReportType(reportType) {
 
 function firstUrlFromText(text) {
   return String(text || '').match(/https?:\/\/\S+/)?.[0] || '';
+}
+
+function taipeiDateOnly(value) {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(value instanceof Date ? value : new Date(value));
+}
+
+function taipeiStartOfDayIso(value) {
+  const date = taipeiDateOnly(value instanceof Date ? value : new Date(value));
+  return `${date}T00:00:00+08:00`;
+}
+
+function isTodayTaipei(value, today = taipeiDateOnly(new Date())) {
+  if (!value) return false;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return taipeiDateOnly(date) === today;
+}
+
+function normalizeReportKey(value) {
+  return String(value || '').replace(/\s+/g, '').toLowerCase().slice(0, 80);
+}
+
+function normalizeId(value) {
+  return String(value || '').trim().replace(/-/g, '').toLowerCase();
+}
+
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 async function pushLineMessages(req, body) {
@@ -2132,7 +3177,7 @@ async function appendOutgoingConversationContent({ conversationId, target, messa
 
 async function findConversationAnchorBlock(conversationId) {
   const blocks = await getBlockChildren(conversationId);
-  return blocks.find((block) => isConversationAnchorBlock(block)) || null;
+  return blocks.find((block) => plainBlockText(block).includes(CONVERSATION_ANCHOR_TEXT)) || null;
 }
 
 async function getBlockChildren(blockId) {
@@ -2150,11 +3195,6 @@ async function getBlockChildren(blockId) {
 function plainBlockText(block) {
   const richText = block?.[block.type]?.rich_text || [];
   return richText.map((item) => item.plain_text || item.text?.content || '').join('');
-}
-
-function isConversationAnchorBlock(block) {
-  const text = plainBlockText(block);
-  return text.includes(CONVERSATION_ANCHOR_TEXT) || CONVERSATION_ANCHOR_PATTERN.test(text);
 }
 
 function buildOutgoingPreview(messages) {
@@ -2185,31 +3225,43 @@ function buildOutgoingMessageId(target, message, sentAt, index) {
 }
 
 async function notionRequest(pathname, { method, body }) {
-  await assertHozoNotionTarget(pathname, body);
+  await assertSevenNotionTarget(pathname, body);
 
-  const response = await fetch(`https://api.notion.com${pathname}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${process.env.NOTION_TOKEN}`,
-      'Content-Type': 'application/json',
-      'Notion-Version': process.env.NOTION_VERSION || '2025-09-03',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const maxAttempts = 3;
+  let lastError = null;
 
-  const responseText = await response.text();
-  if (!response.ok) {
-    throw new Error(`Notion API failed: ${response.status} ${responseText}`);
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const response = await fetch(`https://api.notion.com${pathname}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${process.env.NOTION_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': process.env.NOTION_VERSION || '2025-09-03',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const responseText = await response.text();
+    if (response.ok) {
+      return responseText ? JSON.parse(responseText) : {};
+    }
+
+    lastError = new Error(`Notion API failed: ${response.status} ${responseText}`);
+    if (![429, 500, 502, 503, 504].includes(response.status) || attempt === maxAttempts) {
+      throw lastError;
+    }
+
+    await sleep(600 * attempt);
   }
 
-  return responseText ? JSON.parse(responseText) : {};
+  throw lastError;
 }
 
-async function assertHozoNotionTarget(pathname, body) {
+async function assertSevenNotionTarget(pathname, body) {
   const dataSourceIds = new Set();
-  const dataSourceMatch = String(pathname || '').match(/^\/v1\/data_sources\/([^/]+)\/query(?:\?|$)/);
-  if (dataSourceMatch?.[1]) {
-    dataSourceIds.add(dataSourceMatch[1]);
+  const pathMatch = String(pathname || '').match(/\/v1\/data_sources\/([^/?]+)/);
+  if (pathMatch) {
+    dataSourceIds.add(pathMatch[1]);
   }
 
   const parent = body?.parent;
@@ -2218,44 +3270,39 @@ async function assertHozoNotionTarget(pathname, body) {
   }
 
   for (const dataSourceId of dataSourceIds) {
-    await assertHozoDataSource(dataSourceId);
+    await assertSevenDataSource(dataSourceId);
   }
 }
 
-async function assertHozoDataSource(dataSourceId) {
+async function assertSevenDataSource(dataSourceId) {
   const normalizedId = normalizeId(dataSourceId);
   if (!normalizedId) {
-    throw new Error('Missing HOZO Notion data source ID.');
-  }
-  if (verifiedHozoDataSources.has(normalizedId)) {
-    return verifiedHozoDataSources.get(normalizedId);
+    throw new Error('Notion data source id is missing.');
   }
 
-  const dataSource = await notionFetchJson(`/v1/data_sources/${encodeURIComponent(dataSourceId)}`);
-  const dataSourceTitle = notionTitleText(dataSource.title);
-  const databaseId = dataSource.parent?.database_id;
-  if (!databaseId) {
-    throw new Error(`Notion data source ${dataSourceTitle || dataSourceId} is not attached to a database.`);
+  const cached = verifiedSevenDataSources.get(normalizedId);
+  if (cached) {
+    return cached;
   }
 
-  const database = await notionFetchJson(`/v1/databases/${encodeURIComponent(databaseId)}`);
-  const databaseTitle = notionTitleText(database.title);
-  const parentId = normalizeId(database.parent?.block_id || database.parent?.page_id || '');
+  const dataSource = await notionFetchJson(`/v1/data_sources/${normalizedId}`);
+  const titleText = notionTitleText(dataSource.title);
+  const parentBlockId = normalizeId(dataSource.parent?.block_id || dataSource.parent?.page_id || dataSource.parent?.database_id || '');
 
-  if (dataSource.archived || dataSource.in_trash || database.archived || database.in_trash) {
-    throw new Error(`Refusing to write to archived or trashed Notion data source: ${dataSourceTitle || dataSourceId}.`);
-  }
-  if (!/^HOZO(?:\b|-| | LINE| AM|CRM|好住|總控|Automation)/i.test(dataSourceTitle)) {
-    throw new Error(`Refusing to write to non-HOZO Notion data source: ${dataSourceTitle || dataSourceId}.`);
-  }
-  const allowedParentIds = new Set([HOZO_DATA_SOURCE_PARENT_BLOCK_ID, HOZO_DATA_SOURCE_PARENT_PAGE_ID].filter(Boolean));
-  if (allowedParentIds.size && !allowedParentIds.has(parentId)) {
-    throw new Error(`Refusing to write outside the HOZO Notion database area: ${databaseTitle || databaseId}.`);
+  if (dataSource.archived || dataSource.in_trash) {
+    throw new Error(`Blocked Notion access: data source "${titleText || normalizedId}" is archived or trashed.`);
   }
 
-  const result = { dataSourceTitle, databaseTitle, databaseId };
-  verifiedHozoDataSources.set(normalizedId, result);
-  return result;
+  if (!isAllowedSevenDataSourceTitle(titleText)) {
+    throw new Error(`Blocked Notion access: data source "${titleText || normalizedId}" does not look like a HOZO AM data source.`);
+  }
+
+  if (HOZO_DATA_SOURCE_PARENT_BLOCK_ID && parentBlockId && parentBlockId !== HOZO_DATA_SOURCE_PARENT_BLOCK_ID) {
+    throw new Error(`Blocked Notion access: data source "${titleText || normalizedId}" is outside the configured HOZO AM parent scope.`);
+  }
+
+  verifiedSevenDataSources.set(normalizedId, true);
+  return true;
 }
 
 async function notionFetchJson(pathname) {
@@ -2263,7 +3310,6 @@ async function notionFetchJson(pathname) {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${process.env.NOTION_TOKEN}`,
-      'Content-Type': 'application/json',
       'Notion-Version': process.env.NOTION_VERSION || '2025-09-03',
     },
   });
@@ -2274,12 +3320,20 @@ async function notionFetchJson(pathname) {
   return responseText ? JSON.parse(responseText) : {};
 }
 
-function notionTitleText(title) {
-  return (title || []).map((item) => item.plain_text || item.text?.content || '').join('');
+function notionTitleText(items) {
+  return (items || []).map((item) => item.plain_text || item.text?.content || '').join('').trim();
 }
 
-function normalizeId(value) {
-  return String(value || '').replace(/-/g, '').toLowerCase();
+function isAllowedSevenDataSourceTitle(titleText) {
+  const value = String(titleText || '').trim();
+  if (!value) {
+    return true;
+  }
+  return /(HOZO|HOZO AM|HOZOAM|Codex|總控|任務|專案|會議|每日|LINE|Automation|風險|決策|責任|權責)/i.test(value);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function pageTextProperty(page, propertyName) {
@@ -2304,14 +3358,9 @@ function pageSelectProperty(page, propertyName) {
   return property?.type === 'select' ? property.select?.name || '' : '';
 }
 
-function pageDateProperty(page, propertyName) {
+function pageUrlProperty(page, propertyName) {
   const property = page?.properties?.[propertyName];
-  return property?.type === 'date' ? property.date?.start || '' : '';
-}
-
-function pageNumberProperty(page, propertyName) {
-  const property = page?.properties?.[propertyName];
-  return property?.type === 'number' ? Number(property.number || 0) : 0;
+  return property?.type === 'url' ? property.url || '' : '';
 }
 
 function pageRelationId(page, propertyName) {
@@ -2319,28 +3368,21 @@ function pageRelationId(page, propertyName) {
   return property?.type === 'relation' ? property.relation?.[0]?.id || '' : '';
 }
 
-function taipeiDateOnly(value) {
-  return new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Asia/Taipei',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(value instanceof Date ? value : new Date(value));
+function pageRelationIds(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'relation' ? (property.relation || []).map((item) => item.id).filter(Boolean) : [];
 }
 
-function taipeiStartOfDayIso(value) {
-  return `${taipeiDateOnly(value instanceof Date ? value : new Date(value))}T00:00:00+08:00`;
+function firstFileUrl(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  if (property?.type !== 'files') return '';
+  const file = property.files?.[0];
+  return file?.file?.url || file?.external?.url || '';
 }
 
-function isTodayTaipei(value, today = taipeiDateOnly(new Date())) {
-  if (!value) {
-    return false;
-  }
-  return taipeiDateOnly(value) === today;
-}
-
-function escapeRegExp(value) {
-  return escapeRegex(value);
+function pageDateProperty(page, propertyName) {
+  const property = page?.properties?.[propertyName];
+  return property?.type === 'date' ? property.date?.start || '' : '';
 }
 
 function richTextPlain(items) {
@@ -2384,6 +3426,10 @@ function checkboxProperty(value) {
 
 function relationProperty(id) {
   return { relation: [{ id }] };
+}
+
+function relationArrayProperty(ids) {
+  return { relation: ids.map((id) => ({ id })).filter((item) => item.id) };
 }
 
 function urlProperty(value) {
@@ -2453,25 +3499,172 @@ function sendNoContent(res) {
   res.end();
 }
 
-async function serveReportPage(res, pathname) {
+async function findFollowupRecipientCandidates(searchText) {
+  if (!process.env.NOTION_TOKEN) return [];
+  const terms = recipientSearchTerms(searchText);
+  if (!terms.length) return [];
+
+  const [groups, members, conversations] = await Promise.all([
+    LINE_GROUP_OPTIONS_DATA_SOURCE_ID ? queryDataSourcePages(LINE_GROUP_OPTIONS_DATA_SOURCE_ID, { page_size: 100 }) : Promise.resolve([]),
+    LINE_GROUP_MEMBERS_DATA_SOURCE_ID ? queryDataSourcePages(LINE_GROUP_MEMBERS_DATA_SOURCE_ID, { page_size: 100 }) : Promise.resolve([]),
+    CONVERSATIONS_DATA_SOURCE_ID ? queryDataSourcePages(CONVERSATIONS_DATA_SOURCE_ID, { page_size: 100 }) : Promise.resolve([]),
+  ]);
+
+  const groupsByPageId = new Map(groups.map((page) => [page.id, normalizeRecipientGroupOption(page)]));
+  const candidates = [];
+
+  for (const member of members) {
+    const candidate = normalizeRecipientMemberOption(member, groupsByPageId);
+    const score = scoreRecipientCandidate(terms, [
+      candidate.memberName,
+      candidate.groupName,
+      candidate.project,
+    ].join(' '));
+    if (score <= 0 || !candidate.targetId) continue;
+    candidates.push({
+      label: `${candidate.memberName}｜${candidate.groupName || candidate.targetType}`,
+      targetMemberName: candidate.memberName,
+      targetMemberUserId: candidate.userId,
+      targetId: candidate.targetId,
+      targetType: candidate.targetType,
+      groupName: candidate.groupName,
+      source: 'line-group-member',
+      score,
+    });
+  }
+
+  for (const conversation of conversations) {
+    const candidate = normalizeRecipientConversationOption(conversation);
+    const score = scoreRecipientCandidate(terms, [
+      candidate.name,
+      candidate.customName,
+      candidate.project,
+    ].join(' '));
+    if (score <= 0 || !candidate.targetId) continue;
+    candidates.push({
+      label: `${candidate.name || candidate.customName}｜${candidate.targetType === 'user' ? '個人對話' : 'LINE 群組'}`,
+      targetMemberName: candidate.name || candidate.customName,
+      targetMemberUserId: candidate.targetType === 'user' ? candidate.targetId : '',
+      targetId: candidate.targetId,
+      targetType: candidate.targetType,
+      groupName: candidate.targetType === 'user' ? '' : (candidate.name || candidate.customName),
+      source: 'conversation-master',
+      score: score - (candidate.targetType === 'user' ? 0 : 15),
+    });
+  }
+
+  return uniqueRecipientCandidates(candidates)
+    .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, 'zh-Hant'))
+    .slice(0, 12)
+    .map(({ score, ...candidate }) => candidate);
+}
+
+async function queryDataSourcePages(dataSourceId, body = {}) {
+  const results = [];
+  let startCursor = null;
+  do {
+    const response = await notionRequest(`/v1/data_sources/${dataSourceId}/query`, {
+      method: 'POST',
+      body: {
+        page_size: body.page_size || 100,
+        start_cursor: startCursor || undefined,
+        filter: body.filter,
+        sorts: body.sorts,
+      },
+    });
+    results.push(...(response.results || []));
+    startCursor = response.has_more ? response.next_cursor : null;
+  } while (startCursor);
+  return results;
+}
+
+function normalizeRecipientGroupOption(page) {
+  return {
+    pageId: page.id,
+    groupName: pageTextProperty(page, '群組顯示名稱') || pageTextProperty(page, 'LINE對話名稱') || pageTextProperty(page, '自定義名稱'),
+    targetId: pageTextProperty(page, 'GroupID'),
+    targetType: pageSelectProperty(page, '對象類型') || inferTargetType(pageTextProperty(page, 'GroupID')),
+    project: pageSelectProperty(page, '總控專案'),
+  };
+}
+
+function normalizeRecipientMemberOption(page, groupsByPageId) {
+  const groupPageIds = pageRelationIds(page, 'LINE群組');
+  const group = groupPageIds.map((id) => groupsByPageId.get(id)).find(Boolean) || {};
+  return {
+    memberName: pageTextProperty(page, '成員顯示名稱') || pageTextProperty(page, '成員選項名稱'),
+    userId: pageTextProperty(page, 'UserID'),
+    groupName: pageTextProperty(page, '群組顯示名稱') || group.groupName || '',
+    targetId: group.targetId || pageTextProperty(page, 'GroupID'),
+    targetType: group.targetType || inferTargetType(group.targetId || pageTextProperty(page, 'GroupID')),
+    project: group.project || '',
+  };
+}
+
+function normalizeRecipientConversationOption(page) {
+  const groupId = pageTextProperty(page, 'Group ID');
+  const roomId = pageTextProperty(page, 'Room ID');
+  const userId = pageTextProperty(page, 'User ID');
+  const targetId = groupId || roomId || userId;
+  return {
+    name: pageTextProperty(page, 'LINE 對話名稱'),
+    customName: pageTextProperty(page, '自定義名稱'),
+    targetId,
+    targetType: groupId ? 'group' : roomId ? 'room' : userId ? 'user' : inferTargetType(targetId),
+    project: pageSelectProperty(page, '總控專案'),
+  };
+}
+
+function recipientSearchTerms(value) {
+  return normalizeDispatchText(value)
+    .split(/[\/／,，、\s&：:()（）【】\[\]\-]+/)
+    .map((item) => item.trim())
+    .filter((item) => item.length >= 2)
+    .filter((item) => !/^(line|codex|seven|jr|追蹤|對象|群組|成員|建議|訊息|原因|確認|使用|教學|登入頁|任務|專案|包租代管|茲心園工程|私人事務)$/i.test(item));
+}
+
+function scoreRecipientCandidate(terms, candidateText) {
+  const text = normalizeDispatchText(candidateText);
+  let score = 0;
+  for (const term of terms) {
+    if (!term) continue;
+    if (text === term) score += 120;
+    else if (text.includes(term)) score += 80;
+    else if (term.includes(text) && text.length >= 2) score += 40;
+  }
+  return score;
+}
+
+function uniqueRecipientCandidates(candidates) {
+  const seen = new Set();
+  const unique = [];
+  for (const candidate of candidates) {
+    const key = `${candidate.targetType}:${candidate.targetId}:${candidate.targetMemberUserId || candidate.targetMemberName}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(candidate);
+  }
+  return unique;
+}
+
+async function serveFollowupRecipientCandidates(req, res) {
+  try {
+    const url = new URL(req.url || '/', 'http://localhost');
+    const target = url.searchParams.get('target') || '';
+    const reason = url.searchParams.get('reason') || '';
+    const message = url.searchParams.get('message') || '';
+    const candidates = await findFollowupRecipientCandidates(`${target} ${reason} ${message}`);
+    return sendJson(res, 200, { ok: true, candidates });
+  } catch (error) {
+    console.warn(`Unable to resolve follow-up recipient candidates: ${error.message}`);
+    return sendJson(res, 200, { ok: false, candidates: [], error: error.message });
+  }
+}
+
+function serveReportPage(res, pathname) {
   const reportFile = REPORT_ROUTES.get(pathname);
   if (!reportFile) {
     return sendJson(res, 404, { error: 'Report not found' });
-  }
-
-  if (pathname === '/reports/morning-brief') {
-    const model = process.env.NOTION_TOKEN && TASKS_DATA_SOURCE_ID
-      ? await buildMorningBriefModel()
-      : null;
-    const html = buildMorningBriefHtml(model);
-
-    res.writeHead(200, {
-      ...corsHeaders(),
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store',
-    });
-    res.end(html);
-    return;
   }
 
   const html = readFileSync(new URL(reportFile, import.meta.url), 'utf8');
@@ -2483,204 +3676,192 @@ async function serveReportPage(res, pathname) {
   res.end(html);
 }
 
-function buildMorningBriefHtml(model) {
-  const reportDate = model?.today || taipeiDateOnly(new Date());
-  const reportContent = model ? formatMorningBriefDecisionText(model) : [
-    '# 今日行程與待辦報告',
-    '',
-    '目前無法讀取 HOZO 總控任務庫。',
-    '請檢查 Notion 連線、NOTION_TOKEN 與 HOZO_TASKS_DATA_SOURCE_ID。',
-  ].join('\n');
-  const scheduleItems = model?.scheduleItems || [];
-  const carryoverTasks = model?.carryoverTasks || [];
-  const priorityTasks = model?.priorityTasks || [];
-  const decisionTasks = model?.decisionTasks || [];
-  const workBlocks = model?.workBlocks || [];
-  return `<!doctype html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HOZO-AM 早上 8 點半任務狀態晨報</title>
-  <style>
-    :root{--bg:#f6f7f4;--panel:#fff;--ink:#20242a;--muted:#66706b;--line:#d9ded6;--green:#2f6f5e;--blue:#315f8c;--red:#9d3b3b;--shadow:0 10px 28px rgba(23,30,26,.08)}
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC",system-ui,sans-serif;line-height:1.6}
-    .app{min-height:100vh;display:grid;grid-template-columns:260px minmax(0,1fr)}
-    aside{position:sticky;top:0;height:100vh;padding:24px 18px;background:#24342f;color:#f4f7f2}
-    .brand strong{display:block;font-size:20px}
-    .brand span{display:block;margin-top:4px;color:#bed0c7;font-size:13px}
-    nav{display:grid;gap:8px;margin-top:28px}
-    nav a{color:#dce7e1;text-decoration:none;padding:9px 10px;border-radius:6px}
-    nav a:hover{background:rgba(255,255,255,.08)}
-    main{padding:28px}
-    .top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
-    h1{margin:0;font-size:28px;line-height:1.25}
-    .subtitle{margin-top:6px;color:var(--muted)}
-    .date-card{min-width:180px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow);text-align:right}
-    .date-card strong{display:block;font-size:20px}
-    .date-card span{display:block;color:var(--muted);font-size:13px}
-    .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
-    .metric{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:14px}
-    .metric strong{display:block;font-size:24px}
-    .metric span{color:var(--muted);font-size:13px}
-    section{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden}
-    .head{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:#fbfcfa}
-    .head h2{margin:0;font-size:18px}
-    .note{color:var(--muted);font-size:13px}
-    .schedule,.cards,.work{display:grid;gap:12px;padding:16px}
-    .item{border:1px solid var(--line);border-radius:8px;padding:12px;background:#fff}
-    .item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .item-title{font-weight:700}
-    .badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:12px;background:#edf3ef;color:#2f6f5e;white-space:nowrap}
-    .badge.red{background:#fff0f0;color:#9d3b3b}
-    .badge.blue{background:#edf4fb;color:#315f8c}
-    .item p{margin:8px 0 0;color:var(--muted)}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-    th{font-size:13px;color:var(--muted);background:#fbfcfa}
-    .empty{padding:16px;color:var(--muted)}
-    textarea{width:100%;min-height:170px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:#fff;padding:9px 10px;color:var(--ink);font:inherit;line-height:1.6}
-    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
-    .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:9px 14px;cursor:pointer}
-    .btn.primary{border-color:var(--green);background:var(--green);color:#fff}
-    .btn:disabled{opacity:.65;cursor:wait}
-    .result{display:none;margin-top:16px;padding:14px 16px;border:1px solid #bfd9cd;background:#edf6f1;border-radius:8px;color:#1f4e42}
-    .result.show{display:block}
-    .result.error{border-color:#efc3c3;background:#fff0f0;color:#873333}
-    @media(max-width:820px){.app{display:block}aside{position:static;height:auto}.top{display:block}.date-card{text-align:left;margin-top:12px}main{padding:16px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  </style>
-</head>
-<body>
-  <div class="app">
-    <aside>
-      <div class="brand"><strong>早上 8 點半簡報</strong><span>HOZO 行程、待辦、今日優先</span></div>
-      <nav><a href="#calendar">今日行程</a><a href="#carryover">昨日未完成</a><a href="#priority">今日優先</a><a href="#decisions">需要決策</a><a href="#work">建議時段</a><a href="#writeback">確認寫回</a></nav>
-    </aside>
-    <main>
-      <div class="top">
-        <div><h1>今日行程與待辦報告</h1><div class="subtitle">每天早上 8 點半，先把今天的時間、昨天留下來的事情、最該推進的工作排清楚。</div></div>
-        <div class="date-card"><strong>${escapeHtml(reportDate)}</strong><span>08:30｜Asia/Taipei</span></div>
-      </div>
-      <div class="metrics">
-        <div class="metric"><strong>${scheduleItems.length}</strong><span>今日行程</span></div>
-        <div class="metric"><strong>${carryoverTasks.length}</strong><span>昨日未完成</span></div>
-        <div class="metric"><strong>${priorityTasks.length}</strong><span>今日優先</span></div>
-        <div class="metric"><strong>${decisionTasks.length}</strong><span>需決策</span></div>
-      </div>
-      <section id="calendar"><div class="head"><h2>今日行程</h2><span class="note">由 HOZO 報告時段與本案任務節奏整理</span></div><div class="schedule">${renderMorningScheduleItems(scheduleItems)}</div></section>
-      <section id="carryover"><div class="head"><h2>昨日未完成與延續事項</h2><span class="note">由 HOZO 總控任務庫整理</span></div>${renderMorningTaskTable(carryoverTasks, '今日處理')}</section>
-      <section id="priority"><div class="head"><h2>今天建議優先處理</h2><span class="note">3 到 7 件，避免一天被切太碎</span></div><div class="cards">${renderMorningTaskCards(priorityTasks)}</div></section>
-      <section id="decisions"><div class="head"><h2>今天需要你決策或回覆</h2><span class="note">高風險或模糊事項不自動推進</span></div>${renderMorningDecisionTable(decisionTasks)}</section>
-      <section id="work"><div class="head"><h2>今日建議工作時段</h2><span class="note">依 HOZO 固定報告節奏安排</span></div><div class="work">${renderMorningWorkBlocks(workBlocks)}</div></section>
-      <section id="writeback"><div class="head"><h2>修改後早報內容</h2><span class="note">確認後會寫回 HOZO 風險與決策庫</span></div><div style="padding:16px"><textarea id="reportContent">${escapeHtml(reportContent)}</textarea></div></section>
-      <div class="actions"><button class="btn primary js-confirm" onclick="confirmBrief()">確認並寫回</button></div><div class="result" id="result"></div>
-    </main>
-  </div>
-  <script>
-    const APPROVAL_API='/control/reports/approve';
-    async function confirmBrief(){
-      const result=document.getElementById('result');
-      const buttons=document.querySelectorAll('.js-confirm');
-      buttons.forEach(button=>{button.disabled=true;button.textContent='寫回中...'});
-      result.className='result show';
-      result.innerHTML='<strong>正在寫回早報確認...</strong>';
-      const reportContent=document.getElementById('reportContent').value.trim();
-      try{
-        const response=await fetch(APPROVAL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reportType:'morning',approvedBy:'陸昱晴',submittedAt:new Date().toISOString(),reportContent,decisions:[],tasks:[],notes:'08:30 HOZO-AM 動態早報確認寫回'})});
-        const data=await response.json().catch(()=>({}));
-        if(!response.ok||!data.ok){throw new Error(data.error||'寫回失敗')}
-        result.className='result show';
-        result.innerHTML='<strong>早報已寫回 Notion。</strong><br><span>已建立 HOZO-AM 早報確認紀錄。</span>';
-      }catch(error){
-        result.className='result show error';
-        result.innerHTML='<strong>寫回失敗。</strong><br>'+escapeHtml(error.message||'未知錯誤');
-      }finally{
-        buttons.forEach(button=>{button.disabled=false;button.textContent='確認並寫回'});
-        result.scrollIntoView({behavior:'smooth',block:'nearest'});
+async function serveDashboard(req, res, pathname) {
+  // Dashboard 內含全部業務資料，沿用 User UI 的 Basic auth 保護。
+  if (!isUserUiAuthorized(req)) {
+    res.writeHead(401, {
+      ...corsHeaders(),
+      'WWW-Authenticate': 'Basic realm="HOZO AM Dashboard"',
+      'Content-Type': 'text/plain; charset=utf-8',
+    });
+    res.end('Login required.');
+    return;
+  }
+
+  const query = new URL(req.url ?? '/', 'http://localhost').searchParams;
+  try {
+    let html;
+    if (pathname === '/dashboard') {
+      html = await renderDashboardOverview();
+    } else if (pathname === '/dashboard/project') {
+      html = await renderProjectPage(String(query.get('name') || '未分類'));
+    } else if (pathname === '/dashboard/task') {
+      const taskId = String(query.get('id') || '').replace(/[^0-9a-f]/gi, '');
+      if (!taskId) return sendJson(res, 400, { error: 'Missing task id' });
+      html = await renderTaskPage(taskId);
+    } else {
+      return sendJson(res, 404, { error: 'Not found' });
+    }
+
+    res.writeHead(200, {
+      ...corsHeaders(),
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
+    res.end(html);
+  } catch (error) {
+    console.warn(`Dashboard rendering failed (${pathname}): ${error.message}`);
+    return sendJson(res, 500, { error: error.message });
+  }
+}
+
+async function handleDashboardAssignProject(req, res) {
+  if (!isUserUiAuthorized(req)) {
+    res.writeHead(401, {
+      ...corsHeaders(),
+      'WWW-Authenticate': 'Basic realm="HOZO AM Dashboard"',
+      'Content-Type': 'text/plain; charset=utf-8',
+    });
+    res.end('Login required.');
+    return;
+  }
+
+  try {
+    const body = await readJsonBody(req);
+    const result = await applyProjectAssign(
+      { task: body.task, project: body.project },
+      { reportType: 'dashboard', approvedBy: '陸昱晴', submittedAt: new Date() },
+    );
+    return sendJson(res, result.ok ? 200 : 400, result);
+  } catch (error) {
+    return sendJson(res, 500, { ok: false, error: error.message });
+  }
+}
+
+async function handleDashboardSetParent(req, res) {
+  if (!isUserUiAuthorized(req)) {
+    res.writeHead(401, {
+      ...corsHeaders(),
+      'WWW-Authenticate': 'Basic realm="HOZO AM Dashboard"',
+      'Content-Type': 'text/plain; charset=utf-8',
+    });
+    res.end('Login required.');
+    return;
+  }
+
+  try {
+    const body = await readJsonBody(req);
+    const taskId = String(body.taskId || '').replace(/[^0-9a-f]/gi, '');
+    const parentId = String(body.parentId || '').replace(/[^0-9a-f]/gi, '');
+    if (!taskId) {
+      return sendJson(res, 400, { ok: false, error: 'Missing task id' });
+    }
+
+    const taskPage = await notionRequest(`/v1/pages/${taskId}`, { method: 'GET' });
+    if (normalizeId(taskPage.parent?.data_source_id || '') !== normalizeId(TASKS_DATA_SOURCE_ID)) {
+      return sendJson(res, 400, { ok: false, error: 'Page is not a task' });
+    }
+
+    if (parentId) {
+      if (parentId === taskId) {
+        return sendJson(res, 400, { ok: false, error: '任務不能成為自己的子任務' });
+      }
+      // 防循環：沿著候選母任務的母任務鏈往上走，不可碰到自己。
+      let cursor = parentId;
+      for (let hop = 0; hop < 10 && cursor; hop += 1) {
+        const page = await notionRequest(`/v1/pages/${cursor}`, { method: 'GET' });
+        if (hop === 0 && normalizeId(page.parent?.data_source_id || '') !== normalizeId(TASKS_DATA_SOURCE_ID)) {
+          return sendJson(res, 400, { ok: false, error: 'Parent page is not a task' });
+        }
+        cursor = normalizeId((page.properties?.['母任務']?.relation || [])[0]?.id || '');
+        if (cursor === normalizeId(taskId)) {
+          return sendJson(res, 400, { ok: false, error: '這樣會形成循環（對方已是這個任務的子孫）' });
+        }
       }
     }
-    function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]))}
-  </script>
-</body>
-</html>`;
-}
 
-function formatMorningBriefDecisionText(model) {
-  return [
-    '# 今日行程與待辦報告',
-    '',
-    `日期：${model.today}｜08:30`,
-    '',
-    '## 今日優先處理',
-    ...model.priorityTasks.map((task, index) => `${index + 1}. ${task.name}｜${morningTaskAction(task)}`),
-    '',
-    '## 需要決策或回覆',
-    ...model.decisionTasks.map((task, index) => `${index + 1}. ${task.name}｜建議：${morningDecisionSuggestion(task)}`),
-    '',
-    '## 今日建議工作時段',
-    ...model.workBlocks.map((item) => `${item.time} ${item.note}`),
-  ].join('\n');
-}
+    await notionRequest(`/v1/pages/${taskId}`, {
+      method: 'PATCH',
+      body: {
+        properties: {
+          母任務: { relation: parentId ? [{ id: parentId }] : [] },
+          最後更新: dateProperty(new Date()),
+        },
+      },
+    });
 
-function renderMorningScheduleItems(items) {
-  if (!items.length) return '<div class="empty">目前沒有行程資料。</div>';
-  return items.map((item) => `<article class="item">
-    <div class="item-head"><div><div class="item-title">${escapeHtml(item.time)}　${escapeHtml(item.title)}</div><p>${escapeHtml(item.note)}</p></div><span class="badge blue">${escapeHtml(item.tag || '行程')}</span></div>
-  </article>`).join('');
-}
-
-function renderMorningTaskTable(tasks, actionHeader) {
-  if (!tasks.length) return '<div class="empty">目前沒有昨日延續事項。</div>';
-  const rows = tasks.map((task) => `<tr>
-    <td>${escapeHtml(morningTaskAction(task))}</td>
-    <td>${escapeHtml(task.name)}</td>
-    <td>${escapeHtml(task.project)}</td>
-    <td>${escapeHtml(task.status)}</td>
-    <td>${escapeHtml(task.priority)}</td>
-  </tr>`).join('');
-  return `<table><thead><tr><th>${escapeHtml(actionHeader)}</th><th>事項</th><th>專案</th><th>狀態</th><th>優先</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-function renderMorningTaskCards(tasks) {
-  if (!tasks.length) return '<div class="empty">目前沒有建議優先處理事項。</div>';
-  return tasks.map((task, index) => `<article class="item">
-    <div class="item-head"><div><div class="item-title">${index + 1}. ${escapeHtml(task.name)}</div><p>${escapeHtml(morningTaskAction(task))}</p></div><span class="badge">${escapeHtml(task.project)}</span></div>
-  </article>`).join('');
-}
-
-function renderMorningDecisionTable(tasks) {
-  if (!tasks.length) return '<div class="empty">目前沒有需要決策或回覆的項目。</div>';
-  const rows = tasks.map((task) => `<tr>
-    <td>${escapeHtml(task.name)}<br><span class="note">${escapeHtml(task.project)}｜${escapeHtml(task.status)}</span></td>
-    <td>${escapeHtml(morningDecisionSuggestion(task))}</td>
-    <td><span class="badge red">今天確認</span></td>
-  </tr>`).join('');
-  return `<table><thead><tr><th>事項</th><th>建議</th><th>你的決定</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-function renderMorningWorkBlocks(items) {
-  if (!items.length) return '<div class="empty">目前沒有建議工作時段。</div>';
-  return items.map((item) => `<article class="item"><div class="item-title">${escapeHtml(item.time)}</div><p>${escapeHtml(item.note)}</p></article>`).join('');
-}
-
-function morningDecisionSuggestion(task) {
-  if (['待負責人口述', '待上傳給 Codex', 'Codex 待確認', '需補充'].includes(task.goalStatus)) {
-    return `請 ${task.owner || '負責人'} 說明完成目標、驗收標準與誰確認。`;
+    return sendJson(res, 200, { ok: true, taskId, parentId: parentId || null });
+  } catch (error) {
+    return sendJson(res, 500, { ok: false, error: error.message });
   }
-  if (task.status === '等待回覆') return '今天先追問回覆；若仍未回覆，列入 17:00 跟催。';
-  if (task.status === '待確認完成') return '請確認是否可關閉；若不可關閉，補下一步與期限。';
-  return morningTaskAction(task);
 }
 
-function escapeHtml(value) {
-  return String(value || '').replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  }[char]));
+async function serveDynamicTaskReview(req, res, pathname) {
+  const query = new URL(req.url ?? '/', 'http://localhost').searchParams;
+
+  let reportType = 'daily';
+  let title = '每日總控報告：任務裁決';
+  let subtitle = '20:30 每日總控確認';
+  if (pathname === '/reports/followup-confirmation') {
+    const slot = String(query.get('slot') || '').trim();
+    reportType = ['10', '13', '17'].includes(slot) ? `followup-${slot}` : 'followup-morning';
+    title = `${slot || '10'}:00 追蹤確認與新任務裁決`;
+    subtitle = '追蹤確認時段';
+  }
+
+  try {
+    const html = await renderTaskReviewPage({ reportType, title, subtitle });
+    res.writeHead(200, {
+      ...corsHeaders(),
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
+    res.end(html);
+  } catch (error) {
+    // Dynamic rendering needs Notion; fall back to the static prototype rather than a blank error.
+    console.warn(`Dynamic report rendering failed (${pathname}): ${error.message}`);
+    return serveReportPage(res, `${pathname}-prototype.html`);
+  }
+}
+
+function serveUserUiPage(req, res, pathname) {
+  if (!isUserUiAuthorized(req)) {
+    res.writeHead(401, {
+      ...corsHeaders(),
+      'WWW-Authenticate': 'Basic realm="HOZO AM User UI"',
+      'Content-Type': 'text/plain; charset=utf-8',
+    });
+    res.end('Login required.');
+    return;
+  }
+
+  const fileName = resolveUserUiFileName(pathname);
+  if (!/^user-ui-(connected-preview|project-\d+|task-\d+|line-\d+|scheduled-[a-z-]+)\.html$/.test(fileName)) {
+    return sendJson(res, 404, { error: 'User UI page not found' });
+  }
+
+  const fileUrl = new URL(`../docs/${fileName}`, import.meta.url);
+  if (!existsSync(fileUrl)) {
+    return sendJson(res, 404, { error: 'User UI page not generated yet' });
+  }
+
+  const html = readFileSync(fileUrl, 'utf8');
+  res.writeHead(200, {
+    ...corsHeaders(),
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store',
+  });
+  res.end(html);
+}
+
+function resolveUserUiFileName(pathname) {
+  if (pathname === '/user-ui') {
+    return 'user-ui-connected-preview.html';
+  }
+  if (/^\/user-ui-[^/]+\.html$/.test(pathname)) {
+    return pathname.slice(1);
+  }
+  return pathname.replace(/^\/user-ui\//, '');
 }
 
 function sendJson(res, statusCode, payload) {

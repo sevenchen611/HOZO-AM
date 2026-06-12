@@ -47,6 +47,8 @@ Do not copy production values from another project. Each project must use its ow
 | `AM-IMP-2026.0611.01` | Task hierarchy judgment and promotion prompt | Installed | 2026-06-11 | AM_Core package + local config + Notion task schema update + `docs/upgrades/UPGRADE-2026-06-11-AM-IMP-2026.0611.01.md` | Copied hierarchy prompt and judgment contract into HOZO config; task and meeting creation scripts load both configs; HOZO task database now has hierarchy, blocking, promotion, event-line, completion-threshold, related-task, side-task, and judgment-time fields. User UI manual organization controls were not added. |
 | `HOTFIX-2026.0610.01` | HOZO-AM morning brief data-source isolation | Installed | 2026-06-10 | `src/control-api.js` + `reports/morning-brief-prototype.html` | `/reports/morning-brief` now renders from HOZO task data only; local HTTP check returned 200 and no stale sample markers. |
 
+| `AM-IMP-2026.0611.01`–`AM-IMP-2026.0612.15` | SevenAM 2026-06-12 parity bulk sync (queue, LLM extraction+calibration, triage, attachments, report pages, governance, dashboard, planned messages/Next Action, worker support, operating hours, controller gate) | Installed | 2026-06-12 | `docs/upgrades/UPGRADE-2026-06-12-SEVENAM-PARITY.md` | Syntax + dry-run + local boot verified against HOZO Notion; Render Blueprint sync and env setup pending for Deployed status. |
+
 ## Project-Specific Values
 
 Keep these values project-local:

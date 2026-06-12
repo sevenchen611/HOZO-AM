@@ -2,6 +2,8 @@
 
 This repository is the independent HOZO AM project. It must write only to HOZO AM databases unless the user explicitly asks for a migration or comparison.
 
+**2026-06-12 parity upgrade**: the full SevenAM architecture (AM-IMP-2026.0611.01 and AM-IMP-2026.0612.01–.15) was ported to this project with HOZO naming, HOZO Notion data sources, and the HOZO Render service. The SevenAM repo's AGENTS.md describes the shared architecture in depth; this file records the HOZO-specific values and rules.
+
 ## System Goal
 
 Build HOZO 好住寓好's control center for collecting LINE OA/group messages, customer messages, meeting records, and tasks into Notion, then producing daily morning and evening reports so the HOZO team can track project progress.
@@ -13,66 +15,73 @@ The system answers:
 
 ## Main Actors
 
-- User / main owner: 陸昱晴, role 總經理.
+- User / main owner: 陸昱晴, role 總經理. Maggie is the report keyword target.
 - Codex: analyzes conversations, extracts tasks and risks, drafts reports, and updates system logic.
 - HOZO Jr.: LINE OA that collects LINE conversations and sends reports.
-- Render Webhook Server: receives LINE webhook events, writes to Notion, exposes control APIs, and runs scheduled jobs.
+- Render Webhook Server (`hozo-am-line-oa-webhook`): receives LINE webhook events, writes to Notion, exposes control APIs, serves dynamic report pages and the dashboard, and runs scheduled jobs.
 - Notion: visible data layer for conversations, tasks, attachments, project status, risks, and decisions.
 
 ## Scope
 
 Only include pages and databases under `HOZO 好住、寓好`.
 
-Do not scan, summarize, or sync unrelated Notion pages, other workspace areas, private pages, or non-HOZO project databases.
-
-Existing LINE CRM databases under the HOZO LINE page are allowed:
-
-- HOZO LINE 對話主檔
-- HOZO LINE 訊息紀錄
-- HOZO LINE 附件紀錄
-
-The existing HOZO meeting database should not be reused for this automation. Use the HOZO-AM meeting records database for this project.
+Do not scan, summarize, or sync unrelated Notion pages, other workspace areas, private pages, or non-HOZO project databases. In particular, never use SevenAM / 7AM data sources, secrets, or LINE targets in this project.
 
 ## Default LINE Identity
 
 When sending a direct LINE message to the main owner, the default target is the owner user target configured in `HOZO_REPORT_TARGET_ID`.
 
-Target type:
-
-```text
-user
-```
+The controller-only command gate (calibration replies, 查待辦, report links, command acknowledgements) answers only the personal 1-on-1 chat of `HOZO_CONTROLLER_USER_ID` (falls back to `HOZO_REPORT_TARGET_ID`). Group commands are queued but get no reply.
 
 Never print LINE tokens, Notion tokens, or control API keys back to the user.
 
-## Initial Projects
+## Command Triggers
 
-- 招租管理, owner Maggie
-- 網頁設計, owner Maggie
-- 後臺設計製作, owner Seven
+Hardcoded trigger names after the parity upgrade: `HOZO Junior`, `HOZO Jr.`, `HOZ Jr.`, `HOZ Junior` (plus `HOZO_CODEX_COMMAND_TRIGGERS` env support in legacy paths). Immediate-command prefixes: `HOZO Junior` / `HOZOJunior` / `HOZO Jr.`.
 
-Known LINE group:
+Allowed direct replies: 早報/行程/報告 page links, 查待辦 task lists, 儀表板 dashboard link — controller-only.
 
-- HOZO公司群, project 後臺設計製作
+## Architecture (2026-06-12 parity)
 
-## Notion Data Layers
+All features below are identical to SevenAM's implementation; see the SevenAM AGENTS.md for full behavioral rules.
 
-Use `{專案名稱} + 資料層名稱`; for this project the prefix is `HOZO`.
+1. **Durable Postgres event queue** (`src/event-queue.js`, Render database `hozoam-queue-db`): webhook events are queued before Notion writes; retry with backoff; dead events alert `HOZO_ALERT_TARGET_ID`. Without `DATABASE_URL` it falls back to synchronous writes. **The Render free Postgres plan expires after 30 days — upgrade to a paid plan for production.**
+2. **LLM task extraction** (`scripts/llm-task-extraction.js`, hourly): judges conversation timelines with the shared hierarchy prompt + controlled project vocabulary from `HOZO 總控專案庫`; falls back to the legacy rule engine without `ANTHROPIC_API_KEY`. Prompt hardening, calibration-rule injection, confidence stats, and borderline sampling all active. Borderline review IDs use `HOZO-BL-*`.
+3. **Codex command triage** (`scripts/llm-codex-command-triage.js`, every 15 min): answers analysis commands, marks sensitive ones Needs Confirmation.
+4. **Calibration feedback loop** (`scripts/sync-extraction-feedback.js`, 22:45): harvests user verdicts into the calibration case database (`HOZO-FB-*`), proposes rules (Needs review — the user must flip Status to Active), injects Active `HOZO_AM` rules into extraction. Eval harness: `npm run eval:extraction`.
+5. **Attachment parsing** (`scripts/parse-attachments.js`, every 15 min): images/PDF/Office ≤5MB auto-parse; oversize and private-conversation images need approval in the review page.
+6. **Dynamic report pages** (`/reports/daily-control-report`, `/reports/followup-confirmation?slot=10|13|17`): six sections (verdicts, waiting-reply chase with send/schedule/snooze, in-progress notes, unclassified project assignment, attachment approval, project proposals). Approval key storage: `hozo-approval-key`.
+7. **Project governance**: controlled vocabulary from `HOZO 總控專案庫`; proposal engine (`scripts/propose-projects.js`, 22:20) creates 狀態=候選 candidates for approval in report section six.
+8. **Drill-down dashboard** (`/dashboard`, Basic auth via `HOZO_USER_UI_USERNAME`/`HOZO_USER_UI_PASSWORD`): overview → project → task with inline source conversation and media; move-project, parent/child, full edit panel; LINE command 儀表板.
+9. **Planned messages and Next Action scheduling**: six task properties (預定訊息內容/預定發送對象/預定發送對象ID/下次行動時間/下次行動模式/下次行動說明), dashboard panel with recipient search, `POST /control/tasks/send-planned`, report-page scheduled sends, and `scripts/run-scheduled-actions.js` (every 15 min) firing auto-sends or controller reminders (dead-man-switch semantics; one-shot).
+10. **Dual-mode worker** (`scripts/local-worker.js`): optional local machine runs extraction+triage on Claude Code subscription quota with heartbeats to `/worker/heartbeat`; Render crons stand down while the worker is healthy. Not currently installed for HOZO — Render API mode is the default.
+11. **Cron failure alerts**: all sync crons run through `scripts/run-cron-with-alert.js` (project prefix `HOZO`).
 
-Required or planned databases:
+## System Operating Hours
 
-- HOZO LINE 對話主檔
-- HOZO LINE 訊息紀錄
-- HOZO LINE 附件紀錄
-- HOZO LINE 附件轉檔資料庫
-- HOZO Codex 指令佇列
-- HOZO 總控專案庫
-- HOZO 總控任務庫
-- HOZO-AM 會議記錄
-- HOZO 專案進度報表庫
-- HOZO 風險與決策庫
-- HOZO Automation Run Log
-- HOZO 通知候選佇列
+Taipei 07:00–23:00 work, 23:00–07:00 rest. The 15-minute crons (triage, attachments, scheduled actions) are restricted to UTC `0-14,23`; the local worker (if installed) uses `HOZO_WORKER_ACTIVE_HOUR_START`/`HOZO_WORKER_ACTIVE_HOUR_END` (default 7/23). Overnight-due scheduled actions fire on the first morning scan.
+
+## Scheduled Jobs (Render Cron, UTC; Taipei = UTC+8)
+
+| Job | Taipei Time | UTC Cron |
+| --- | --- | --- |
+| `hozo-am-line-message-judgement-sync` | 08:10-22:10 hourly | `10 0-14 * * *` |
+| `hozo-am-codex-command-triage` | 07:00-22:45 every 15 min | `*/15 0-14,23 * * *` |
+| `hozo-am-attachment-parsing` | 07:07-22:52 every 15 min | `7,22,37,52 0-14,23 * * *` |
+| `hozo-am-scheduled-actions` | 07:03-22:48 every 15 min | `3,18,33,48 0-14,23 * * *` |
+| `hozo-am-meeting-action-sync` | 08:00-22:00 hourly | `0 0-14 * * *` |
+| `hozo-am-responsibility-candidate-sync` | 08:15-22:15 hourly | `15 0-14 * * *` |
+| `hozo-am-project-proposals` | 22:20 daily | `20 14 * * *` |
+| `hozo-am-extraction-feedback-sync` | 22:45 daily | `45 14 * * *` |
+| `hozo-am-morning-brief` | 08:30 | `30 0 * * *` |
+| `hozo-am-followup-morning` | 10:00 | `0 2 * * *` |
+| `hozo-am-followup-midday` | 13:00 | `0 5 * * *` |
+| `hozo-am-followup-afternoon` | 17:00 | `0 9 * * *` |
+| `hozo-am-daily-report` | 20:30 | `30 12 * * *` |
+
+## HOZO Notion Data Sources
+
+Configured through `HOZO_*` env vars (values in `.env` locally and Render Environment in production): conversations, messages, attachments, attachment conversions, codex commands, meetings, tasks, projects, progress reports, risk decisions, automation run log, responsibility, LINE group options/members/member index, daily report snapshots, judgment calibration cases, judgment rules.
 
 Rules:
 
@@ -80,47 +89,16 @@ Rules:
 - Tasks are official only after confirmation unless high-confidence and low-risk.
 - Finance, contracts, legal, tax, HR, or external commitment items require confirmation.
 - General LINE messages should not trigger automatic replies.
-
-## Command Triggers
-
-Configured through:
-
-```text
-HOZO_CODEX_COMMAND_TRIGGERS=HOZO Junior,HOZ Jr.,HOZO Jr.
-```
-
-Render should still store the raw LINE message first. Queue creation failure must not block normal LINE storage.
-
-## Scheduled Reports
-
-Render Cron uses UTC. Taipei time is UTC+8.
-
-| Job | Taipei Time | UTC Cron |
-| --- | --- | --- |
-| LINE task reconciliation | 08:10-22:10 hourly | `10 0-14 * * *` |
-| Meeting action sync | 08:00-22:00 hourly | `0 0-14 * * *` |
-| Morning brief | 08:30 | `30 0 * * *` |
-| Follow-up morning | 10:00 | `0 2 * * *` |
-| Follow-up midday | 13:00 | `0 5 * * *` |
-| Follow-up afternoon | 17:00 | `0 9 * * *` |
-| Daily report | 20:30 | `30 12 * * *` |
-
-Hourly LINE task reconciliation runs:
-
-```bash
-npm run line:judgements -- --include-outgoing-groups --limit 50
-```
-
-This job is task reconciliation, not direct message-to-task conversion. For every new LINE message, first read the same conversation context and search active `HOZO 總控任務庫` tasks. If the message extends, answers, completes, blocks, changes, or clarifies an existing task, update that task and record evidence. Create a new event-level task only when no existing task can reasonably absorb the message.
-
-The 08:00-22:00 hourly LINE judgement contract is defined in:
-
-```text
-config/hourly-line-task-reconciliation.json
-```
+- The progress-report property `需要 Seven 決策` is a legacy shared schema name — do not rename it without migrating the Notion database.
 
 ## Sensitive Data Rules
 
 - Do not commit `.env`, `env.txt`, LINE tokens, Notion tokens, or control API keys.
 - Confirm existence/format only; never echo secret values.
 - Render environment variables are the deployment source of truth for secrets.
+
+## Deployment
+
+- GitHub repo: `sevenchen611/HOZO-AM` (this folder is a git repo — use normal git commit/push).
+- Render auto-deploys the web service on push; render.yaml Blueprint changes (new crons, the Postgres database) require a Blueprint sync confirmation in the Render dashboard.
+- Required new Render env (set on the web service; crons inherit via fromService): `ANTHROPIC_API_KEY`, `HOZO_USER_UI_USERNAME`, `HOZO_USER_UI_PASSWORD`, `HOZO_ALERT_TARGET_ID` (optional), `HOZO_CONTROLLER_USER_ID` (optional, falls back to `HOZO_REPORT_TARGET_ID`), `DATABASE_URL` (auto-wired from `hozoam-queue-db` by Blueprint).

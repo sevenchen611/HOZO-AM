@@ -13,11 +13,11 @@ const tasksDataSourceId = process.env.HOZO_TASKS_DATA_SOURCE_ID || '';
 
 const args = parseArgs(process.argv.slice(2));
 const dryRun = Boolean(args['dry-run']);
-const planPath = path.resolve(root, args.plan || 'reports/task-rebuild/sevenam-curated-task-create-plan-20260610.json');
+const planPath = path.resolve(root, args.plan || 'reports/task-rebuild/hozoam-curated-task-create-plan-20260610.json');
 const maxMediaPerTask = numberArg(args['max-media-per-task'], 8);
 const contextWindow = numberArg(args['context-window'], 3);
 const runId = formatRunId(new Date());
-const outputPath = path.join(root, 'reports', 'task-rebuild', `sevenam-task-media-backfill-${runId}.json`);
+const outputPath = path.join(root, 'reports', 'task-rebuild', `hozoam-task-media-backfill-${runId}.json`);
 
 if (!notionToken) throw new Error('NOTION_TOKEN is not set.');
 if (!conversationsDataSourceId) throw new Error('HOZO_CONVERSATIONS_DATA_SOURCE_ID is not set.');
@@ -622,4 +622,3 @@ function loadEnv(filePath) {
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-

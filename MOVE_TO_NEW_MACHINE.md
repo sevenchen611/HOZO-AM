@@ -1,30 +1,123 @@
-# Move HOZO AM To A New Machine
+# Move To A New Machine
 
-This package contains the HOZO AM LINE OA webhook service.
+This package contains the LINE OA webhook service for HOZO Jr.
 
-## Files to copy
+## What To Copy
 
-- `src/`
-- `scripts/`
-- `reports/`
-- `config/`
-- `README.md`
-- `AGENTS.md`
-- `render.yaml`
-- `package.json`
-- `package-lock.json`
-- `.env.example`
+Use the normal project package for code and documentation:
 
-Do not copy committed secrets. Keep `.env` private and recreate it from `.env.example`.
+```text
+line-oa-webhook-transfer-YYYYMMDD-HHMMSS.zip
+```
 
-## Required setup
+Secrets are packaged separately:
 
-1. Install Node.js.
-2. Run `npm install`.
-3. Create `.env` from `.env.example`.
-4. Fill LINE, Notion, and Render control secrets.
-5. Run `npm start`.
+```text
+line-oa-webhook-secrets-YYYYMMDD-HHMMSS.zip
+```
 
-## Deployment note
+Keep the secrets package private. It contains local environment values such as LINE, Notion, and control API keys.
 
-The current Render service host is `https://hozo-am-line-oa-webhook.onrender.com`. If a future deployment uses a different host, update `HOZO_PUBLIC_BASE_URL`, `CONTROL_API_URL`, and `CONTROL_LINE_PUSH_URL`.
+## Requirements
+
+- Node.js 20 or newer
+- npm
+- Network access to LINE, Notion, and Render if testing remote APIs
+
+## Install
+
+1. Extract the normal project package on the new machine.
+2. Open a terminal in the extracted `line-oa-webhook` folder.
+3. Install dependencies:
+
+```powershell
+npm install
+```
+
+At the time this guide was written, the project has no external npm dependencies in `package.json`, but running `npm install` is still harmless and prepares the project if dependencies are added later.
+
+## Environment Variables
+
+The app reads settings from environment variables. It does not automatically load `env.txt`.
+
+On a local Windows machine, set the variables for the current PowerShell session before starting:
+
+```powershell
+$env:LINE_CHANNEL_ACCESS_TOKEN="..."
+$env:LINE_CHANNEL_SECRET="..."
+$env:NOTION_TOKEN="..."
+$env:HOZO_CONVERSATIONS_DATA_SOURCE_ID="..."
+$env:HOZO_MESSAGES_DATA_SOURCE_ID="..."
+$env:HOZO_ATTACHMENTS_DATA_SOURCE_ID="..."
+$env:HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID="..."
+$env:HOZO_CODEX_COMMANDS_DATA_SOURCE_ID="..."
+$env:HOZO_CONTROL_API_KEY="..."
+```
+
+`HOZO_CONVERSATIONS_DATA_SOURCE_ID` is the source used by hourly LINE task
+judgement. `HOZO_MESSAGES_DATA_SOURCE_ID` is still required for raw LINE event
+logging, outgoing message logs, attachment relations, and debugging, but it is
+not the task judgement input.
+
+Use the separate secrets package as the source of the real values. Do not paste secrets into chat, commits, screenshots, or public docs.
+
+## Run Locally
+
+Start the webhook/control server:
+
+```powershell
+npm start
+```
+
+By default the server listens on:
+
+```text
+http://localhost:3000
+```
+
+Health checks:
+
+```text
+GET http://localhost:3000/health
+GET http://localhost:3000/control/health
+```
+
+## Test A Report Push
+
+After setting `HOZO_CONTROL_API_KEY`, test from PowerShell:
+
+```powershell
+$headers = @{ "x-hozo-control-key" = $env:HOZO_CONTROL_API_KEY }
+$body = @{ reportType = "morning" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/control/reports/send" -Headers $headers -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($body))
+```
+
+## Deploy To Render
+
+If moving by GitHub/Render instead of running locally:
+
+1. Push or upload the project contents to the target repository.
+2. In Render, create or update the service from `render.yaml`.
+3. Add the environment variables from the secrets package in the Render Dashboard.
+4. Confirm:
+
+```text
+GET https://<render-service>/health
+GET https://<render-service>/control/health
+```
+
+## Important Notes
+
+- The Notion location for the raw LINE CRM layer is now:
+
+```text
+Codex 總控中心 / HOZO LINE CRM 原始紀錄層
+```
+
+- Render and the webhook code access Notion by database/data source IDs, not by the visual page path.
+- `env.txt` and other secret files must not be committed to GitHub.
+- If this server runs on a new public URL, update the LINE Developers webhook URL to:
+
+```text
+https://<new-host>/webhook/line
+```
