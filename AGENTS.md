@@ -13,6 +13,15 @@ The system answers:
 1. What is the current status of each HOZO project?
 2. What should happen next, and who needs to be reminded?
 
+## Business Context（案場結構）
+
+HOZO 好住寓好 is a 包租代管（sublease & property management）business. There are currently **two cases（案場）**, and tenants, 工務（repair/engineering）and 房務（housekeeping）work all split across them:
+
+1. **櫻桃計畫** — the 櫻桃/櫻花商務會館 site (handed over from Debbie 2026-06-01; legacy contacts: Amber for finance, 信翰 for cleaning).
+2. **明義街 46 號** — the 明義街 site (e.g. tenant group 明義街46號2之2; 2F construction: electric meters, network, dryer/shelving).
+
+Tenant inquiries and issues will keep arriving for both sites separately. When judging conversations and creating tasks, always identify **which 案場 the matter belongs to** and record it in the task title or body (the controlled project vocabulary stays functional — 房務管理, 工務維修管理, etc. — so the 案場 must be made explicit in the task itself).
+
 ## Main Actors
 
 - User / main owner: 陸昱晴, role 總經理. Maggie is the report keyword target.
