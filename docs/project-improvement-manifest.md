@@ -49,6 +49,11 @@ Do not copy production values from another project. Each project must use its ow
 
 | `AM-IMP-2026.0611.01`–`AM-IMP-2026.0612.15` | SevenAM 2026-06-12 parity bulk sync (queue, LLM extraction+calibration, triage, attachments, report pages, governance, dashboard, planned messages/Next Action, worker support, operating hours, controller gate) | Installed | 2026-06-12 | `docs/upgrades/UPGRADE-2026-06-12-SEVENAM-PARITY.md` | Syntax + dry-run + local boot verified against HOZO Notion; Render Blueprint sync and env setup pending for Deployed status. |
 
+| `AM-IMP-2026.0613.01` | OpenAI Codex CLI LLM backend | Deployed | 2026-06-13 | SevenAM `docs/upgrades/UPGRADE-2026-06-13-AM-IMP-2026.0613.01.md` | Worker live on backend=codex; self-test + full proposal analysis verified in production. |
+| `AM-IMP-2026.0613.02` | Worker wrapper OS-level log redirection | Deployed | 2026-06-13 | SevenAM `docs/upgrades/UPGRADE-2026-06-13-AM-IMP-2026.0613.02.md` | Tee-Object freeze reproduced live; cmd /c wrapper verified (commit 748450e). |
+| `AM-IMP-2026.0613.03` | Local-worker schedule consolidation (Codex-only: zero Render crons) | Installed | 2026-06-13 | SevenAM `docs/upgrades/UPGRADE-2026-06-13-AM-IMP-2026.0613.03.md` | Worker timetable live (15-min actions, hourly syncs, 5 reports, nightly batches); all 8 Render crons deleted by user. |
+| `AM-IMP-2026.0613.04` | Queue database plan policy | Installed | 2026-06-13 | SevenAM `docs/upgrades/UPGRADE-2026-06-13-AM-IMP-2026.0613.04.md` | hozoam-queue-db takes the account's free Postgres slot for the test period (upgrade one line when productionizing). |
+
 ## Project-Specific Values
 
 Keep these values project-local:
