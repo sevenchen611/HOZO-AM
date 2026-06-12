@@ -11,7 +11,7 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { claudeCodeSelfTest } from '../src/llm-backend.js';
+import { claudeCodeSelfTest, codexSelfTest } from '../src/llm-backend.js';
 
 loadEnvFile('.env');
 loadEnvFile('../env.txt');
@@ -21,6 +21,8 @@ const controlApiKey = process.env.HOZO_CONTROL_API_KEY || '';
 const intervalSeconds = clampNumber(Number(process.env.HOZO_WORKER_INTERVAL_SECONDS || 90), 30, 900);
 const failureBackoffSeconds = 300;
 const workerId = `local-${process.env.COMPUTERNAME || 'worker'}`;
+// HOZO 走 OpenAI Codex 訂閱（A/B 測試：SevenAM 走 Claude）。
+const workerBackend = String(process.env.HOZO_WORKER_LLM_BACKEND || 'codex').trim().toLowerCase();
 // 工作時段（台北時間）：時段外不掃描、不心跳；Render 夜間排程也已關閉，全系統休息。
 const activeHourStart = clampNumber(Number(process.env.HOZO_WORKER_ACTIVE_HOUR_START ?? 7), 0, 23);
 const activeHourEnd = clampNumber(Number(process.env.HOZO_WORKER_ACTIVE_HOUR_END ?? 23), 1, 24);
@@ -35,16 +37,18 @@ let feedbackRanOn = '';
 process.on('SIGINT', () => { stopping = true; log('SIGINT received; finishing current cycle then exiting.'); });
 process.on('SIGTERM', () => { stopping = true; });
 
-log(`HOZO AM local worker starting (id=${workerId}, interval=${intervalSeconds}s, backend=claude-code)`);
+log(`HOZO AM local worker starting (id=${workerId}, interval=${intervalSeconds}s, backend=${workerBackend})`);
 
-const selfTest = await claudeCodeSelfTest();
+const selfTest = workerBackend === 'codex' ? await codexSelfTest() : await claudeCodeSelfTest();
 if (!selfTest.ok) {
-  log(`❌ Claude Code CLI 自我檢測失敗：${selfTest.error}`);
-  log('請在這台電腦的終端機執行 claude 並完成 /login（瀏覽器登入訂閱帳號），然後重啟 worker。');
-  log('⚠️ Codex-only 模式：Render 沒有 LLM 排程備援，worker 停擺期間 AI 判讀完全暫停。');
+  log(`❌ ${workerBackend} CLI 自我檢測失敗：${selfTest.error}`);
+  log(workerBackend === 'codex'
+    ? '請在這台電腦的終端機執行 codex login（瀏覽器登入 ChatGPT 訂閱帳號），然後重啟 worker。'
+    : '請在這台電腦的終端機執行 claude 並完成 /login（瀏覽器登入訂閱帳號），然後重啟 worker。');
+  log('⚠️ 本機獨跑模式：Render 沒有 LLM 排程備援，worker 停擺期間 AI 判讀完全暫停。');
   process.exit(2);
 }
-log('✅ Claude Code CLI 自我檢測通過，訂閱額度可用。');
+log(`✅ ${workerBackend} CLI 自我檢測通過，訂閱額度可用。`);
 log(`工作時段：台北 ${String(activeHourStart).padStart(2, '0')}:00–${String(activeHourEnd % 24).padStart(2, '0')}:00；時段外暫停所有掃描。`);
 
 let inQuietHours = false;
@@ -108,12 +112,12 @@ while (!stopping) {
   await delay(sleepSeconds * 1000);
 
   if (consecutiveFailures >= 3 && consecutiveFailures % 3 === 0) {
-    const retest = await claudeCodeSelfTest();
+    const retest = workerBackend === 'codex' ? await codexSelfTest() : await claudeCodeSelfTest();
     if (retest.ok) {
-      log('✅ Claude Code 恢復可用，恢復正常節奏。');
+      log(`✅ ${workerBackend} 恢復可用，恢復正常節奏。`);
       consecutiveFailures = 0;
     } else {
-      log(`Claude Code 仍不可用：${retest.error}`);
+      log(`${workerBackend} 仍不可用：${retest.error}`);
     }
   }
 }
@@ -124,7 +128,7 @@ function runChild(label, scriptArgs) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, scriptArgs, {
       cwd: process.cwd(),
-      env: { ...process.env, LLM_BACKEND: 'claude-code' },
+      env: { ...process.env, LLM_BACKEND: workerBackend },
       windowsHide: true,
     });
 
