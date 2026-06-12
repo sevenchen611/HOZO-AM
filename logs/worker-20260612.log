@@ -1,0 +1,6 @@
+[2026-06-12T22:56:43.6679175+08:00] worker starting
+[2026-06-12T14:56:44.161Z] HOZO AM local worker starting (id=local-GH23040201, interval=90s, backend=claude-code)
+(node:59548) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[llm-task-extraction] (node:4120) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)

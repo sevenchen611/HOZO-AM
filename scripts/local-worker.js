@@ -1,8 +1,13 @@
-// 24/7 local worker: runs extraction + command triage on the Claude Code
-// subscription (LLM_BACKEND=claude-code) and heartbeats to Render so the
-// hourly/15-min crons stand down while this machine is healthy.
-// If the machine, CLI auth, or quota dies, heartbeats stop and Render's
-// API-billed crons take over automatically.
+// HOZO AM Codex-only worker（2026-06-12 起的 A/B 測試模式）：
+// 所有 AI 工作都在這台機器用 Claude Code 訂閱額度跑（LLM_BACKEND=claude-code），
+// Render 上沒有 LLM 排程、不需要 ANTHROPIC_API_KEY。與 SevenAM（Anthropic API
+// 模式）做執行品質與成本比較。
+//
+// 每輪（預設 90 秒）：任務萃取＋指令分流（即時回覆）
+// 每 15 分鐘：Next Action 排程掃描（無 LLM）
+// 每晚 22:20：專案提案；22:45：回饋收割（規則建議需 API key，無 key 時只收資料）
+// 工作時段：台北 07:00–23:00；時段外全部暫停。
+// 心跳仍照送（部署新版 Render 後 /worker/status 可看到 worker 健康狀態）。
 
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -23,6 +28,9 @@ const activeHourEnd = clampNumber(Number(process.env.HOZO_WORKER_ACTIVE_HOUR_END
 let consecutiveFailures = 0;
 let cycles = 0;
 let stopping = false;
+let lastScheduledActionsAt = 0;
+let proposalsRanOn = '';
+let feedbackRanOn = '';
 
 process.on('SIGINT', () => { stopping = true; log('SIGINT received; finishing current cycle then exiting.'); });
 process.on('SIGTERM', () => { stopping = true; });
@@ -33,7 +41,7 @@ const selfTest = await claudeCodeSelfTest();
 if (!selfTest.ok) {
   log(`❌ Claude Code CLI 自我檢測失敗：${selfTest.error}`);
   log('請在這台電腦的終端機執行 claude 並完成 /login（瀏覽器登入訂閱帳號），然後重啟 worker。');
-  log('在此之前 Render 的 API 排程會照常運作，系統不會中斷。');
+  log('⚠️ Codex-only 模式：Render 沒有 LLM 排程備援，worker 停擺期間 AI 判讀完全暫停。');
   process.exit(2);
 }
 log('✅ Claude Code CLI 自我檢測通過，訂閱額度可用。');
@@ -67,12 +75,29 @@ while (!stopping) {
   const triage = await runChild('codex-command-triage', ['scripts/llm-codex-command-triage.js', '--limit', '5', '--reply']);
   if (!triage.ok) cycleOk = false;
 
+  // Next Action 排程掃描（無 LLM）：每 15 分鐘一次。
+  if (Date.now() - lastScheduledActionsAt >= 15 * 60 * 1000) {
+    const actions = await runChild('scheduled-actions', ['scripts/run-scheduled-actions.js', '--limit', '20']);
+    if (actions.ok) lastScheduledActionsAt = Date.now();
+  }
+
+  // 夜間批次（Codex-only 模式下由 worker 接手 Render 的每日排程）。
+  const { date: taipeiDate, minutes: taipeiMinutes } = taipeiNow();
+  if (taipeiMinutes >= 22 * 60 + 20 && proposalsRanOn !== taipeiDate) {
+    proposalsRanOn = taipeiDate;
+    await runChild('project-proposals', ['scripts/propose-projects.js']);
+  }
+  if (taipeiMinutes >= 22 * 60 + 45 && feedbackRanOn !== taipeiDate) {
+    feedbackRanOn = taipeiDate;
+    await runChild('extraction-feedback', ['scripts/sync-extraction-feedback.js', '--since-days', '7']);
+  }
+
   if (cycleOk) {
     consecutiveFailures = 0;
     await sendHeartbeat({ cycles, lastCycleMs: Date.now() - cycleStartedAt });
   } else {
     consecutiveFailures += 1;
-    log(`⚠️ 本輪有工作失敗（連續失敗 ${consecutiveFailures} 次）${consecutiveFailures >= 3 ? '；暫停心跳，Render 排程將自動接手。' : ''}`);
+    log(`⚠️ 本輪有工作失敗（連續失敗 ${consecutiveFailures} 次）${consecutiveFailures >= 3 ? '；暫停心跳並退避 5 分鐘（Codex-only 模式無 Render 備援）。' : ''}`);
     if (consecutiveFailures < 3) {
       // 偶發失敗仍送心跳，避免單次網路抖動就讓兩邊搶工作。
       await sendHeartbeat({ cycles, degraded: true });
@@ -139,6 +164,17 @@ async function sendHeartbeat(meta) {
   } catch (error) {
     log(`Heartbeat failed: ${error.message}`);
   }
+}
+
+function taipeiNow() {
+  const formatted = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(new Date());
+  const [date, time] = formatted.split(' ');
+  const [hour, minute] = time.split(':').map(Number);
+  return { date, minutes: hour * 60 + minute };
 }
 
 function isActiveHour() {

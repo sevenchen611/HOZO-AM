@@ -54,7 +54,8 @@ All features below are identical to SevenAM's implementation; see the SevenAM AG
 7. **Project governance**: controlled vocabulary from `HOZO 總控專案庫`; proposal engine (`scripts/propose-projects.js`, 22:20) creates 狀態=候選 candidates for approval in report section six.
 8. **Drill-down dashboard** (`/dashboard`, Basic auth via `HOZO_USER_UI_USERNAME`/`HOZO_USER_UI_PASSWORD`): overview → project → task with inline source conversation and media; move-project, parent/child, full edit panel; LINE command 儀表板.
 9. **Planned messages and Next Action scheduling**: six task properties (預定訊息內容/預定發送對象/預定發送對象ID/下次行動時間/下次行動模式/下次行動說明), dashboard panel with recipient search, `POST /control/tasks/send-planned`, report-page scheduled sends, and `scripts/run-scheduled-actions.js` (every 15 min) firing auto-sends or controller reminders (dead-man-switch semantics; one-shot).
-10. **Dual-mode worker** (`scripts/local-worker.js`): optional local machine runs extraction+triage on Claude Code subscription quota with heartbeats to `/worker/heartbeat`; Render crons stand down while the worker is healthy. Not currently installed for HOZO — Render API mode is the default.
+10. **Codex-only worker** (`scripts/local-worker.js`) — **HOZO runs in Codex-only mode (2026-06-12 A/B test)**: ALL AI work runs on the 24/7 local machine via Claude Code subscription quota (`LLM_BACKEND=claude-code`). There are NO LLM crons on Render and `ANTHROPIC_API_KEY` is intentionally not set. The worker handles: extraction + command triage every ~90s, Next Action scheduled-actions every 15 min, project proposals nightly ≥22:20, extraction feedback sync nightly ≥22:45 (rule suggestions are skipped without an API key; feedback collection still runs). Startup entry: `HOZO-AM-Local-Worker.cmd` in the Windows Startup folder. **No Render fallback exists** — if the worker machine dies, HOZO AI judgment stops until it is restarted. This contrasts with SevenAM (Anthropic API on Render + worker hybrid) for a quality/cost comparison.
+    - Attachment parsing is disabled in this mode (it requires the Anthropic API for vision/document parsing); attachments stay queued as 待轉檔.
 11. **Cron failure alerts**: all sync crons run through `scripts/run-cron-with-alert.js` (project prefix `HOZO`).
 
 ## System Operating Hours
@@ -63,16 +64,12 @@ Taipei 07:00–23:00 work, 23:00–07:00 rest. The 15-minute crons (triage, atta
 
 ## Scheduled Jobs (Render Cron, UTC; Taipei = UTC+8)
 
+Codex-only mode: extraction, triage, scheduled actions, proposals, and feedback sync run on the local worker, NOT on Render. Render keeps only the non-LLM jobs below.
+
 | Job | Taipei Time | UTC Cron |
 | --- | --- | --- |
-| `hozo-am-line-message-judgement-sync` | 08:10-22:10 hourly | `10 0-14 * * *` |
-| `hozo-am-codex-command-triage` | 07:00-22:45 every 15 min | `*/15 0-14,23 * * *` |
-| `hozo-am-attachment-parsing` | 07:07-22:52 every 15 min | `7,22,37,52 0-14,23 * * *` |
-| `hozo-am-scheduled-actions` | 07:03-22:48 every 15 min | `3,18,33,48 0-14,23 * * *` |
 | `hozo-am-meeting-action-sync` | 08:00-22:00 hourly | `0 0-14 * * *` |
 | `hozo-am-responsibility-candidate-sync` | 08:15-22:15 hourly | `15 0-14 * * *` |
-| `hozo-am-project-proposals` | 22:20 daily | `20 14 * * *` |
-| `hozo-am-extraction-feedback-sync` | 22:45 daily | `45 14 * * *` |
 | `hozo-am-morning-brief` | 08:30 | `30 0 * * *` |
 | `hozo-am-followup-morning` | 10:00 | `0 2 * * *` |
 | `hozo-am-followup-midday` | 13:00 | `0 5 * * *` |
@@ -101,4 +98,4 @@ Rules:
 
 - GitHub repo: `sevenchen611/HOZO-AM` (this folder is a git repo — use normal git commit/push).
 - Render auto-deploys the web service on push; render.yaml Blueprint changes (new crons, the Postgres database) require a Blueprint sync confirmation in the Render dashboard.
-- Required new Render env (set on the web service; crons inherit via fromService): `ANTHROPIC_API_KEY`, `HOZO_USER_UI_USERNAME`, `HOZO_USER_UI_PASSWORD`, `HOZO_ALERT_TARGET_ID` (optional), `HOZO_CONTROLLER_USER_ID` (optional, falls back to `HOZO_REPORT_TARGET_ID`), `DATABASE_URL` (auto-wired from `hozoam-queue-db` by Blueprint).
+- Required new Render env (set on the web service): `HOZO_USER_UI_USERNAME`, `HOZO_USER_UI_PASSWORD`, `HOZO_ALERT_TARGET_ID` (optional), `HOZO_CONTROLLER_USER_ID` (optional, falls back to `HOZO_REPORT_TARGET_ID`), `DATABASE_URL` (auto-wired from `hozoam-queue-db` by Blueprint). `ANTHROPIC_API_KEY` is intentionally NOT set — Codex-only mode.
