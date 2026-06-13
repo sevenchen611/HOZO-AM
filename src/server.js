@@ -1513,7 +1513,9 @@ async function appendConversationContentFirst({ conversationId, conversationName
 
 async function findOrCreateConversationAnchor(conversationId) {
   const children = await getBlockChildren(conversationId);
-  const anchor = children.find((block) => plainBlockText(block).includes(conversationAnchorText));
+  // 前綴無關比對：舊頁面的錨點是「【HOZO CRM】對話記錄…」，移植後是「【HOZO LINE】…」，
+  // 用穩定子字串「】對話記錄」比對，避免在舊頁面重複建錨點導致新訊息掉到頁尾（2026-06-13 修）。
+  const anchor = children.find((block) => plainBlockText(block).includes('】對話記錄'));
   if (anchor) {
     return anchor;
   }

@@ -3177,7 +3177,8 @@ async function appendOutgoingConversationContent({ conversationId, target, messa
 
 async function findConversationAnchorBlock(conversationId) {
   const blocks = await getBlockChildren(conversationId);
-  return blocks.find((block) => plainBlockText(block).includes(CONVERSATION_ANCHOR_TEXT)) || null;
+  // 前綴無關比對（CRM／LINE 舊新錨點都認得），避免對外訊息掉到頁尾（2026-06-13 修）。
+  return blocks.find((block) => plainBlockText(block).includes('】對話記錄')) || null;
 }
 
 async function getBlockChildren(blockId) {
