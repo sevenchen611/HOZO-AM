@@ -31,8 +31,9 @@ services:
         sync: false
       - key: HOZO_CODEX_COMMANDS_DATA_SOURCE_ID
         sync: false
-      - key: HOZO_DATA_SOURCE_PARENT_BLOCK_ID
-        sync: false
+      # 注意：不要設 HOZO_DATA_SOURCE_PARENT_BLOCK_ID。HOZO 的資料庫散落在 5 個
+      # 不同父頁面（LINE CRM／任務／專案各自一頁），單一父頁面範圍檢查會把全部
+      # Notion 寫入擋掉（2026-06-13 斷線事故）。隔離改靠標題白名單＋Notion 整合授權。
       - key: HOZO_ATTACHMENT_CONVERSIONS_DATA_SOURCE_ID
         sync: false
       - key: HOZO_MEETINGS_DATA_SOURCE_ID
